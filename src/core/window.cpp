@@ -28,11 +28,21 @@ namespace FAVE
         glfwSetFramebufferSizeCallback(m_window, resizeCallback);
     }
 
-    void Window::start()
+    void Window::start() // TODO deltaTime
     {
+        if (!m_window)
+        {
+            throwError("Window is not created");
+        }
+
         if (!m_scene)
         {
             throwError("Scene is not set");
+        }
+
+        if (!m_scene->camera())
+        {
+            throwError("Camera is not set");
         }
 
         glEnable(GL_DEPTH_TEST);
@@ -42,10 +52,9 @@ namespace FAVE
             glClearColor(m_background_color.r, m_background_color.g, m_background_color.b, m_background_color.a);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            m_scene->camera()->input(m_window, 0.001f); // TODO deltaTime
-            m_scene->camera()->update();
+            m_scene->camera()->update_matrix();
 
-            m_scene->render();
+            m_scene->render(0.001f);
 
             glfwSwapBuffers(m_window);
             glfwPollEvents();

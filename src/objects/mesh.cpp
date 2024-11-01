@@ -1,4 +1,6 @@
 #include "objects/mesh.h"
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 namespace FAVE
 {
@@ -21,18 +23,21 @@ namespace FAVE
     void Mesh::draw(Camera *p_camera, Light *p_light)
     {
         m_material.shader().use();
-        glUniformMatrix4fv(glGetUniformLocation(m_material.shader().id(), "model"), 1, GL_FALSE, glm::value_ptr(glm::translate(glm::mat4(1.0f), position())));
+
+        glUniform3f(glGetUniformLocation(m_material.shader().id(), "scale"), m_scale.x, m_scale.y, m_scale.z);
+        glUniform3f(glGetUniformLocation(m_material.shader().id(), "rotation"), m_rotation.x, m_rotation.y, m_rotation.z);
+        glUniform3f(glGetUniformLocation(m_material.shader().id(), "position"), position().x, position().y, position().z);
+
         glUniform4f(glGetUniformLocation(m_material.shader().id(), "lightColor"), p_light->color().r, p_light->color().g, p_light->color().b, p_light->color().a);
         glUniform3f(glGetUniformLocation(m_material.shader().id(), "lightPos"), p_light->position().x, p_light->position().y, p_light->position().z);
-        m_vao.bind();
+        glUniform3f(glGetUniformLocation(m_material.shader().id(), "camPos"), p_camera->position().x, p_camera->position().y, p_camera->position().z);
+        p_camera->matrix(m_material.shader(), "camMatrix");
 
+        m_vao.bind();
         m_material.diffuseTexture()->texUnit(m_material.shader(), "diffuse0", 0);
         m_material.diffuseTexture()->bind();
         m_material.diffuseTexture()->texUnit(m_material.shader(), "specular0", 1);
         m_material.diffuseTexture()->bind();
-
-        glUniform3f(glGetUniformLocation(m_material.shader().id(), "camPos"), p_camera->position().x, p_camera->position().y, p_camera->position().z);
-        p_camera->matrix(m_material.shader(), "camMatrix");
 
         glDrawElements(GL_TRIANGLES, m_indices.size(), GL_UNSIGNED_INT, 0);
     }

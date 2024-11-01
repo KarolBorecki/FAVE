@@ -3,12 +3,15 @@
 
 #include "logging/logger.h"
 
-namespace FAVE {
+namespace FAVE
+{
     class Object;
 }
 
-namespace FAVE {
-    class Script {
+namespace FAVE
+{
+    class Script
+    {
     public:
         virtual void reload() {};
 

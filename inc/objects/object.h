@@ -1,7 +1,10 @@
 #ifndef FAVE_OBJECT_H
 #define FAVE_OBJECT_H
 
+#include <vector>
 #include <glm/glm.hpp>
+
+#include "scripting/script.h"
 
 namespace FAVE
 {
@@ -22,10 +25,28 @@ namespace FAVE
         inline glm::vec3 position() const { return m_position; }
         inline glm::vec3 rotation() const { return m_rotation; }
 
+        inline glm::vec3 up() const { return m_up; }
+
+        void attach(Script *p_script)
+        {
+            m_scripts.push_back(p_script);
+            p_script->attachTo(this);
+        }
+
+        void update(float p_delta_time)
+        {
+            for (auto &script : m_scripts)
+                script->update(p_delta_time);
+        }
+
     protected:
         glm::vec3 m_scale = glm::vec3(1.0f, 1.0f, 1.0f);
         glm::vec3 m_position = glm::vec3(0.0f, 0.0f, 0.0f);
-        glm::vec3 m_rotation = glm::vec3(0.0f, 0.0f, 0.0f);
+        glm::vec3 m_rotation = glm::vec3(0.0f, 0.0f, 0.0f); // Euler angles
+
+        const glm::vec3 m_up = glm::vec3(0.0f, 1.0f, 0.0f);
+
+        std::vector<Script *> m_scripts;
     };
 }
 
