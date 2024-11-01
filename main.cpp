@@ -7,10 +7,7 @@ FAVE::Vertex vertices[] =
         FAVE::Vertex{glm::vec3(1.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f), glm::vec2(1.0f, 1.0f)},
         FAVE::Vertex{glm::vec3(1.0f, 0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f), glm::vec2(1.0f, 0.0f)}};
 
-GLuint indices[] =
-    {
-        0, 1, 2,
-        0, 2, 3};
+GLuint indices[] = {0, 1, 2, 0, 2, 3};
 
 int main()
 {
@@ -27,7 +24,7 @@ int main()
     FAVE::Texture planksDiffuse("./resources/textures/planks.png", FAVE::TextureType::DIFFUSE, 0, GL_RGBA, GL_UNSIGNED_BYTE);
     FAVE::Texture planksSpecular("./resources/textures/planksSpec.png", FAVE::TextureType::SPECULAR, 1, GL_RED, GL_UNSIGNED_BYTE);
 
-    FAVE::Material material(shaderProgram, planksDiffuse, planksSpecular);
+    FAVE::Material material(shaderProgram, &planksDiffuse, &planksSpecular);
     FAVE::Mesh floor(verts, ind, material);
 
     FAVE::Light light({1.0f, 1.0f, 1.0f, 1.0f});

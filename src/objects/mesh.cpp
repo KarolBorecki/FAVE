@@ -26,10 +26,10 @@ namespace FAVE
         glUniform3f(glGetUniformLocation(m_material.shader().id(), "lightPos"), p_light->position().x, p_light->position().y, p_light->position().z);
         m_vao.bind();
 
-        m_material.diffuseTexture().texUnit(m_material.shader(), "diffuse0", 0);
-        m_material.diffuseTexture().bind();
-        m_material.diffuseTexture().texUnit(m_material.shader(), "specular0", 1);
-        m_material.diffuseTexture().bind();
+        m_material.diffuseTexture()->texUnit(m_material.shader(), "diffuse0", 0);
+        m_material.diffuseTexture()->bind();
+        m_material.diffuseTexture()->texUnit(m_material.shader(), "specular0", 1);
+        m_material.diffuseTexture()->bind();
 
         glUniform3f(glGetUniformLocation(m_material.shader().id(), "camPos"), p_camera->position().x, p_camera->position().y, p_camera->position().z);
         p_camera->matrix(m_material.shader(), "camMatrix");
