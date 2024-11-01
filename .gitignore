@@ -32,7 +32,11 @@
 *.app
 
 /build
+FAVE
 
+# IDE files
 .vscode
 .idea
-FAVE
+
+# valgrind files
+vgcore*

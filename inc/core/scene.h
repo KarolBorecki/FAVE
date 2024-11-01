@@ -22,20 +22,22 @@ namespace FAVE
         void addObject(RenderObject *p_obj);
 
         void setCamera(Camera *p_camera);
-        inline Camera* camera() { return m_camera; }
+        inline Camera *camera() { return m_camera; }
 
         void setLight(Light *p_light);
-        inline Light* light() { return m_light; }
+        inline Light *light() { return m_light; }
 
-        void onWindowResize(int p_width, int p_height);
+        void onWindowResize(uint16_t p_width, uint16_t p_height);
+
+        void finish();
 
     private:
         std::vector<RenderObject *> m_objects;
         Camera *m_camera;
         Light *m_light;
 
-        uint16_t m_width {1};
-        uint16_t m_height {1};
+        uint16_t m_width{1};
+        uint16_t m_height{1};
     };
 }
 

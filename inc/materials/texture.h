@@ -6,6 +6,7 @@
 
 #include "logging/exceptions.h"
 #include "base/indexable.h"
+#include "base/definitions.h"
 #include "materials/shader.h"
 
 namespace FAVE
@@ -13,7 +14,7 @@ namespace FAVE
     class Texture : Indexable
     {
     public:
-        Texture(const char *p_image, const char *p_texType, GLuint p_slot, GLenum p_format, GLenum p_pixelType);
+        Texture(const char *p_image, TextureType p_texType, GLuint p_slot, GLenum p_format, GLenum p_pixelType);
         virtual ~Texture() = default;
 
         void bind();
@@ -22,12 +23,11 @@ namespace FAVE
 
         void texUnit(Shader &p_shader, const char *p_uniform, GLuint p_unit);
 
-        const char *type() const { return m_type; }
+        TextureType type() const { return m_type; }
 
     protected:
         GLuint m_unit;
-
-        const char *m_type;
+        TextureType m_type;
     };
 }
 

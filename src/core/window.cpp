@@ -1,6 +1,7 @@
 #include "core/window.h"
 
-namespace FAVE {
+namespace FAVE
+{
     uint16_t Window::m_width = 1;
     uint16_t Window::m_height = 1;
     const char *Window::m_title = "FAVE";
@@ -14,7 +15,8 @@ namespace FAVE {
         m_height = p_height;
         m_title = p_title;
         m_window = glfwCreateWindow(m_width, m_height, m_title, nullptr, nullptr);
-        if (!m_window) {
+        if (!m_window)
+        {
             glfwTerminate();
             throwError("Failed to create window");
         }
@@ -26,14 +28,17 @@ namespace FAVE {
         glfwSetFramebufferSizeCallback(m_window, resizeCallback);
     }
 
-    void Window::start() {
-        if (!m_scene) {
+    void Window::start()
+    {
+        if (!m_scene)
+        {
             throwError("Scene is not set");
         }
 
         glEnable(GL_DEPTH_TEST);
 
-        while (!glfwWindowShouldClose(m_window)) {
+        while (!glfwWindowShouldClose(m_window))
+        {
             glClearColor(m_background_color.r, m_background_color.g, m_background_color.b, m_background_color.a);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -47,9 +52,10 @@ namespace FAVE {
         }
     }
 
-    void Window::close() {
+    void Window::close()
+    {
+        m_scene->finish();
         glfwDestroyWindow(m_window);
-        glfwTerminate();
     }
 
     void Window::setScene(Scene *scene)
@@ -58,7 +64,8 @@ namespace FAVE {
         m_scene->onWindowResize(m_width, m_height);
     }
 
-    void Window::resizeCallback(GLFWwindow *p_window, int p_width, int p_height) {
+    void Window::resizeCallback(GLFWwindow *p_window, int p_width, int p_height)
+    {
         m_width = p_width;
         m_height = p_height;
         glViewport(0, 0, m_width, m_height);

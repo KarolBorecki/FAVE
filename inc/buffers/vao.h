@@ -3,6 +3,7 @@
 
 #include <glad/glad.h>
 
+#include "logging/logger.h"
 #include "buffers/buffer.h"
 #include "buffers/vbo.h"
 
@@ -12,6 +13,7 @@ namespace FAVE
 	{
 	public:
 		VAO();
+		virtual ~VAO() = default;
 
 		void bind() override;
 		void unbind() override;

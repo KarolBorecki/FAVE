@@ -1,8 +1,7 @@
 #include "buffers/vbo.h"
 
-namespace FAVE 
+namespace FAVE
 {
-
     VBO::VBO(std::vector<Vertex> &p_vertices)
     {
         glGenBuffers(1, &m_ID);
@@ -22,6 +21,10 @@ namespace FAVE
 
     void VBO::destroy()
     {
-        glDeleteBuffers(1, &m_ID);
+        if (glIsBuffer(m_ID))
+        {
+            glDeleteBuffers(1, &m_ID);
+            m_ID = 0;
+        }
     }
 } // namespace FAVE

@@ -4,6 +4,7 @@
 #include <cstring>
 #include <glad/glad.h>
 
+#include "logging/exceptions.h"
 #include "base/indexable.h"
 #include "util/file_utils.h"
 
@@ -13,10 +14,11 @@ namespace FAVE
     {
     public:
         Shader(const char *p_vertexPath, const char *p_fragmentPath);
-        ~Shader();
+        virtual ~Shader() = default;
 
         void use();
         void unuse();
+        void destroy();
 
         void setBool(const char *p_name, bool p_value) const;
         void setInt(const char *p_name, int p_value) const;

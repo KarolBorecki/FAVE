@@ -20,7 +20,21 @@ namespace FAVE
         float b;
         float a;
     };
-    
+
+    enum class LightType // NOT IMPLEMENTED
+    {
+        DIRECTIONAL,
+        POINT,
+        SPOT
+    };
+
+    enum class TextureType : uint8_t
+    {
+        DIFFUSE,
+        SPECULAR,
+        AMBIENT, // NOT IMPLEMENTED
+        EMISSIVE // NOT IMPLEMENTED
+    };
 }
 
 #endif // FAVE_DEFINITIONS_H

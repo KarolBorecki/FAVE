@@ -1,6 +1,7 @@
 #include "buffers/ebo.h"
 
-namespace FAVE {
+namespace FAVE
+{
     EBO::EBO(std::vector<GLuint> &p_indices)
     {
         glGenBuffers(1, &m_ID);
@@ -20,6 +21,10 @@ namespace FAVE {
 
     void EBO::destroy()
     {
-        glDeleteBuffers(1, &m_ID);
+        if (glIsBuffer(m_ID))
+        {
+            glDeleteBuffers(1, &m_ID);
+            m_ID = 0;
+        }
     }
 }

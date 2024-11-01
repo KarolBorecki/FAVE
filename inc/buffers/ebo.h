@@ -5,7 +5,8 @@
 
 #include <glad/glad.h>
 
-#include "buffer.h"
+#include "logging/logger.h"
+#include "buffers/buffer.h"
 
 namespace FAVE
 {
@@ -13,6 +14,7 @@ namespace FAVE
 	{
 	public:
 		EBO(std::vector<GLuint> &indices);
+		virtual ~EBO() = default;
 
 		void bind() override;
 		void unbind() override;

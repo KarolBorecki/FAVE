@@ -6,6 +6,7 @@
 #include <glm/glm.hpp>
 #include <glad/glad.h>
 
+#include "logging/logger.h"
 #include "base/definitions.h"
 #include "buffers/buffer.h"
 
@@ -15,6 +16,7 @@ namespace FAVE
 	{
 	public:
 		VBO(std::vector<Vertex> &p_vertices);
+		virtual ~VBO() = default;
 
 		void bind() override;
 		void unbind() override;

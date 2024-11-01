@@ -6,7 +6,7 @@
 #include "objects/light.h"
 #include "materials/shader.h"
 
-namespace FAVE 
+namespace FAVE
 {
     class RenderObject : public Object
     {
@@ -14,7 +14,9 @@ namespace FAVE
         RenderObject() = default;
         virtual ~RenderObject() = default;
 
-        virtual void draw(Camera *p_camera, Light* p_light) = 0;
+        virtual void draw(Camera *p_camera, Light *p_light) = 0;
+
+        virtual void destroy() = 0;
     };
 }
 

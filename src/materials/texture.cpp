@@ -2,7 +2,7 @@
 
 namespace FAVE
 {
-    Texture::Texture(const char *p_image, const char *p_texType, GLuint p_slot, GLenum p_format, GLenum p_pixelType) : m_unit(p_slot), m_type(p_texType)
+    Texture::Texture(const char *p_image, TextureType p_texType, GLuint p_slot, GLenum p_format, GLenum p_pixelType) : m_unit(p_slot), m_type(p_texType)
     {
         int width_img, height_img, num_col_ch;
         stbi_set_flip_vertically_on_load(true);
@@ -53,6 +53,10 @@ namespace FAVE
 
     void Texture::destroy()
     {
-        glDeleteTextures(1, &m_ID);
+        if (glIsTexture(m_ID))
+        {
+            glDeleteTextures(1, &m_ID);
+            m_ID = 0;
+        }
     }
 }

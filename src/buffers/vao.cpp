@@ -1,6 +1,7 @@
 #include "buffers/vao.h"
 
-namespace FAVE {
+namespace FAVE
+{
     VAO::VAO()
     {
         glGenVertexArrays(1, &m_ID);
@@ -18,7 +19,11 @@ namespace FAVE {
 
     void VAO::destroy()
     {
-        glDeleteVertexArrays(1, &m_ID);
+        if (glIsVertexArray(m_ID))
+        {
+            glDeleteVertexArrays(1, &m_ID);
+            m_ID = 0;
+        }
     }
 
     void VAO::linkAttrib(VBO &p_vbo, GLuint p_layout, GLuint p_num_components, GLenum p_type, GLsizeiptr p_stride, void *p_offset)
