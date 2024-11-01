@@ -17,6 +17,9 @@ namespace FAVE
         vbo.unbind();
         ebo.unbind();
 
+        vbo.destroy();
+        ebo.destroy();
+
         m_material.shader().use();
     }
 

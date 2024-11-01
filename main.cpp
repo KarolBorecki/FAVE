@@ -11,15 +11,15 @@ GLuint indices[] = {0, 1, 2, 0, 2, 3};
 
 int main()
 {
+    std::vector<FAVE::Vertex> verts(vertices, vertices + sizeof(vertices) / sizeof(FAVE::Vertex)); // TODO implement reading obj
+    std::vector<GLuint> ind(indices, indices + sizeof(indices) / sizeof(GLuint));
+
     FAVE::Core::init();
     FAVE::Window::open(1800, 1200, "FAVE");
 
     FAVE::Scene scene;
 
     FAVE::Shader shaderProgram("./resources/shaders/default.vert", "./resources/shaders/default.frag");
-
-    std::vector<FAVE::Vertex> verts(vertices, vertices + sizeof(vertices) / sizeof(FAVE::Vertex));
-    std::vector<GLuint> ind(indices, indices + sizeof(indices) / sizeof(GLuint));
 
     FAVE::Texture planksDiffuse("./resources/textures/planks.png", FAVE::TextureType::DIFFUSE, 0, GL_RGBA, GL_UNSIGNED_BYTE);
     FAVE::Texture planksSpecular("./resources/textures/planksSpec.png", FAVE::TextureType::SPECULAR, 1, GL_RED, GL_UNSIGNED_BYTE);
@@ -30,7 +30,10 @@ int main()
     FAVE::Light light({1.0f, 1.0f, 1.0f, 1.0f});
     light.setPosition({0.5f, 0.5f, 0.5f});
 
+    FAVE::CameraController cameraController;
     FAVE::Camera camera;
+    camera.attach(&cameraController);
+    cameraController.m_camera = &camera;
 
     scene.setCamera(&camera);
     scene.setLight(&light);

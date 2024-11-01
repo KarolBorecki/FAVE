@@ -26,3 +26,5 @@
 #include "core/scene.h"
 #include "core/window.h"
 #include "core/core.h"
+
+#include "scripting/camera_controller.h"

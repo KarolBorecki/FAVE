@@ -2,12 +2,23 @@
 
 namespace FAVE
 {
+    void Scene::init()
+    {
+        m_camera->start();
+        m_light->start();
+        for (auto &object : m_objects)
+            object->start();
+    }
+
     void Scene::render(float p_delta_time) // TODO deltaTime
     {
         for (auto &object : m_objects)
         {
             object->draw(m_camera, m_light);
             object->update(p_delta_time); // TODO isnt it gonna slow down drawing process?
+
+            m_camera->update(p_delta_time);
+            m_light->update(p_delta_time);
         }
     }
 

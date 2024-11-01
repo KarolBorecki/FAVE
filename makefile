@@ -25,6 +25,8 @@ $(OBJ_DIR):
 	@mkdir -p $(OBJ_DIR)
 
 clean:
-	rm -rf $(OBJ_DIR) $(TARGET)
+	rm -rf $(OBJ_DIR)
+	rm -f $(TARGET)
+	rm -f vgcore.*
 
 .PHONY: all clean

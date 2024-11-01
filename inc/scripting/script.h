@@ -13,11 +13,12 @@ namespace FAVE
     class Script
     {
     public:
-        virtual void reload() {};
+        Script() = default;
+        virtual ~Script() = default;
 
         virtual void start() {};
 
-        virtual void update(double p_delta_time) {};
+        virtual void update(float p_delta_time) {};
 
         void attachTo(Object *p_object) { m_object = p_object; }
 

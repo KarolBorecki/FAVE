@@ -29,6 +29,9 @@ namespace FAVE
             m_height = p_height;
         }
 
+        inline uint16_t width() { return m_width; }
+        inline uint16_t height() { return m_height; }
+
     private:
         float m_fov = 45.0f;
         float m_near_plane = 0.1f;

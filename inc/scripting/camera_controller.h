@@ -3,28 +3,44 @@
 
 #include <glad/glad.h>
 
+#include "logging/exceptions.h"
+
 namespace FAVE
 {
     class CameraController : public Script
     {
     public:
-        CameraController(GLFWwindow *p_window) : m_window(p_window) {}
+        using Script::Script;
 
-        void update(float deltaTime)
+        void start() override
+        {
+            if (m_camera == nullptr)
+            {
+                throwError("CameraController script requires a Camera component to be attached to the same GameObject.");
+            }
+
+            m_window = glfwGetCurrentContext();
+            if (m_window == nullptr)
+            {
+                throwError("CameraController script requires a window to be created.");
+            }
+        }
+
+        void update(float p_delta_time) override
         {
             float camera_speed = m_speed;
             if (glfwGetKey(m_window, GLFW_KEY_W) == GLFW_PRESS)
-                m_object->move(camera_speed * m_object->rotation());
+                m_camera->move(camera_speed * m_camera->rotation());
             if (glfwGetKey(m_window, GLFW_KEY_S) == GLFW_PRESS)
-                m_object->move(-camera_speed * m_object->rotation());
+                m_camera->move(-camera_speed * m_camera->rotation());
             if (glfwGetKey(m_window, GLFW_KEY_A) == GLFW_PRESS)
-                m_object->move(-glm::normalize(glm::cross(m_object->rotation(), m_object->up())) * camera_speed);
+                m_camera->move(-glm::normalize(glm::cross(m_camera->rotation(), m_camera->up())) * camera_speed);
             if (glfwGetKey(m_window, GLFW_KEY_D) == GLFW_PRESS)
-                m_object->move(glm::normalize(glm::cross(m_object->rotation(), m_object->up())) * camera_speed);
+                m_camera->move(glm::normalize(glm::cross(m_camera->rotation(), m_camera->up())) * camera_speed);
             if (glfwGetKey(m_window, GLFW_KEY_SPACE) == GLFW_PRESS)
-                m_object->move(m_object->up() * camera_speed);
+                m_camera->move(m_camera->up() * camera_speed);
             if (glfwGetKey(m_window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-                m_object->move(-m_object->up() * camera_speed);
+                m_camera->move(-m_camera->up() * camera_speed);
 
             if (glfwGetMouseButton(m_window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
             {
@@ -32,7 +48,7 @@ namespace FAVE
 
                 if (m_first_click)
                 {
-                    glfwSetCursorPos(m_window, (m_width / 2), (m_height / 2));
+                    glfwSetCursorPos(m_window, (m_camera->width() / 2), (m_camera->height() / 2));
                     m_first_click = false;
                 }
 
@@ -40,19 +56,19 @@ namespace FAVE
                 double mouse_y;
                 glfwGetCursorPos(m_window, &mouse_x, &mouse_y);
 
-                float rotX = m_sensitivity * (float)(mouse_y - (m_height / 2)) / m_height;
-                float rotY = m_sensitivity * (float)(mouse_x - (m_width / 2)) / m_width;
+                float rot_x = m_sensitivity * (float)(mouse_y - (m_camera->height() / 2)) / m_camera->height();
+                float rot_y = m_sensitivity * (float)(mouse_x - (m_camera->width() / 2)) / m_camera->width();
 
-                glm::vec3 new_orientation = glm::rotate(m_rotation, glm::radians(-rotX), glm::normalize(glm::cross(m_rotation, m_up)));
+                glm::vec3 new_orientation = glm::rotate(m_camera->rotation(), glm::radians(-rot_x), glm::normalize(glm::cross(m_camera->rotation(), m_camera->up())));
 
-                if (abs(glm::angle(new_orientation, m_up) - glm::radians(90.0f)) <= glm::radians(85.0f))
+                if (abs(glm::angle(new_orientation, m_camera->up()) - glm::radians(90.0f)) <= glm::radians(85.0f))
                 {
-                    m_rotation = new_orientation;
+                    m_camera->setOrientation(new_orientation);
                 }
 
-                m_rotation = glm::rotate(m_rotation, glm::radians(-rotY), m_up);
+                m_camera->setOrientation(glm::rotate(m_camera->rotation(), glm::radians(-rot_y), m_camera->up()));
 
-                glfwSetCursorPos(m_window, (m_width / 2), (m_height / 2));
+                glfwSetCursorPos(m_window, (m_camera->width() / 2), (m_camera->height() / 2));
             }
             else if (glfwGetMouseButton(m_window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE)
             {
@@ -61,13 +77,15 @@ namespace FAVE
             }
         }
 
-    private:
-        GLFWwindow *m_window;
+    public:
+        GLFWwindow *m_window{nullptr};
+        Camera *m_camera{nullptr};
 
         float m_speed = 0.01f;
-        float m_sensitivity = 0.1f;
+        float m_sensitivity = 80.0f;
 
-        bool m_firstClick = true;
+    private:
+        bool m_first_click = true;
     };
 }
 

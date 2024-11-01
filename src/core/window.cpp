@@ -71,6 +71,7 @@ namespace FAVE
     {
         m_scene = scene;
         m_scene->onWindowResize(m_width, m_height);
+        m_scene->init();
     }
 
     void Window::resizeCallback(GLFWwindow *p_window, int p_width, int p_height)

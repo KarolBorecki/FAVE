@@ -17,6 +17,7 @@ namespace FAVE
         Scene() = default;
         virtual ~Scene() = default;
 
+        void init();
         void render(float p_delta_time);
 
         void addObject(RenderObject *p_obj);

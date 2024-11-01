@@ -33,6 +33,12 @@ namespace FAVE
             p_script->attachTo(this);
         }
 
+        void start()
+        {
+            for (auto &script : m_scripts)
+                script->start();
+        }
+
         void update(float p_delta_time)
         {
             for (auto &script : m_scripts)

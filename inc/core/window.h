@@ -25,6 +25,8 @@ namespace FAVE
 
         static inline void setBackgroundColor(const Color &color) { m_background_color = color; }
 
+        static inline GLFWwindow *getGLFWwindow() { return m_window; }
+
     private:
         static uint16_t m_width;
         static uint16_t m_height;
