@@ -35,10 +35,19 @@ namespace FAVE
         p_camera->matrix(m_material.shader(), "camMatrix");
 
         m_vao.bind();
-        m_material.diffuseTexture()->texUnit(m_material.shader(), "diffuse0", 0);
-        m_material.diffuseTexture()->bind();
-        m_material.diffuseTexture()->texUnit(m_material.shader(), "specular0", 1);
-        m_material.diffuseTexture()->bind();
+        if (m_material.diffuseTexture() != nullptr && m_material.specularTexture() != nullptr)
+        {
+            m_material.diffuseTexture()->texUnit(m_material.shader(), "diffuse0", 0);
+            m_material.diffuseTexture()->bind();
+            m_material.diffuseTexture()->texUnit(m_material.shader(), "specular0", 1);
+            m_material.diffuseTexture()->bind();
+            glUniform1i(glGetUniformLocation(m_material.shader().id(), "useTexture"), 1);
+        }
+        else
+        {
+            throwWarning("No textures found - using color instead!");
+            glUniform1i(glGetUniformLocation(m_material.shader().id(), "useTexture"), 0);
+        }
 
         glDrawElements(GL_TRIANGLES, m_indices.size(), GL_UNSIGNED_INT, 0);
     }
