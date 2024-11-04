@@ -1,13 +1,20 @@
 #ifndef FAVE_MESH_H
 #define FAVE_MESH_H
 
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 #include "logging/logger.h"
 #include "base/definitions.h"
-#include "materials/material.h"
+
 #include "buffers/vao.h"
+#include "buffers/vbo.h"
 #include "buffers/ebo.h"
+
 #include "objects/camera.h"
 #include "objects/render_object.h"
+
+#include "materials/material.h"
 
 namespace FAVE
 {

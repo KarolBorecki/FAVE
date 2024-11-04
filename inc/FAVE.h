@@ -18,7 +18,10 @@
 #include "materials/texture.h"
 
 #include "objects/object.h"
+#include "objects/render_object.h"
 #include "objects/mesh.h"
+#include "objects/fluid_simulation.h"
+#include "objects/light.h"
 #include "objects/camera.h"
 
 #include "scripting/script.h"
