@@ -1,25 +1,27 @@
 #include "objects/fluid_simulation.h"
+#include "util/marching_cubes.h" // Contains the lookup tables and utility functions
 
 namespace FAVE
 {
     FluidSimulation::FluidSimulation(Material &p_material, uint16_t p_size_x, uint16_t p_size_y, uint16_t p_size_z, uint16_t p_water_level, float p_cube_size)
         : m_material(p_material), m_size_x(p_size_x), m_size_y(p_size_y), m_size_z(p_size_z), m_water_level(p_water_level), m_cube_size(p_cube_size)
     {
-        m_cubes = new bool **[m_size_x];
+        // Initialize scalar field based on water level
+        m_scalar_field = new float **[m_size_x];
         for (uint16_t x = 0; x < m_size_x; x++)
         {
-            m_cubes[x] = new bool *[m_size_y];
+            m_scalar_field[x] = new float *[m_size_y];
             for (uint16_t y = 0; y < m_size_y; y++)
             {
-                m_cubes[x][y] = new bool[m_size_z];
+                m_scalar_field[x][y] = new float[m_size_z];
                 for (uint16_t z = 0; z < m_size_z; z++)
                 {
-                    m_cubes[x][y][z] = y <= m_water_level;
+                    // Set scalar field values based on water level
+                    m_scalar_field[x][y][z] = (y <= m_water_level) ? -1.0f : 1.0f; // -1 inside water, +1 outside
                 }
             }
         }
-
-        log("Created fluid simulation with size %dx%dx%d, water level %d and cube size %f", m_size_x, m_size_y, m_size_z, m_water_level, m_cube_size);
+        log("Created fluid simulation with Marching Cubes.");
     }
 
     FluidSimulation::~FluidSimulation()
@@ -28,11 +30,11 @@ namespace FAVE
         {
             for (uint16_t y = 0; y < m_size_y; y++)
             {
-                delete[] m_cubes[x][y];
+                delete[] m_scalar_field[x][y];
             }
-            delete[] m_cubes[x];
+            delete[] m_scalar_field[x];
         }
-        delete[] m_cubes;
+        delete[] m_scalar_field;
     }
 
     void FluidSimulation::draw(Camera *p_camera, Light *p_light)
@@ -78,60 +80,73 @@ namespace FAVE
         m_vertices.clear();
         m_indices.clear();
     }
+
     void FluidSimulation::recognise_geometry()
     {
-        uint16_t vertex_count = 0;
         m_vertices.clear();
         m_indices.clear();
 
-        for (uint16_t x = 0; x < m_size_x; x++)
+        for (uint16_t x = 0; x < m_size_x - 1; x++) // Adjust loop to avoid out-of-bounds
         {
-            for (uint16_t y = 0; y < m_size_y; y++)
+            for (uint16_t y = 0; y < m_size_y - 1; y++)
             {
-                for (uint16_t z = 0; z < m_size_z; z++)
+                for (uint16_t z = 0; z < m_size_z - 1; z++)
                 {
-                    if (!m_cubes[x][y][z])
-                        continue;
+                    // Marching Cubes algorithm - extract triangles for current voxel
+                    glm::vec3 voxel_pos(x * m_cube_size, y * m_cube_size, z * m_cube_size);
 
-                    glm::vec3 pos(x * m_cube_size, y * m_cube_size, z * m_cube_size);
+                    // Get the scalar values at each of the voxel's 8 corners
+                    float corners[8] = {
+                        m_scalar_field[x][y][z],
+                        m_scalar_field[x + 1][y][z],
+                        m_scalar_field[x + 1][y + 1][z],
+                        m_scalar_field[x][y + 1][z],
+                        m_scalar_field[x][y][z + 1],
+                        m_scalar_field[x + 1][y][z + 1],
+                        m_scalar_field[x + 1][y + 1][z + 1],
+                        m_scalar_field[x][y + 1][z + 1]};
 
-                    // Define vertices for each face with explicit std::array creation
-                    add_face(pos, glm::vec3(0, 1, 0), std::array<glm::vec3, 4>{glm::vec3(0, 1, 0), glm::vec3(0, 0, 0), glm::vec3(1, 1, 0), glm::vec3(1, 0, 0)}, vertex_count);
+                    // Calculate the index for the lookup table
+                    int cube_index = 0;
+                    for (int i = 0; i < 8; i++)
+                    {
+                        if (corners[i] < 0) // Fluid presence indicated by negative value
+                            cube_index |= (1 << i);
+                    }
 
-                    add_face(pos, glm::vec3(0, -1, 0), std::array<glm::vec3, 4>{glm::vec3(0, 0, 0), glm::vec3(0, 0, -1), glm::vec3(1, 0, -1), glm::vec3(1, 0, 0)}, vertex_count);
+                    // Retrieve the triangulation data for this cube index
+                    const int *triangulation = marching_cubes::triTable[cube_index];
 
-                    add_face(pos, glm::vec3(1, 0, 0), std::array<glm::vec3, 4>{glm::vec3(1, 0, 0), glm::vec3(1, 1, 0), glm::vec3(1, 1, -1), glm::vec3(1, 0, -1)}, vertex_count);
+                    // Generate vertices for the intersected triangles
+                    for (int i = 0; triangulation[i] != -1; i += 3)
+                    {
+                        glm::vec3 vertex_positions[3];
+                        for (int j = 0; j < 3; ++j)
+                        {
+                            int edge = triangulation[i + j];
+                            glm::vec3 p1 = voxel_pos + marching_cubes::edgeVertexOffsets[edge][0] * m_cube_size;
+                            glm::vec3 p2 = voxel_pos + marching_cubes::edgeVertexOffsets[edge][1] * m_cube_size;
 
-                    add_face(pos, glm::vec3(-1, 0, 0), std::array<glm::vec3, 4>{glm::vec3(0, 1, 0), glm::vec3(0, 1, -1), glm::vec3(0, 0, -1), glm::vec3(0, 0, 0)}, vertex_count);
+                            // Linear interpolation based on scalar field values
+                            float val1 = corners[marching_cubes::cornerIndexAFromEdge[edge]];
+                            float val2 = corners[marching_cubes::cornerIndexBFromEdge[edge]];
+                            vertex_positions[j] = p1 + (p2 - p1) * (val1 / (val1 - val2)); // Corrected interpolation direction
+                        }
 
-                    add_face(pos, glm::vec3(0, 0, 1), std::array<glm::vec3, 4>{glm::vec3(0, 0, 0), glm::vec3(1, 0, 0), glm::vec3(1, 1, 0), glm::vec3(0, 1, 0)}, vertex_count);
-
-                    add_face(pos, glm::vec3(0, 0, -1), std::array<glm::vec3, 4>{glm::vec3(0, 0, -1), glm::vec3(1, 0, -1), glm::vec3(1, 1, -1), glm::vec3(0, 1, -1)}, vertex_count);
+                        // Push vertices and indices for the triangle
+                        unsigned int baseIndex = static_cast<unsigned int>(m_vertices.size());
+                        for (int j = 0; j < 3; j++)
+                        {
+                            glm::vec3 color(0.4f, 0.7f, 1.0f); // Default water color
+                            glm::vec3 normal = glm::normalize(glm::cross(vertex_positions[1] - vertex_positions[0], vertex_positions[2] - vertex_positions[0]));
+                            m_vertices.push_back(Vertex{vertex_positions[j], normal, color, glm::vec2(0.0f, 0.0f)});
+                            m_indices.push_back(baseIndex + j); // Reference the correct index for the vertex
+                        }
+                    }
                 }
             }
         }
 
-        log("Recognised geometry with %lu vertices and %lu indices", m_vertices.size(), m_indices.size());
-    }
-
-    void FluidSimulation::add_face(const glm::vec3 &pos, const glm::vec3 &normal, const std::array<glm::vec3, 4> &offsets, uint16_t &vertex_count)
-    {
-        glm::vec3 color = glm::vec3(0.4f, 0.7f, 1.0f); // Default water color
-
-        for (auto &offset : offsets)
-        {
-            glm::vec3 vertex_pos = pos + offset * m_cube_size;
-            m_vertices.push_back(Vertex{vertex_pos, normal, color, glm::vec2(0.0f, 0.0f)});
-        }
-
-        // Define indices for two triangles
-        m_indices.push_back(vertex_count);
-        m_indices.push_back(vertex_count + 1);
-        m_indices.push_back(vertex_count + 2);
-        m_indices.push_back(vertex_count + 2);
-        m_indices.push_back(vertex_count + 3);
-        m_indices.push_back(vertex_count);
-
-        vertex_count += 4;
+        log("Recognised geometry with Marching Cubes: %zu vertices, %zu indices", m_vertices.size(), m_indices.size()); // Use %zu for size_t
     }
 }

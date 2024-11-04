@@ -31,6 +31,7 @@ namespace FAVE
         float m_cube_size;
 
         bool ***m_cubes; // japierdole
+        float ***m_scalar_field;
 
         VAO m_vao;
         std::vector<Vertex> m_vertices;
