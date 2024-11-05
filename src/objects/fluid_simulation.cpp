@@ -1,13 +1,16 @@
 #include "objects/fluid_simulation.h"
 #include "util/marching_cubes.h"
-#include <cmath>  // Dla funkcji sin()
-#include <chrono> // Dla pomiaru czasu
+#include <cmath>
+#include <chrono>
+#include <time.h>
+#include <stdlib.h>
 
 namespace FAVE
 {
     FluidSimulation::FluidSimulation(Material &p_material, uint16_t p_size_x, uint16_t p_size_y, uint16_t p_size_z, uint16_t p_water_level, float p_cube_size)
         : m_material(p_material), m_size_x(p_size_x), m_size_y(p_size_y), m_size_z(p_size_z), m_water_level(p_water_level), m_cube_size(p_cube_size)
     {
+        srand(time(NULL));
         m_scalar_field = new float **[m_size_x];
         for (uint16_t x = 0; x < m_size_x; x++)
         {
@@ -140,7 +143,7 @@ namespace FAVE
 
     void FluidSimulation::update(float deltaTime)
     {
-        m_time += deltaTime; // Zwiększ czas o czas upływu
+        m_time += deltaTime;
 
         for (uint16_t x = 0; x < m_size_x; x++)
         {
@@ -148,14 +151,11 @@ namespace FAVE
             {
                 for (uint16_t z = 0; z < m_size_z; z++)
                 {
-                    // Zmodyfikowana funkcja falowania
                     if (y <= m_water_level)
+
                     {
-                        m_scalar_field[x][y][z] = -1.0f + m_waveAmplitude * sin(m_waveFrequency * (x + m_time * 5.0f)); // Zwiększ tempo
-                    }
-                    else
-                    {
-                        m_scalar_field[x][y][z] = 1.0f;
+                        int r = (0 + rand() % 1000) / 1000;
+                        m_scalar_field[x][y][z] = m_waveAmplitude * sin(m_waveFrequency * ((x + r) + m_time * 5.0f)) - 1.0f;
                     }
                 }
             }

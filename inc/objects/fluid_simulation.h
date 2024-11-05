@@ -39,10 +39,9 @@ namespace FAVE
         std::vector<Vertex> m_vertices;
         std::vector<GLuint> m_indices;
 
-        // Dodaj zmienne do falowania
-        float m_waveFrequency = 0.5f; // Częstotliwość fal
-        float m_waveAmplitude = 0.5f; // Amplituda fal
-        float m_time = 0.0f;          // Czas symulacji
+        float m_waveFrequency = 0.1f;
+        float m_waveAmplitude = 1.0f;
+        float m_time = 0.0f;
 
         void recognise_geometry();
         void add_face(const glm::vec3 &pos, const glm::vec3 &normal, const std::array<glm::vec3, 4> &offsets, uint16_t &vertex_count);
