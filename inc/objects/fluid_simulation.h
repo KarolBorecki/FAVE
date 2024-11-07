@@ -22,10 +22,9 @@ namespace FAVE
         virtual ~FluidSimulation();
 
         void draw(Camera *p_camera, Light *p_light);
+        void update(float deltaTime);
 
         void destroy();
-
-        void update(float deltaTime);
 
     private:
         Material &m_material;
@@ -36,7 +35,6 @@ namespace FAVE
 
         float m_cube_size;
 
-        bool ***m_cubes; // japierdole
         float ***m_scalar_field;
         std::vector<std::vector<std::vector<glm::vec3>>> m_velocities;
         glm::vec3 m_gravity = glm::vec3(0.0f, -9.8f, 0.0f);
@@ -49,12 +47,7 @@ namespace FAVE
         std::vector<Vertex> m_vertices;
         std::vector<GLuint> m_indices;
 
-        float m_waveFrequency = 0.1f;
-        float m_waveAmplitude = 1.0f;
-        float m_time = 0.0f;
-
         void recognise_geometry();
-        void add_face(const glm::vec3 &pos, const glm::vec3 &normal, const std::array<glm::vec3, 4> &offsets, uint16_t &vertex_count);
     };
 }
 
