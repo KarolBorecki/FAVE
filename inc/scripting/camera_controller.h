@@ -75,6 +75,8 @@ namespace FAVE
                 glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
                 m_first_click = true;
             }
+            // log("Camera position: %f, %f, %f", m_camera->position().x, m_camera->position().y, m_camera->position().z);
+            // log("Camera rotation: %f, %f, %f", m_camera->rotation().x, m_camera->rotation().y, m_camera->rotation().z);
         }
 
     public:

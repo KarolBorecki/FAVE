@@ -2,6 +2,10 @@
 #define FAVE_FLUID_SIMULATION_H
 
 #include <array>
+#include <cmath>
+#include <chrono>
+#include <time.h>
+#include <stdlib.h>
 
 #include "buffers/vao.h"
 #include "buffers/vbo.h"
@@ -34,6 +38,12 @@ namespace FAVE
 
         bool ***m_cubes; // japierdole
         float ***m_scalar_field;
+        std::vector<std::vector<std::vector<glm::vec3>>> m_velocities;
+        glm::vec3 m_gravity = glm::vec3(0.0f, -9.8f, 0.0f);
+
+        glm::vec3 m_sphereCenter = glm::vec3(10.0f, 10.0f, 10.0f);
+        float m_sphereRadius = 5.0f;
+        float m_collisionDamping = 0.8f;
 
         VAO m_vao;
         std::vector<Vertex> m_vertices;

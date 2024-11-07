@@ -1,9 +1,6 @@
 #include "objects/fluid_simulation.h"
+
 #include "util/marching_cubes.h"
-#include <cmath>
-#include <chrono>
-#include <time.h>
-#include <stdlib.h>
 
 namespace FAVE
 {
@@ -25,6 +22,8 @@ namespace FAVE
                 }
             }
         }
+        m_velocities.resize(m_size_x, std::vector<std::vector<glm::vec3>>(m_size_y, std::vector<glm::vec3>(m_size_z, glm::vec3(0.0f))));
+
         log("Created fluid simulation with Marching Cubes with size %d, %d, %d and water level %d", m_size_x, m_size_y, m_size_z, m_water_level);
     }
 
@@ -143,20 +142,50 @@ namespace FAVE
 
     void FluidSimulation::update(float deltaTime)
     {
-        m_time += deltaTime;
-
+        m_sphereCenter = glm::vec3(m_position.x + m_size_x * m_cube_size / 2, m_sphereCenter.y + m_gravity.y * deltaTime, m_position.z + m_size_z * m_cube_size / 2);
         for (uint16_t x = 0; x < m_size_x; x++)
         {
             for (uint16_t y = 0; y < m_size_y; y++)
             {
                 for (uint16_t z = 0; z < m_size_z; z++)
                 {
-                    if (y <= m_water_level)
+                    // Skip if outside water level
+                    if (m_scalar_field[x][y][z] > 0.0f)
+                        continue;
 
+                    // Apply gravity to velocity
+                    m_velocities[x][y][z] += m_gravity * deltaTime;
+
+                    // Calculate the current and projected positions
+                    glm::vec3 position = glm::vec3(x, y, z) * m_cube_size;
+                    glm::vec3 next_position = position + m_velocities[x][y][z] * deltaTime;
+
+                    // Check for collision with the sphere
+                    glm::vec3 to_sphere = next_position - m_sphereCenter;
+                    float distance_to_sphere = glm::length(to_sphere);
+
+                    if (distance_to_sphere < m_sphereRadius)
                     {
-                        int r = (0 + rand() % 1000) / 1000;
-                        m_scalar_field[x][y][z] = m_waveAmplitude * sin(m_waveFrequency * ((x + r) + m_time * 5.0f)) - 1.0f;
+                        // Calculate collision normal
+                        glm::vec3 collision_normal = glm::normalize(to_sphere);
+
+                        // Reflect velocity along collision normal with damping
+                        m_velocities[x][y][z] = glm::reflect(m_velocities[x][y][z], collision_normal) * m_collisionDamping;
+
+                        // Adjust next position to lie exactly on the sphere's surface
+                        next_position = m_sphereCenter + collision_normal * m_sphereRadius;
+                        log("Collision detected at %d, %d, %d", x, y, z);
                     }
+
+                    // Check for ground collision (y = 0)
+                    if (next_position.y <= 0.0f)
+                    {
+                        next_position.y = 0.0f;
+                        m_velocities[x][y][z].y *= -0.5f; // Bounce effect with energy loss
+                    }
+
+                    // Update scalar field to reflect new position (simulate water level)
+                    m_scalar_field[x][y][z] = (next_position.y <= m_water_level) ? -1.0f : 1.0f;
                 }
             }
         }

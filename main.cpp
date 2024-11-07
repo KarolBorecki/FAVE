@@ -25,22 +25,25 @@ int main()
     FAVE::Texture planksSpecular("./resources/textures/planksSpec.png", FAVE::TextureType::SPECULAR, 1, GL_RED, GL_UNSIGNED_BYTE);
 
     FAVE::Material material(shaderProgram, &planksDiffuse, &planksSpecular);
-    FAVE::Mesh floor(verts, ind, material);
+    // FAVE::Mesh floor(verts, ind, material);
 
-    FAVE::FluidSimulation fluid(material, 100, 13, 100, 7, 0.3f);
+    FAVE::FluidSimulation fluid(material, 50, 13, 50, 7, 0.2f);
+    fluid.setPosition({-5.0f, -2.0f, -6.0f});
 
     FAVE::Light light({1.0f, 1.0f, 1.0f, 1.0f});
     light.setPosition({0.5f, 0.5f, 0.5f});
 
     FAVE::CameraController cameraController;
     FAVE::Camera camera;
+    camera.setPosition({0.65f, 5.0f, 12.5f});
+    camera.setOrientation({-0.03f, -0.22f, -1.0f});
     camera.attach(&cameraController);
     cameraController.m_camera = &camera;
 
     scene.setCamera(&camera);
     scene.setLight(&light);
     scene.addObject(&fluid);
-    scene.addObject(&floor);
+    // scene.addObject(&floor);
     FAVE::Window::setScene(&scene);
 
     FAVE::Window::start();
