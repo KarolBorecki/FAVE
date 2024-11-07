@@ -28,15 +28,15 @@ int main()
     // FAVE::Mesh floor(verts, ind, material);
 
     FAVE::FluidSimulation fluid(material, 50, 13, 50, 7, 0.2f);
-    fluid.setPosition({-5.0f, -2.0f, -6.0f});
+    fluid.setPosition({0.0f, 0.0f, 0.0f});
 
     FAVE::Light light({1.0f, 1.0f, 1.0f, 1.0f});
     light.setPosition({0.5f, 0.5f, 0.5f});
 
     FAVE::CameraController cameraController;
     FAVE::Camera camera;
-    camera.setPosition({0.65f, 5.0f, 12.5f});
-    camera.setOrientation({-0.03f, -0.22f, -1.0f});
+    camera.setPosition({12.7f, 3.7f, 12.7f});
+    camera.setOrientation({-0.9f, -0.25f, -0.9f});
     camera.attach(&cameraController);
     cameraController.m_camera = &camera;
 

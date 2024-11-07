@@ -69,14 +69,14 @@ namespace FAVE
                 m_camera->setOrientation(glm::rotate(m_camera->rotation(), glm::radians(-rot_y), m_camera->up()));
 
                 glfwSetCursorPos(m_window, (m_camera->width() / 2), (m_camera->height() / 2));
+                log("Camera position: %f, %f, %f", m_camera->position().x, m_camera->position().y, m_camera->position().z);
+                log("Camera rotation: %f, %f, %f", m_camera->rotation().x, m_camera->rotation().y, m_camera->rotation().z);
             }
             else if (glfwGetMouseButton(m_window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE)
             {
                 glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
                 m_first_click = true;
             }
-            // log("Camera position: %f, %f, %f", m_camera->position().x, m_camera->position().y, m_camera->position().z);
-            // log("Camera rotation: %f, %f, %f", m_camera->rotation().x, m_camera->rotation().y, m_camera->rotation().z);
         }
 
     public:

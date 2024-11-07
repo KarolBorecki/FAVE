@@ -142,7 +142,8 @@ namespace FAVE
 
     void FluidSimulation::update(float deltaTime)
     {
-        m_sphereCenter = glm::vec3(m_position.x + m_size_x * m_cube_size / 2, m_sphereCenter.y + m_gravity.y * deltaTime, m_position.z + m_size_z * m_cube_size / 2);
+        m_sphereCenter = glm::vec3(2.0, m_sphereCenter.y + m_gravity.y * deltaTime, 2.0);
+
         for (uint16_t x = 0; x < m_size_x; x++)
         {
             for (uint16_t y = 0; y < m_size_y; y++)
@@ -166,15 +167,24 @@ namespace FAVE
 
                     if (distance_to_sphere < m_sphereRadius)
                     {
-                        // Calculate collision normal
                         glm::vec3 collision_normal = glm::normalize(to_sphere);
 
-                        // Reflect velocity along collision normal with damping
+                        // Reflect and amplify velocity with damping and randomness for splash effect
                         m_velocities[x][y][z] = glm::reflect(m_velocities[x][y][z], collision_normal) * m_collisionDamping;
 
-                        // Adjust next position to lie exactly on the sphere's surface
+                        // Add splash effect by boosting velocity along collision normal
+                        float splashIntensity = 2.0f; // Adjust for effect strength
+                        m_velocities[x][y][z] += collision_normal * splashIntensity;
+
+                        // Add random small perturbation to simulate droplet dispersion
+                        m_velocities[x][y][z] += glm::vec3(
+                                                     (rand() % 100 - 50) / 100.0f,
+                                                     (rand() % 100) / 100.0f,
+                                                     (rand() % 100 - 50) / 100.0f) *
+                                                 0.1f;
+
                         next_position = m_sphereCenter + collision_normal * m_sphereRadius;
-                        log("Collision detected at %d, %d, %d", x, y, z);
+                        log("Collision and splash effect triggered at %d, %d, %d", x, y, z);
                     }
 
                     // Check for ground collision (y = 0)
