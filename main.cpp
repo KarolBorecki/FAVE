@@ -27,7 +27,7 @@ int main()
     FAVE::Material material(shaderProgram, &planksDiffuse, &planksSpecular);
     // FAVE::Mesh floor(verts, ind, material);
 
-    FAVE::FluidSimulation fluid(material, 50, 13, 50, 7, 0.2f);
+    FAVE::FluidSimulation fluid(material, 50, 13, 3, 7, 0.2f);
     fluid.setPosition({0.0f, 0.0f, 0.0f});
 
     FAVE::Light light({1.0f, 1.0f, 1.0f, 1.0f});

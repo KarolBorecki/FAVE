@@ -13,19 +13,31 @@ namespace FAVE
         : m_material(p_material), m_size_x(p_size_x), m_size_y(p_size_y), m_size_z(p_size_z),
           m_water_level(p_water_level), m_grid_size(p_grid_size)
     {
-        // Initialize scalar field and velocities
-        m_scalar_field = new float **[m_size_x];
-        m_velocities.resize(m_size_x, std::vector<std::vector<glm::vec3>>(m_size_y, std::vector<glm::vec3>(m_size_z, glm::vec3(0.0f))));
-
+        m_cells = new GridCell **[m_size_x];
         for (uint16_t x = 0; x < m_size_x; ++x)
         {
-            m_scalar_field[x] = new float *[m_size_y];
+            m_cells[x] = new GridCell *[m_size_y];
             for (uint16_t y = 0; y < m_size_y; ++y)
             {
-                m_scalar_field[x][y] = new float[m_size_z];
+                m_cells[x][y] = new GridCell[m_size_z];
                 for (uint16_t z = 0; z < m_size_z; ++z)
                 {
-                    m_scalar_field[x][y][z] = (y < m_water_level) ? 1.0f : 0.0f; // 1.0f for water, 0.0f for empty
+                    m_cells[x][y][z].u = glm::vec3(0.0f);
+                    m_cells[x][y][z].v = glm::vec3(0.0f);
+                    m_cells[x][y][z].w = glm::vec3(0.0f);
+
+                    m_cells[x][y][z].s = y > m_water_level ? 0.0f : 1.0f;
+                    if (x == 0 || x == m_size_x - 1 || y == 0 || y == m_size_y - 1 || z == 0 || z == m_size_z - 1)
+                        m_cells[x][y][z].s = 0.0f; // borders
+
+                    m_cells[x][y][z].p = 0.0f;
+
+                    // log("x: %d y: %d z: %d", x, y, z);
+                    // log("u: (%lf, %lf, %lf)", m_cells[x][y][z].u.x, m_cells[x][y][z].u.y, m_cells[x][y][z].u.z);
+                    // log("v: (%lf, %lf, %lf)", m_cells[x][y][z].v.x, m_cells[x][y][z].v.y, m_cells[x][y][z].v.z);
+                    // log("w: (%lf, %lf, %lf)", m_cells[x][y][z].w.x, m_cells[x][y][z].w.y, m_cells[x][y][z].w.z);
+                    // log("s: %lf", m_cells[x][y][z].s);
+                    // log("p: %lf", m_cells[x][y][z].p);
                 }
             }
         }
@@ -36,92 +48,119 @@ namespace FAVE
         destroy();
     }
 
-    void FluidSimulation::update(float deltaTime)
+    void FluidSimulation::update_physics(float p_delta_time)
     {
-        RenderObject::update(deltaTime);
-        // Update sphere position
-        m_sphereCenter += m_gravity * deltaTime;
-
-        // Compute pressure gradient and update fluid behavior
-        for (uint16_t x = 1; x < m_size_x - 1; ++x)
+        // integrate
+        for (uint16_t i = 0; i < m_size_x; ++i)
         {
-            for (uint16_t y = 1; y < m_size_y - 1; ++y)
+            for (uint16_t j = 0; j < m_size_y; ++j)
             {
-                for (uint16_t z = 1; z < m_size_z - 1; ++z)
+                for (uint16_t k = 0; k < m_size_z; ++k)
                 {
-                    if (m_scalar_field[x][y][z] == 1.0f)
-                    { // Only consider water voxels
+                    m_cells[i][j][k].v += p_delta_time * -9.81f; // TODO gravity
+                }
+            }
+        }
 
-                        // Calculate pressure (using a simplified method like height-based pressure or using a pressure field)
-                        float pressure = calculatePressure(x, y, z);
+        // solve incompresabillity
+        float c_p = m_fluid_density * m_grid_size / p_delta_time;
+        for (uint16_t n = 0; n < m_solver_steps; n++)
+        {
+            for (uint16_t i = 1; i < m_size_x - 1; i++)
+            {
+                for (uint16_t j = 1; j < m_size_y - 1; j++)
+                {
+                    for (uint16_t k = 1; k < m_size_z - 1; k++)
+                    {
+                        if (m_cells[i][j][k].s == 0.0f)
+                            continue;
+                        float s = m_cells[i + 1][j][k].s + m_cells[i - 1][j][k].s + m_cells[i][j + 1][k].s + m_cells[i][j - 1][k].s + m_cells[i][j][k + 1].s + m_cells[i][j][k - 1].s;
+                        if (s == 0.0f)
+                            continue;
 
-                        // Compute pressure gradient (simplified using central differences)
-                        glm::vec3 pressureGradient = glm::vec3(0.0f);
-                        pressureGradient.x = (pressure - calculatePressure(x - 1, y, z)) / m_grid_size;
-                        pressureGradient.y = (pressure - calculatePressure(x, y - 1, z)) / m_grid_size;
-                        pressureGradient.z = (pressure - calculatePressure(x, y, z - 1)) / m_grid_size;
+                        float d = m_over_relaxation * (m_cells[i + 1][j][k].u - m_cells[i][j][k].u + m_cells[i][j + 1][k].v - m_cells[i][j][k].v + m_cells[i][j][k + 1].w - m_cells[i][j][k].w);
+                        float p = -d / s;
+                        m_cells[i][j][k].u = m_cells[i][j][k].u - m_cells[i][j][k].s * p;
+                        m_cells[i + 1][j][k].u = m_cells[i + 1][j][k].u + m_cells[i + 1][j][k].s * p;
+                        m_cells[i][j][k].v = m_cells[i][j][k].v - m_cells[i][j][k].s * p;
+                        m_cells[i][j + 1][k].v = m_cells[i][j + 1][k].v + m_cells[i][j + 1][k].s * p;
+                        m_cells[i][j][k].w = m_cells[i][j][k].w - m_cells[i][j][k].s * p;
+                        m_cells[i][j][k + 1].w = m_cells[i][j][k + 1].w + m_cells[i][j][k + 1].s * p;
 
-                        // Update velocity based on pressure gradient and fluid viscosity
-                        glm::vec3 velocityChange = -pressureGradient; // Using a simple pressure force model
-                        m_velocities[x][y][z] += velocityChange;
+                        m_cells[i][j][k].p += d_s * c_p;
+                    }
+                }
+            }
+        }
 
-                        // Apply gravity to water voxels
-                        m_velocities[x][y][z] += m_gravity;
+        // advect
+        uint16_t n = m_size_y;
+        float h = m_grid_size;
+        float h2 = 0.5f * h;
+        for (uint16_t i = 1; i < m_size_x - 1; i++)
+        {
+            for (uint16_t j = 1; j < m_size_y - 1; j++)
+            {
+                for (uint16_t k = 1; k < m_size_z - 1; k++)
+                {
+                    if (m_cells[i][j][k].s != 0.0f && m_cells[i - 1][j][k].s && j < m_size_y - 1 && k < m_size_z - 1)
+                    {
+                        float x = i * h;
+                        float y = j * h + h2;
+                        float z = k * h + h2;
+                        float u = m_cells[i][j][k].u;
+                        float v = m_cells[i][j][k].v; // TODO avg V
+                        float w = m_cells[i][j][k].w;
 
-                        // Move voxel based on velocity
-                        glm::vec3 pos = glm::vec3(x, y, z) * m_grid_size;
-                        glm::vec3 new_pos = pos + m_velocities[x][y][z] * deltaTime;
+                        x = x - p_delta_time * u;
+                        y = y - p_delta_time * v;
+                        z = z - p_delta_time * w;
+                        u = ; // TODO sample field
 
-                        // Update scalar field based on the new position
-                        // If the voxel moves above the water level, it's no longer water, otherwise it is
-                        if (new_pos.y > m_water_level * m_grid_size)
-                        {
-                            m_scalar_field[x][y][z] = 0.0f; // voxel is no longer water
-                        }
-                        else
-                        {
-                            m_scalar_field[x][y][z] = 1.0f; // voxel is water
-                        }
+                        m_cells[i][j][k].new_u = u;
+                    }
 
-                        // Boundary checking
-                        if (new_pos.y < 0)
-                        {
-                            m_velocities[x][y][z].y = 0; // Reflect velocity on the ground
-                        }
+                    if (m_cells[i][j][k].s != 0.0f && m_cells[i][j - 1][k].s && i < m_size_x - 1 && k < m_size_z - 1)
+                    {
+                        float x = i * h + h2;
+                        float y = j * h;
+                        float z = k * h + h2;
+                        float u = m_cells[i][j][k].u; // TODO avg U
+                        float v = m_cells[i][j][k].v;
+                        float w = m_cells[i][j][k].w;
 
-                        // Sphere collision handling
-                        float distanceToSphere = glm::length(new_pos - m_sphereCenter);
-                        if (distanceToSphere < m_sphereRadius)
-                        {
-                            // Reflect velocity based on collision
-                            glm::vec3 collisionNormal = glm::normalize(new_pos - m_sphereCenter);
-                            m_velocities[x][y][z] -= 2.0f * glm::dot(m_velocities[x][y][z], collisionNormal) * collisionNormal;
-                            // Damping factor applied to simulate energy loss on collision
-                            m_velocities[x][y][z] *= m_collisionDamping;
+                        x = x - p_delta_time * u;
+                        y = y - p_delta_time * v;
+                        z = z - p_delta_time * w;
+                        v = ; // TODO sample field
 
-                            log("Collision detected at: [%lf, %lf, %lf] velocity is: [%lf, %lf, %lf]",
-                                new_pos.x, new_pos.y, new_pos.z, m_velocities[x][y][z].x, m_velocities[x][y][z].y, m_velocities[x][y][z].z);
-                        }
+                        m_cells[i][j][k].new_v = v;
+                    }
+
+                    if (m_cells[i][j][k].s != 0.0f && m_cells[i][j][k - 1].s && i < m_size_x - 1 && j < m_size_y - 1)
+                    {
+                        float x = i * h + h2;
+                        float y = j * h + h2;
+                        float z = k * h;
+                        float u = m_cells[i][j][k].u;
+                        float v = m_cells[i][j][k].v;
+                        float w = m_cells[i][j][k].w; // TODO avg N
+
+                        x = x - p_delta_time * u;
+                        y = y - p_delta_time * v;
+                        z = z - p_delta_time * w;
+                        w = ; // TODO sample field
+
+                        m_cells[i][j][k].new_w = w;
                     }
                 }
             }
         }
     }
 
-    // This function calculates the pressure at each voxel based on its height or density
-    float FluidSimulation::calculatePressure(uint16_t x, uint16_t y, uint16_t z)
-    {
-        // Use the y-coordinate for a simple pressure model (higher y = higher pressure)
-        // In a real simulation, this would likely depend on density or other factors.
-        if (m_scalar_field[x][y][z] == 1.0f)
-        {
-            return glm::max(0.0f, float(m_water_level - y) * 0.1f); // Simple pressure gradient based on depth
-        }
-        return 0.0f;
-    }
-
     void FluidSimulation::draw(Camera *p_camera, Light *p_light)
     {
+        update_physics(0.016f);
         recognise_geometry();
         m_vao.bind();
         VBO vbo(m_vertices);
@@ -157,15 +196,7 @@ namespace FAVE
 
     void FluidSimulation::destroy() // TODO
     {
-        // for (uint16_t x = 0; x < m_size_x; ++x)
-        // {
-        //     for (uint16_t y = 0; y < m_size_y; ++y)
-        //     {
-        //         delete[] m_scalar_field[x][y];
-        //     }
-        //     delete[] m_scalar_field[x];
-        // }
-        // delete[] m_scalar_field;
+        // TODO
     }
 
     void FluidSimulation::recognise_geometry()
@@ -193,7 +224,7 @@ namespace FAVE
             {
                 for (uint16_t z = 0; z < m_size_z; ++z)
                 {
-                    if (m_scalar_field[x][y][z] == 1.0f)
+                    if (m_cells[x][y][z].s == 1.0f)
                     {
                         glm::vec3 cubePos = glm::vec3(x, y, z) * m_grid_size;
 
@@ -217,4 +248,69 @@ namespace FAVE
         }
     }
 
-}
+    float FluidSimulation::sample_field(float p_x, float p_y, float p_z, uint8_t p_field)
+    {
+        float n = m_size_y;
+        float h = m_grid_size;
+        float h2 = 0.5f * h;
+        float h1 = 1.0f / h;
+
+        float x = fmax(h, fmin(p_x, m_size_x * h));
+        float y = fmax(h, fmin(p_y, m_size_y * h));
+        float z = fmax(h, fmin(p_z, m_size_z * h));
+
+        float dx = 0.0f;
+        float dy = 0.0f;
+        float dz = 0.0f;
+
+        float f;
+        switch (p_field)
+        {
+        case 0:
+            f = m_cells[x][y][z].u; // TODO this is bad
+            dx = (x - h) * h1;
+            dy = (y - h2) * h1;
+            dz = (z - h2) * h1;
+            break;
+        case 1:
+            f = m_cells[x][y][z].v;
+            dx = (x - h2) * h1;
+            dy = (y - h) * h1;
+            dz = (z - h2) * h1;
+            break;
+        case 2:
+            f = m_cells[x][y][z].n;
+            dx = (x - h2) * h1;
+            dy = (y - h2) * h1;
+            dz = (z - h) * h1;
+            break;
+        case 3:
+            f = m_cells[x][y][z].s;
+            dx = (x - h2) * h1;
+            dy = (y - h2) * h1;
+            dz = (z - h2) * h1;
+            break;
+        default:
+            f = 0.0f;
+        }
+
+        float x0 = fmax(m_size_x - 1, floor((x - dx) * h1));
+        float tx = ((x - dx) - x0 * h) * h1;
+        float x1 = fmin(x0 + 1, m_size_x - 1);
+
+        float y0 = fmax(m_size_y - 1, floor((y - dy) * h1));
+        float ty = ((y - dy) - y0 * h) * h1;
+        float y1 = fmin(y0 + 1, m_size_y - 1);
+
+        float z0 = fmax(m_size_z - 1, floor((z - dz) * h1));
+        float tz = ((z - dz) - z0 * h) * h1;
+        float z1 = fmin(z0 + 1, m_size_z - 1);
+
+        float sx = 1.0f - tx;
+        float sy = 1.0f - ty;
+        float sz = 1.0f - tz;
+
+        float val = ; // TODO
+
+        return val;
+    }
