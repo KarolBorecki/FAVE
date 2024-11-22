@@ -3,15 +3,13 @@
 #include "objects/light.h"
 #include <glm/glm.hpp>
 
-#include <glm/glm.hpp>
 #include <vector>
 #include <array>
 
 namespace FAVE
 {
     FluidSimulation::FluidSimulation(Material &p_material, uint16_t p_size_x, uint16_t p_size_y, uint16_t p_size_z, uint16_t p_water_level, float p_grid_size)
-        : m_material(p_material), m_size_x(p_size_x), m_size_y(p_size_y), m_size_z(p_size_z),
-          m_water_level(p_water_level), m_grid_size(p_grid_size)
+        : m_material(p_material), m_size_x(p_size_x), m_size_y(p_size_y), m_size_z(p_size_z), m_water_level(p_water_level), m_grid_size(p_grid_size)
     {
         m_cells = new GridCell **[m_size_x];
         for (uint16_t x = 0; x < m_size_x; ++x)
@@ -22,9 +20,9 @@ namespace FAVE
                 m_cells[x][y] = new GridCell[m_size_z];
                 for (uint16_t z = 0; z < m_size_z; ++z)
                 {
-                    m_cells[x][y][z].u = glm::vec3(0.0f);
-                    m_cells[x][y][z].v = glm::vec3(0.0f);
-                    m_cells[x][y][z].w = glm::vec3(0.0f);
+                    m_cells[x][y][z].u = 0.0f;
+                    m_cells[x][y][z].v = 0.0f;
+                    m_cells[x][y][z].w = 0.0f;
 
                     m_cells[x][y][z].s = y > m_water_level ? 0.0f : 1.0f;
                     if (x == 0 || x == m_size_x - 1 || y == 0 || y == m_size_y - 1 || z == 0 || z == m_size_z - 1)
@@ -87,14 +85,14 @@ namespace FAVE
                         m_cells[i][j][k].w = m_cells[i][j][k].w - m_cells[i][j][k].s * p;
                         m_cells[i][j][k + 1].w = m_cells[i][j][k + 1].w + m_cells[i][j][k + 1].s * p;
 
-                        m_cells[i][j][k].p += d_s * c_p;
+                        m_cells[i][j][k].p += p * c_p; // TODO what is d_s, previosly was p=d_s
                     }
                 }
             }
         }
 
         // advect
-        uint16_t n = m_size_y;
+        // uint16_t n = m_size_y;
         float h = m_grid_size;
         float h2 = 0.5f * h;
         for (uint16_t i = 1; i < m_size_x - 1; i++)
@@ -109,13 +107,13 @@ namespace FAVE
                         float y = j * h + h2;
                         float z = k * h + h2;
                         float u = m_cells[i][j][k].u;
-                        float v = m_cells[i][j][k].v; // TODO avg V
+                        float v = avg_v(i, j, k);
                         float w = m_cells[i][j][k].w;
 
                         x = x - p_delta_time * u;
                         y = y - p_delta_time * v;
                         z = z - p_delta_time * w;
-                        u = ; // TODO sample field
+                        u = sample_field(x, y, z, 0);
 
                         m_cells[i][j][k].new_u = u;
                     }
@@ -125,14 +123,14 @@ namespace FAVE
                         float x = i * h + h2;
                         float y = j * h;
                         float z = k * h + h2;
-                        float u = m_cells[i][j][k].u; // TODO avg U
+                        float u = avg_u(i, j, k);
                         float v = m_cells[i][j][k].v;
                         float w = m_cells[i][j][k].w;
 
                         x = x - p_delta_time * u;
                         y = y - p_delta_time * v;
                         z = z - p_delta_time * w;
-                        v = ; // TODO sample field
+                        v = sample_field(x, y, z, 1);
 
                         m_cells[i][j][k].new_v = v;
                     }
@@ -144,12 +142,12 @@ namespace FAVE
                         float z = k * h;
                         float u = m_cells[i][j][k].u;
                         float v = m_cells[i][j][k].v;
-                        float w = m_cells[i][j][k].w; // TODO avg N
+                        float w = avg_w(i, j, k);
 
                         x = x - p_delta_time * u;
                         y = y - p_delta_time * v;
                         z = z - p_delta_time * w;
-                        w = ; // TODO sample field
+                        w = sample_field(x, y, z, 2);
 
                         m_cells[i][j][k].new_w = w;
                     }
@@ -248,9 +246,36 @@ namespace FAVE
         }
     }
 
+    float FluidSimulation::avg_u(uint16_t p_i, uint16_t p_j, uint16_t p_k)
+    {
+        // Average u velocity at the center of a cell
+        return 0.25f * (m_cells[p_i][p_j][p_k].u +
+                        m_cells[p_i + 1][p_j][p_k].u +
+                        m_cells[p_i][p_j][p_k + 1].u +
+                        m_cells[p_i + 1][p_j][p_k + 1].u);
+    }
+
+    float FluidSimulation::avg_v(uint16_t p_i, uint16_t p_j, uint16_t p_k)
+    {
+        // Average v velocity at the center of a cell
+        return 0.25f * (m_cells[p_i][p_j][p_k].v +
+                        m_cells[p_i][p_j + 1][p_k].v +
+                        m_cells[p_i][p_j][p_k + 1].v +
+                        m_cells[p_i][p_j + 1][p_k + 1].v);
+    }
+
+    float FluidSimulation::avg_w(uint16_t p_i, uint16_t p_j, uint16_t p_k)
+    {
+        // Average w velocity at the center of a cell
+        return 0.25f * (m_cells[p_i][p_j][p_k].w +
+                        m_cells[p_i + 1][p_j][p_k].w +
+                        m_cells[p_i][p_j + 1][p_k].w +
+                        m_cells[p_i + 1][p_j + 1][p_k].w);
+    }
+
     float FluidSimulation::sample_field(float p_x, float p_y, float p_z, uint8_t p_field)
     {
-        float n = m_size_y;
+        // float n = m_size_y;
         float h = m_grid_size;
         float h2 = 0.5f * h;
         float h1 = 1.0f / h;
@@ -263,54 +288,92 @@ namespace FAVE
         float dy = 0.0f;
         float dz = 0.0f;
 
-        float f;
         switch (p_field)
         {
-        case 0:
-            f = m_cells[x][y][z].u; // TODO this is bad
-            dx = (x - h) * h1;
-            dy = (y - h2) * h1;
-            dz = (z - h2) * h1;
+        case 0: // U FIELD
+            dy = h2;
+            dz = h2;
             break;
-        case 1:
-            f = m_cells[x][y][z].v;
-            dx = (x - h2) * h1;
-            dy = (y - h) * h1;
-            dz = (z - h2) * h1;
+        case 1: // V FIELD
+            dx = h2;
+            dz = h2;
             break;
-        case 2:
-            f = m_cells[x][y][z].n;
-            dx = (x - h2) * h1;
-            dy = (y - h2) * h1;
-            dz = (z - h) * h1;
+        case 2: // W FIELD
+            dx = h2;
+            dy = h2;
             break;
-        case 3:
-            f = m_cells[x][y][z].s;
-            dx = (x - h2) * h1;
-            dy = (y - h2) * h1;
-            dz = (z - h2) * h1;
+        case 3: // S FIELD
+            dx = h2;
+            dy = h2;
+            dz = h2;
             break;
         default:
-            f = 0.0f;
+            break;
         }
 
-        float x0 = fmax(m_size_x - 1, floor((x - dx) * h1));
+        uint16_t x0 = fmax(m_size_x - 1, floor((x - dx) * h1));
         float tx = ((x - dx) - x0 * h) * h1;
-        float x1 = fmin(x0 + 1, m_size_x - 1);
+        uint16_t x1 = fmin(x0 + 1, m_size_x - 1);
 
-        float y0 = fmax(m_size_y - 1, floor((y - dy) * h1));
+        uint16_t y0 = fmax(m_size_y - 1, floor((y - dy) * h1));
         float ty = ((y - dy) - y0 * h) * h1;
-        float y1 = fmin(y0 + 1, m_size_y - 1);
+        uint16_t y1 = fmin(y0 + 1, m_size_y - 1);
 
-        float z0 = fmax(m_size_z - 1, floor((z - dz) * h1));
+        uint16_t z0 = fmax(m_size_z - 1, floor((z - dz) * h1));
         float tz = ((z - dz) - z0 * h) * h1;
-        float z1 = fmin(z0 + 1, m_size_z - 1);
+        uint16_t z1 = fmin(z0 + 1, m_size_z - 1);
 
         float sx = 1.0f - tx;
         float sy = 1.0f - ty;
         float sz = 1.0f - tz;
 
-        float val = ; // TODO
+        float val = 0.0f;
+        switch (p_field)
+        {
+        case 0: // U FIELD
+            val = sx * sy * sz * m_cells[x0][y0][z0].u 
+            + tx * sy * sz * m_cells[x1][y0][z0].u 
+            + sx * ty * sz * m_cells[x0][y1][z0].u 
+            + tx * ty * sz * m_cells[x1][y1][z0].u 
+            + sx * sy * tz * m_cells[x0][y0][z1].u 
+            + tx * sy * tz * m_cells[x1][y0][z1].u 
+            + sx * ty * tz * m_cells[x0][y1][z1].u 
+            + tx * ty * tz * m_cells[x1][y1][z1].u;
+            break;
+        case 1: // V FIELD
+            val = sx * sy * sz * m_cells[x0][y0][z0].v
+            + tx * sy * sz * m_cells[x1][y0][z0].v
+            + sx * ty * sz * m_cells[x0][y1][z0].v
+            + tx * ty * sz * m_cells[x1][y1][z0].v
+            + sx * sy * tz * m_cells[x0][y0][z1].v
+            + tx * sy * tz * m_cells[x1][y0][z1].v
+            + sx * ty * tz * m_cells[x0][y1][z1].v
+            + tx * ty * tz * m_cells[x1][y1][z1].v;
+            break;
+        case 2: // W FIELD
+            val = sx * sy * sz * m_cells[x0][y0][z0].w
+            + tx * sy * sz * m_cells[x1][y0][z0].w
+            + sx * ty * sz * m_cells[x0][y1][z0].w
+            + tx * ty * sz * m_cells[x1][y1][z0].w
+            + sx * sy * tz * m_cells[x0][y0][z1].w
+            + tx * sy * tz * m_cells[x1][y0][z1].w
+            + sx * ty * tz * m_cells[x0][y1][z1].w
+            + tx * ty * tz * m_cells[x1][y1][z1].w;
+            break;
+        case 3: // S FIELD
+            val = sx * sy * sz * m_cells[x0][y0][z0].s
+            + tx * sy * sz * m_cells[x1][y0][z0].s
+            + sx * ty * sz * m_cells[x0][y1][z0].s
+            + tx * ty * sz * m_cells[x1][y1][z0].s
+            + sx * sy * tz * m_cells[x0][y0][z1].s
+            + tx * sy * tz * m_cells[x1][y0][z1].s
+            + sx * ty * tz * m_cells[x0][y1][z1].s
+            + tx * ty * tz * m_cells[x1][y1][z1].s;
+            break;
+        default:
 
+            break;
+        }
         return val;
     }
+}

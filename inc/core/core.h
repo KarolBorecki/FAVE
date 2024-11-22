@@ -10,7 +10,6 @@ namespace FAVE
     {
     public:
         Core() = default;
-        virtual ~Core() = default;
 
         static void init();
         static void finish();

@@ -7,6 +7,9 @@
 #include <iostream>
 #include <cerrno>
 
+#include "logging/logger.h"
+#include "logging/exceptions.h"
+
 namespace FAVE {
     std::string get_file_contents(const char *filename);
 }

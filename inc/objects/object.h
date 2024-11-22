@@ -12,7 +12,6 @@ namespace FAVE
     {
     public:
         Object() = default;
-        virtual ~Object() = default;
 
         inline void setScale(glm::vec3 p_scale) { m_scale = p_scale; }
         inline void setPosition(glm::vec3 p_position) { m_position = p_position; }

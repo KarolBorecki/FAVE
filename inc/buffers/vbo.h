@@ -16,7 +16,6 @@ namespace FAVE
 	{
 	public:
 		VBO(std::vector<Vertex> &p_vertices);
-		virtual ~VBO() = default;
 
 		void bind() override;
 		void unbind() override;

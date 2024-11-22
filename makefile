@@ -1,7 +1,7 @@
 TARGET = FAVE
 
 CXX = g++
-CXXFLAGS = -g -Wall -Iinc -Iinc/external #TODO remove -g
+CXXFLAGS = -g -Wall -std=c++20 -Iinc -Iinc/external #TODO remove -g
 
 LIBS = -ldl -lglfw -lGL 
 

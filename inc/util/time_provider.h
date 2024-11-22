@@ -11,8 +11,6 @@ namespace FAVE
     public:
         TimeProvider() = default;
 
-        virtual ~TimeProvider() = default;
-
         /**
          * @brief Returns time from engine's core start in milliseconds.
          */

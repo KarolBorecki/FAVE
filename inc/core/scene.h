@@ -15,7 +15,6 @@ namespace FAVE
     {
     public:
         Scene() = default;
-        virtual ~Scene() = default;
 
         void init();
         void render(float p_delta_time);

@@ -9,7 +9,6 @@ namespace FAVE
     {
     public:
         Indexable() = default;
-        virtual ~Indexable() = default;
 
         GLuint id() const { return m_ID; }
 

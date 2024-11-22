@@ -30,7 +30,7 @@ namespace FAVE
     {
     public:
         FluidSimulation(Material &p_material, uint16_t p_size_x, uint16_t p_size_y, uint16_t p_size_z, uint16_t p_water_level, float p_grid_size);
-        virtual ~FluidSimulation();
+        ~FluidSimulation();
 
         void draw(Camera *p_camera, Light *p_light);
         void update_physics(float deltaTime);
@@ -64,6 +64,9 @@ namespace FAVE
 
         void recognise_geometry();
         float sample_field(float p_x, float p_y, float p_z, uint8_t p_field); // 0 - U_field, 1 - V_field, 2 - N_field, 3 - S_field, 4 - P_field
+        float avg_u(uint16_t p_i, uint16_t p_j, uint16_t p_k);
+        float avg_v(uint16_t p_i, uint16_t p_j, uint16_t p_k);
+        float avg_w(uint16_t p_i, uint16_t p_j, uint16_t p_k);
     };
 }
 

@@ -40,3 +40,7 @@ FAVE
 
 # valgrind files
 vgcore*
+
+# MacOs
+.DS_Store
+*.dSYM/

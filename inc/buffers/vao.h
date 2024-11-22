@@ -13,7 +13,6 @@ namespace FAVE
 	{
 	public:
 		VAO();
-		virtual ~VAO() = default;
 
 		void bind() override;
 		void unbind() override;

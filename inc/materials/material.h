@@ -13,7 +13,6 @@ namespace FAVE
     {
     public:
         Material(Shader &p_shader, Texture *p_diffuse_texture, Texture *p_specular_texture);
-        virtual ~Material() = default;
 
         void destroy();
 

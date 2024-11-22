@@ -14,7 +14,6 @@ namespace FAVE
     {
     public:
         Shader(const char *p_vertexPath, const char *p_fragmentPath);
-        virtual ~Shader() = default;
 
         void use();
         void unuse();

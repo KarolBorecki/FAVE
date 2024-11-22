@@ -18,7 +18,6 @@ namespace FAVE
     {
     public:
         Camera();
-        virtual ~Camera() = default;
 
         void update_matrix();
         void matrix(Shader &shader, const char *uniform);

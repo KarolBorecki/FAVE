@@ -15,7 +15,6 @@ namespace FAVE
     {
     public:
         Texture(const char *p_image, TextureType p_texType, GLuint p_slot, GLenum p_format, GLenum p_pixelType);
-        virtual ~Texture() = default;
 
         void bind();
         void unbind();

@@ -14,7 +14,6 @@ namespace FAVE
     {
     public:
         Window() = default;
-        virtual ~Window() = default;
 
         static void open(uint16_t width, uint16_t height, const char *title);
         static void start();

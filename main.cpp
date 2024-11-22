@@ -15,14 +15,14 @@ int main()
     std::vector<GLuint> ind(indices, indices + sizeof(indices) / sizeof(GLuint));
 
     FAVE::Core::init();
-    FAVE::Window::open(1800, 1200, "FAVE");
+    FAVE::Window::open(900, 700, "FAVE");
 
     FAVE::Scene scene;
 
-    FAVE::Shader shaderProgram("./resources/shaders/default.vert", "./resources/shaders/default.frag");
+    FAVE::Shader shaderProgram("/Users/karolborecki/repo/FAVE/resources/shaders/default.vert", "/Users/karolborecki/repo/FAVE/resources/shaders/default.frag");
 
-    FAVE::Texture planksDiffuse("./resources/textures/planks.png", FAVE::TextureType::DIFFUSE, 0, GL_RGBA, GL_UNSIGNED_BYTE);
-    FAVE::Texture planksSpecular("./resources/textures/planksSpec.png", FAVE::TextureType::SPECULAR, 1, GL_RED, GL_UNSIGNED_BYTE);
+    FAVE::Texture planksDiffuse("/Users/karolborecki/repo/FAVE/resources/textures/planks.png", FAVE::TextureType::DIFFUSE, 0, GL_RGBA, GL_UNSIGNED_BYTE);
+    FAVE::Texture planksSpecular("/Users/karolborecki/repo/FAVE/resources/textures/planksSpec.png", FAVE::TextureType::SPECULAR, 1, GL_RED, GL_UNSIGNED_BYTE);
 
     FAVE::Material material(shaderProgram, &planksDiffuse, &planksSpecular);
     // FAVE::Mesh floor(verts, ind, material);

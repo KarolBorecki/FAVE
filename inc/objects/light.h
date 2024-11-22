@@ -10,7 +10,6 @@ namespace FAVE
     {
     public:
         Light(const Color &p_color);
-        virtual ~Light() = default;
 
         void setColor(const Color &p_color);
         inline Color &color() { return m_color; }

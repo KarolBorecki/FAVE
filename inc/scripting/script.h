@@ -14,7 +14,6 @@ namespace FAVE
     {
     public:
         Script() = default;
-        virtual ~Script() = default;
 
         virtual void start() {};
 

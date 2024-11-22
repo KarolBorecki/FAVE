@@ -12,7 +12,6 @@ namespace FAVE
     {
     public:
         RenderObject() = default;
-        virtual ~RenderObject() = default;
 
         virtual void draw(Camera *p_camera, Light *p_light) = 0;
 
