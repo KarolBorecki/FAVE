@@ -4,11 +4,8 @@ namespace FAVE
 {
     Shader::Shader(const char *p_vertexPath, const char *p_fragmentPath)
     {
-        FAVE::log("1");
         std::string vertexCode = get_file_contents(p_vertexPath);
         std::string fragmentCode = get_file_contents(p_fragmentPath);
-
-        log("VERTEX CODE: \n %s", vertexCode.c_str());
 
         const char *vertexSource = vertexCode.c_str();
         const char *fragmentSource = fragmentCode.c_str();

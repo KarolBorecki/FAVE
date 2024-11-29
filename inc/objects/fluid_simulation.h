@@ -32,12 +32,13 @@ namespace FAVE
         FluidSimulation(Material &p_material, uint16_t p_size_x, uint16_t p_size_y, uint16_t p_size_z, uint16_t p_water_level, float p_grid_size);
         ~FluidSimulation();
 
-        void draw(Camera *p_camera, Light *p_light);
+        void draw(float p_delta_time, Camera *p_camera, Light *p_light);
         void update_physics(float deltaTime);
 
         void destroy();
 
     private:
+        GLFWwindow *m_window{nullptr};
         Material &m_material;
 
         uint16_t m_size_x;
@@ -49,8 +50,8 @@ namespace FAVE
         glm::vec3 m_gravity = glm::vec3(0.0f, -9.8f, 0.0f);
         GridCell ***m_cells;
 
-        uint16_t m_solver_steps = 10;
-        float m_over_relaxation = 1.7f;
+        uint16_t m_solver_steps = 15;
+        float m_over_relaxation = 0.9f;
 
         float m_fluid_density = 1.0f;
 

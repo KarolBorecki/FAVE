@@ -23,7 +23,7 @@ namespace FAVE
     public:
         Mesh(std::vector<Vertex> &p_vertices, std::vector<GLuint> &p_indices, Material &p_material);
 
-        void draw(Camera *p_camera, Light *p_light) override;
+        void draw(float p_delta_time, Camera *p_camera, Light *p_light) override;
         void destroy() override;
 
     protected:

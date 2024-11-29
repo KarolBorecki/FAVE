@@ -21,7 +21,7 @@ namespace FAVE
         m_material.shader().use();
     }
 
-    void Mesh::draw(Camera *p_camera, Light *p_light)
+    void Mesh::draw(float p_delta_time, Camera *p_camera, Light *p_light)
     {
         m_material.shader().use();
 

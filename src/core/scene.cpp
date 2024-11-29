@@ -14,7 +14,7 @@ namespace FAVE
     {
         for (auto &object : m_objects)
         {
-            object->draw(m_camera, m_light);
+            object->draw(p_delta_time, m_camera, m_light);
             object->update(p_delta_time); // TODO isnt it gonna slow down drawing process?
 
             m_camera->update(p_delta_time);

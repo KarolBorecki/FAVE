@@ -13,7 +13,7 @@ namespace FAVE
     public:
         RenderObject() = default;
 
-        virtual void draw(Camera *p_camera, Light *p_light) = 0;
+        virtual void draw(float p_delta_time, Camera *p_camera, Light *p_light) = 0;
 
         virtual void destroy() = 0;
     };

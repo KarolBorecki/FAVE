@@ -19,33 +19,41 @@ int main()
 
     FAVE::Scene scene;
 
-    FAVE::Shader shaderProgram("/Users/karolborecki/repo/FAVE/resources/shaders/default.vert", "/Users/karolborecki/repo/FAVE/resources/shaders/default.frag");
+    FAVE::Shader shaderProgram("./resources/shaders/default.vert", "./resources/shaders/default.frag");
 
-    FAVE::Texture planksDiffuse("/Users/karolborecki/repo/FAVE/resources/textures/planks.png", FAVE::TextureType::DIFFUSE, 0, GL_RGBA, GL_UNSIGNED_BYTE);
-    FAVE::Texture planksSpecular("/Users/karolborecki/repo/FAVE/resources/textures/planksSpec.png", FAVE::TextureType::SPECULAR, 1, GL_RED, GL_UNSIGNED_BYTE);
+    FAVE::Texture planksDiffuse("./resources/textures/planks.png", FAVE::TextureType::DIFFUSE, 0, GL_RGBA, GL_UNSIGNED_BYTE);
+    FAVE::Texture planksSpecular("./resources/textures/planksSpec.png", FAVE::TextureType::SPECULAR, 1, GL_RED, GL_UNSIGNED_BYTE);
 
     FAVE::Material material(shaderProgram, &planksDiffuse, &planksSpecular);
     // FAVE::Mesh floor(verts, ind, material);
 
-    FAVE::FluidSimulation fluid(material, 50, 13, 3, 7, 0.2f);
+    FAVE::log("creating object......");
+    FAVE::FluidSimulation fluid(material, 35, 11, 35, 7, 0.2f);
     fluid.setPosition({0.0f, 0.0f, 0.0f});
 
+    FAVE::log("creating light......");
     FAVE::Light light({1.0f, 1.0f, 1.0f, 1.0f});
     light.setPosition({0.5f, 0.5f, 0.5f});
 
+    FAVE::log("creating camera......");
     FAVE::CameraController cameraController;
     FAVE::Camera camera;
     camera.setPosition({12.7f, 3.7f, 12.7f});
     camera.setOrientation({-0.9f, -0.25f, -0.9f});
+    FAVE::log("attaching camera to controller......");
     camera.attach(&cameraController);
+    FAVE::log("setting camera to controller......");
     cameraController.m_camera = &camera;
 
+    FAVE::log("adding objects to scene......");
     scene.setCamera(&camera);
     scene.setLight(&light);
     scene.addObject(&fluid);
     // scene.addObject(&floor);
+    FAVE::log("Scene setting......");
     FAVE::Window::setScene(&scene);
 
+    FAVE::log("window starting......");
     FAVE::Window::start();
 
     FAVE::Window::close();
