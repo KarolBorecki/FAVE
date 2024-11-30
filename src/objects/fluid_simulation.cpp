@@ -25,7 +25,7 @@ namespace FAVE
                     m_cells[x][y][z].w = 0.0f;
 
                     // Initialize solid state based on position
-                    m_cells[x][y][z].s = (y <= m_water_level && x < m_size_x - 5 && x > 5 && z < m_size_z - 5 && z > 5) ? 1.0f : 0.0f;
+                    m_cells[x][y][z].s = (y <= m_water_level) ? 1.0f : 0.0f;
 
                     // Set boundary cells as solid
                     if (x == 0 || x == m_size_x - 1 || y == 0 || y == m_size_y - 1 || z == 0 || z == m_size_z - 1)
@@ -33,10 +33,11 @@ namespace FAVE
 
                     m_cells[x][y][z].p = 0.0f;
 
+                    uint16_t outer_ring = 5;
                     // Add initial motion in upper fluid layers
-                    if (m_cells[x][y][z].s == 1.0f)
+                    if (m_cells[x][y][z].s == 1.0f && x < m_size_x - outer_ring && y == m_water_level && z < m_size_z - outer_ring && x > outer_ring && z > outer_ring)
                     {
-                        m_cells[x][y][z].v = -1.5f; // Wstępna prędkość "w dół"
+                        m_cells[x][m_water_level][z].v = -20.5f; // Wstępna prędkość "w dół"
                     }
                 }
             }
@@ -68,32 +69,19 @@ namespace FAVE
 
         log("cell [%d][%d][%d] v: %.2f p: %.2f", 15, 6, 15, m_cells[15][6][15].v, m_cells[15][6][15].p);
         // integrate
-        for (uint16_t i = 0; i < m_size_x; ++i)
-        {
-            for (uint16_t j = 1; j < m_size_y; ++j) // Start at 1 to avoid boundary violations
-            {
-                for (uint16_t k = 0; k < m_size_z; ++k)
-                {
-                    if (m_cells[i][j][k].s != 0.0f && m_cells[i][j - 1][k].s != 0.0f && m_cells[i][j][k - 1].s != 0.0f)
-                    {
-                        m_cells[i][j][k].v += p_delta_time * GRAVITY;
-
-                        // // Propagate velocity to neighboring cells to simulate spreading
-                        // if (m_cells[i][j][k].v != 0.0f) // Próg ruchu płynu
-                        // {
-                        //     if (i > 0 && m_cells[i - 1][j][k].s == 1.0f)
-                        //         m_cells[i - 1][j][k].v += 0.1f * m_cells[i][j][k].v;
-                        //     if (i < m_size_x - 1 && m_cells[i + 1][j][k].s == 1.0f)
-                        //         m_cells[i + 1][j][k].v += 0.1f * m_cells[i][j][k].v;
-                        //     if (k > 0 && m_cells[i][j][k - 1].s == 1.0f)
-                        //         m_cells[i][j][k - 1].v += 0.1f * m_cells[i][j][k].v;
-                        //     if (k < m_size_z - 1 && m_cells[i][j][k + 1].s == 1.0f)
-                        //         m_cells[i][j][k + 1].v += 0.1f * m_cells[i][j][k].v;
-                        // }
-                    }
-                }
-            }
-        }
+        // for (uint16_t i = 0; i < m_size_x; ++i)
+        // {
+        //     for (uint16_t j = 1; j < m_size_y; ++j) // Start at 1 to avoid boundary violations
+        //     {
+        //         for (uint16_t k = 0; k < m_size_z; ++k)
+        //         {
+        //             if (m_cells[i][j][k].s != 0.0f && m_cells[i][j - 1][k].s != 0.0f && m_cells[i][j][k - 1].s != 0.0f)
+        //             {
+        //                 m_cells[i][j][k].v += p_delta_time * GRAVITY;
+        //             }
+        //         }
+        //     }
+        // }
         // Reset pressure
         for (uint16_t i = 1; i < m_size_x - 1; ++i)
         {
@@ -121,12 +109,7 @@ namespace FAVE
                         float s = m_cells[i + 1][j][k].s + m_cells[i - 1][j][k].s +
                                   m_cells[i][j + 1][k].s + m_cells[i][j - 1][k].s +
                                   m_cells[i][j][k + 1].s + m_cells[i][j][k - 1].s;
-                        if (s == 0.0f)
-                            continue;
-
-                        float div = m_cells[i + 1][j][k].u - m_cells[i][j][k].u +
-                                    m_cells[i][j + 1][k].v - m_cells[i][j][k].v +
-                                    m_cells[i][j][k + 1].w - m_cells[i][j][k].w;
+                        if (s == 0.0f)5 1].w - m_cells[i][j][k].w;
 
                         float p = -div / s;
                         p *= m_over_relaxation;
@@ -360,8 +343,8 @@ namespace FAVE
                             vertex.position = cubePos + vert * m_grid_size;
 
                             // Adjust color based on velocity
-                            float speed = glm::length(glm::vec3(m_cells[x][y][z].u, m_cells[x][y][z].v, m_cells[x][y][z].w));
-                            vertex.color = glm::vec3(0.1f, 0.1f, 1.0f - speed); // Zmiana koloru na podstawie prędkości
+                            float speed = abs(glm::length(glm::vec3(m_cells[x][y][z].u, m_cells[x][y][z].v, m_cells[x][y][z].w)));
+                            vertex.color = glm::vec3(0.1f + speed, 0.8f * speed, speed);
 
                             vertex.normal = glm::normalize(vert);
                             m_vertices.push_back(vertex);

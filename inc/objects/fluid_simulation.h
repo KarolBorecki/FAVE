@@ -51,7 +51,7 @@ namespace FAVE
         GridCell ***m_cells;
 
         uint16_t m_solver_steps = 20;
-        float m_over_relaxation = 1.7f;
+        float m_over_relaxation = 1.2f;
 
         float m_fluid_density = 1000.0f;
 
