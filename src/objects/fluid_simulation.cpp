@@ -74,7 +74,7 @@ namespace FAVE
             {
                 for (uint16_t k = 0; k < m_size_z; ++k)
                 {
-                    if (m_cells[i][j][k].s != 0.0f && m_cells[i][j - 1][k].s != 0.0f)
+                    if (m_cells[i][j][k].s != 0.0f && m_cells[i][j - 1][k].s != 0.0f && m_cells[i][j][k - 1].s != 0.0f)
                     {
                         m_cells[i][j][k].v += p_delta_time * GRAVITY;
 
@@ -139,10 +139,12 @@ namespace FAVE
 
                         m_cells[i][j][k].u -= m_cells[i - 1][j][k].s * p;
                         m_cells[i + 1][j][k].u += m_cells[i + 1][j][k].s * p;
-                        m_cells[i][j][k].v -= m_cells[i][j][k].s * p;
+
+                        m_cells[i][j][k].v -= m_cells[i][j - 1][k].s * p;
                         m_cells[i][j + 1][k].v += m_cells[i][j + 1][k].s * p;
+
                         m_cells[i][j][k].w -= m_cells[i][j][k - 1].s * p;
-                        m_cells[i][j][k + 1].w -= m_cells[i][j][k + 1].s * p;
+                        m_cells[i][j][k + 1].w += m_cells[i][j][k + 1].s * p;
                     }
                 }
             }
@@ -179,16 +181,16 @@ namespace FAVE
         // advect
         float h = m_grid_size;
         float h2 = 0.5f * h;
-        for (uint16_t i = 1; i < m_size_x - 1; i++)
+        for (uint16_t i = 1; i < m_size_x; i++)
         {
-            for (uint16_t j = 1; j < m_size_y - 1; j++)
+            for (uint16_t j = 1; j < m_size_y; j++)
             {
-                for (uint16_t k = 1; k < m_size_z - 1; k++)
+                for (uint16_t k = 1; k < m_size_z; k++)
                 {
                     m_cells[i][j][k].new_u = m_cells[i][j][k].u;
                     m_cells[i][j][k].new_v = m_cells[i][j][k].v;
                     m_cells[i][j][k].new_w = m_cells[i][j][k].w;
-                    if (m_cells[i][j][k].s != 0.0f && m_cells[i - 1][j][k].s != 0.0f)
+                    if (m_cells[i][j][k].s != 0.0f && m_cells[i - 1][j][k].s != 0.0f && j < m_size_y - 1 && k < m_size_z - 1)
                     {
                         float x = i * h;
                         float y = j * h + h2;
@@ -205,7 +207,7 @@ namespace FAVE
                         m_cells[i][j][k].new_u = u;
                     }
 
-                    if (m_cells[i][j][k].s != 0.0f && m_cells[i][j - 1][k].s != 0.0f)
+                    if (m_cells[i][j][k].s != 0.0f && m_cells[i][j - 1][k].s != 0.0f && i < m_size_x - 1 && k < m_size_z - 1)
                     {
                         float x = i * h + h2;
                         float y = j * h;
@@ -222,7 +224,7 @@ namespace FAVE
                         m_cells[i][j][k].new_v = v;
                     }
 
-                    if (m_cells[i][j][k].s != 0.0f && m_cells[i][j][k - 1].s != 0.0f)
+                    if (m_cells[i][j][k].s != 0.0f && m_cells[i][j][k - 1].s != 0.0f && i < m_size_x - 1 && j < m_size_y - 1)
                     {
                         float x = i * h + h2;
                         float y = j * h + h2;
@@ -379,28 +381,40 @@ namespace FAVE
     float FluidSimulation::avg_u(uint16_t p_i, uint16_t p_j, uint16_t p_k)
     {
         // Average u velocity at the center of a cell
-        return 0.25f * (m_cells[p_i][p_j][p_k].u +
-                        m_cells[p_i + 1][p_j][p_k].u +
-                        m_cells[p_i][p_j][p_k + 1].u +
-                        m_cells[p_i + 1][p_j][p_k + 1].u);
+        return 0.125f * (m_cells[p_i][p_j][p_k].u +
+                         m_cells[p_i][p_j + 1][p_k].u +
+                         m_cells[p_i][p_j][p_k + 1].u +
+                         m_cells[p_i][p_j + 1][p_k + 1].u +
+                         m_cells[p_i - 1][p_j][p_k].u +
+                         m_cells[p_i - 1][p_j + 1][p_k].u +
+                         m_cells[p_i - 1][p_j][p_k + 1].u +
+                         m_cells[p_i - 1][p_j + 1][p_k + 1].u);
     }
 
     float FluidSimulation::avg_v(uint16_t p_i, uint16_t p_j, uint16_t p_k)
     {
         // Average v velocity at the center of a cell
-        return 0.25f * (m_cells[p_i][p_j][p_k].v +
-                        m_cells[p_i][p_j + 1][p_k].v +
-                        m_cells[p_i][p_j][p_k + 1].v +
-                        m_cells[p_i][p_j + 1][p_k + 1].v);
+        return 0.125f * (m_cells[p_i][p_j][p_k].v +
+                         m_cells[p_i][p_j + 1][p_k].v +
+                         m_cells[p_i][p_j][p_k + 1].v +
+                         m_cells[p_i][p_j + 1][p_k + 1].v +
+                         m_cells[p_i - 1][p_j][p_k].v +
+                         m_cells[p_i - 1][p_j + 1][p_k].v +
+                         m_cells[p_i - 1][p_j][p_k + 1].v +
+                         m_cells[p_i - 1][p_j + 1][p_k + 1].v);
     }
 
     float FluidSimulation::avg_w(uint16_t p_i, uint16_t p_j, uint16_t p_k)
     {
         // Average w velocity at the center of a cell
-        return 0.25f * (m_cells[p_i][p_j][p_k].w +
-                        m_cells[p_i + 1][p_j][p_k].w +
-                        m_cells[p_i][p_j + 1][p_k].w +
-                        m_cells[p_i + 1][p_j + 1][p_k].w);
+        return 0.125f * (m_cells[p_i][p_j][p_k].w +
+                         m_cells[p_i][p_j + 1][p_k].w +
+                         m_cells[p_i][p_j][p_k + 1].w +
+                         m_cells[p_i][p_j + 1][p_k + 1].w +
+                         m_cells[p_i - 1][p_j][p_k].w +
+                         m_cells[p_i - 1][p_j + 1][p_k].w +
+                         m_cells[p_i - 1][p_j][p_k + 1].w +
+                         m_cells[p_i - 1][p_j + 1][p_k + 1].w);
     }
 
     float FluidSimulation::sample_field(float p_x, float p_y, float p_z, uint8_t p_field)

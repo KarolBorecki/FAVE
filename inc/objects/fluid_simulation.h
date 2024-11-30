@@ -50,7 +50,7 @@ namespace FAVE
         glm::vec3 m_gravity = glm::vec3(0.0f, -9.8f, 0.0f);
         GridCell ***m_cells;
 
-        uint16_t m_solver_steps = 15;
+        uint16_t m_solver_steps = 20;
         float m_over_relaxation = 1.7f;
 
         float m_fluid_density = 1000.0f;
