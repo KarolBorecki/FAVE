@@ -36,7 +36,7 @@ namespace FAVE
                     // Add initial motion in upper fluid layers
                     if (m_cells[x][y][z].s == 1.0f)
                     {
-                        m_cells[x][y][z].v = -12.5f; // Wstępna prędkość "w dół"
+                        m_cells[x][y][z].v = -1.5f; // Wstępna prędkość "w dół"
                     }
                 }
             }
@@ -65,7 +65,8 @@ namespace FAVE
     void FluidSimulation::update_physics(float p_delta_time)
     {
         constexpr float GRAVITY = -9.81f; // Configurable gravity constant
-        std::cout << "Cell[15][15][5] v: " << m_cells[15][6][15].v << " p: " << m_cells[15][6][15].p << std::endl;
+
+        log("cell [%d][%d][%d] v: %.2f p: %.2f", 15, 6, 15, m_cells[15][6][15].v, m_cells[15][6][15].p);
         // integrate
         for (uint16_t i = 0; i < m_size_x; ++i)
         {
@@ -129,20 +130,19 @@ namespace FAVE
 
                         float p = -div / s;
                         p *= m_over_relaxation;
+                        if (i == 15 && j == 6 && k == 15)
+                        {
+                            log("pressure at [15][6][15]: %.2f      div=%.2f  s = %.2lf", m_cells[i][j][k].p, div, s);
+                            log("u: %.2f v: %.2f w: %.2f", m_cells[i][j][k].u, m_cells[i][j][k].v, m_cells[i][j][k].w);
+                        }
+                        m_cells[i][j][k].p += p * c_p;
 
-                        // Apply pressure corrections
                         m_cells[i][j][k].u -= m_cells[i - 1][j][k].s * p;
                         m_cells[i + 1][j][k].u += m_cells[i + 1][j][k].s * p;
                         m_cells[i][j][k].v -= m_cells[i][j][k].s * p;
                         m_cells[i][j + 1][k].v += m_cells[i][j + 1][k].s * p;
                         m_cells[i][j][k].w -= m_cells[i][j][k - 1].s * p;
                         m_cells[i][j][k + 1].w -= m_cells[i][j][k + 1].s * p;
-
-                        m_cells[i][j][k].p += p * c_p;
-                        if (i == 15 && j == 6 && k == 15)
-                        {
-                            std::cout << "Pressure at [15][6][15]: " << m_cells[i][j][k].p << std::endl;
-                        }
                     }
                 }
             }
@@ -185,14 +185,17 @@ namespace FAVE
             {
                 for (uint16_t k = 1; k < m_size_z - 1; k++)
                 {
-                    if (m_cells[i][j][k].s != 0.0f && m_cells[i - 1][j][k].s && j < m_size_y - 1 && k < m_size_z - 1)
+                    m_cells[i][j][k].new_u = m_cells[i][j][k].u;
+                    m_cells[i][j][k].new_v = m_cells[i][j][k].v;
+                    m_cells[i][j][k].new_w = m_cells[i][j][k].w;
+                    if (m_cells[i][j][k].s != 0.0f && m_cells[i - 1][j][k].s != 0.0f)
                     {
                         float x = i * h;
                         float y = j * h + h2;
                         float z = k * h + h2;
                         float u = m_cells[i][j][k].u;
                         float v = avg_v(i, j, k);
-                        float w = m_cells[i][j][k].w;
+                        float w = avg_w(i, j, k);
 
                         x = x - p_delta_time * u;
                         y = y - p_delta_time * v;
@@ -202,14 +205,14 @@ namespace FAVE
                         m_cells[i][j][k].new_u = u;
                     }
 
-                    if (m_cells[i][j][k].s != 0.0f && m_cells[i][j - 1][k].s && i < m_size_x - 1 && k < m_size_z - 1)
+                    if (m_cells[i][j][k].s != 0.0f && m_cells[i][j - 1][k].s != 0.0f)
                     {
                         float x = i * h + h2;
                         float y = j * h;
                         float z = k * h + h2;
                         float u = avg_u(i, j, k);
                         float v = m_cells[i][j][k].v;
-                        float w = m_cells[i][j][k].w;
+                        float w = avg_w(i, j, k);
 
                         x = x - p_delta_time * u;
                         y = y - p_delta_time * v;
@@ -219,14 +222,14 @@ namespace FAVE
                         m_cells[i][j][k].new_v = v;
                     }
 
-                    if (m_cells[i][j][k].s != 0.0f && m_cells[i][j][k - 1].s && i < m_size_x - 1 && j < m_size_y - 1)
+                    if (m_cells[i][j][k].s != 0.0f && m_cells[i][j][k - 1].s != 0.0f)
                     {
                         float x = i * h + h2;
                         float y = j * h + h2;
                         float z = k * h;
-                        float u = m_cells[i][j][k].u;
-                        float v = m_cells[i][j][k].v;
-                        float w = avg_w(i, j, k);
+                        float u = avg_u(i, j, k);
+                        float v = avg_v(i, j, k);
+                        float w = m_cells[i][j][k].w;
 
                         x = x - p_delta_time * u;
                         y = y - p_delta_time * v;
@@ -235,6 +238,19 @@ namespace FAVE
 
                         m_cells[i][j][k].new_w = w;
                     }
+                }
+            }
+        }
+
+        for (uint16_t i = 1; i < m_size_x - 1; i++)
+        {
+            for (uint16_t j = 1; j < m_size_y - 1; j++)
+            {
+                for (uint16_t k = 1; k < m_size_z - 1; k++)
+                {
+                    m_cells[i][j][k].u = m_cells[i][j][k].new_u;
+                    m_cells[i][j][k].v = m_cells[i][j][k].new_v;
+                    m_cells[i][j][k].w = m_cells[i][j][k].new_w;
                 }
             }
         }

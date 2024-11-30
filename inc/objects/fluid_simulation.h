@@ -51,9 +51,9 @@ namespace FAVE
         GridCell ***m_cells;
 
         uint16_t m_solver_steps = 15;
-        float m_over_relaxation = 0.9f;
+        float m_over_relaxation = 1.7f;
 
-        float m_fluid_density = 1.0f;
+        float m_fluid_density = 1000.0f;
 
         // glm::vec3 m_sphereCenter = glm::vec3(10.0f, 10.0f, 10.0f);
         // float m_sphereRadius = 5.0f;
