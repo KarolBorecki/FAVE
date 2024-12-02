@@ -1,5 +1,5 @@
 #include "objects/fluid_simulation.h"
-#ifndef FAVE_2D_FLUID_SIMULATION
+#ifdef FAVE_2D_FLUID_SIMULATION
 #include "objects/camera.h"
 #include "objects/light.h"
 #include <glm/glm.hpp>

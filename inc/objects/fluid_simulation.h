@@ -15,6 +15,8 @@
 #include "objects/render_object.h"
 #include "materials/material.h"
 
+#define FAVE_2D_FLUID_SIMULATION
+
 namespace FAVE
 {
     struct GridCell
