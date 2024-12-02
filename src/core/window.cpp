@@ -54,7 +54,7 @@ namespace FAVE
 
             m_scene->camera()->update_matrix();
 
-            m_scene->render(0.01f);
+            m_scene->render(0.001f);
 
             glfwSwapBuffers(m_window);
             glfwPollEvents();

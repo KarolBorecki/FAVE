@@ -23,6 +23,8 @@ namespace FAVE
                     m_cells[x][y][z].u = 0.0f;
                     m_cells[x][y][z].v = 0.0f;
                     m_cells[x][y][z].w = 0.0f;
+                    m_cells[x][y][z].m = 1.0f;
+                    m_cells[x][y][z].new_m = 0.0f;
 
                     // Initialize solid state based on position
                     m_cells[x][y][z].s = (y <= m_water_level) ? 1.0f : 0.0f;
@@ -33,12 +35,11 @@ namespace FAVE
 
                     m_cells[x][y][z].p = 0.0f;
 
-                    uint16_t outer_ring = 5;
-                    // Add initial motion in upper fluid layers
-                    if (m_cells[x][y][z].s == 1.0f && x < m_size_x - outer_ring && y == m_water_level && z < m_size_z - outer_ring && x > outer_ring && z > outer_ring)
-                    {
-                        m_cells[x][m_water_level][z].v = -20.5f; // Wstępna prędkość "w dół"
-                    }
+                    // uint16_t outer_ring = 5;
+                    // if (m_cells[x][y][z].s == 1.0f && x < m_size_x - outer_ring && z < m_size_z - outer_ring && x > outer_ring && z > outer_ring)
+                    // {
+                    //     m_cells[x][m_water_level][z].v = -20.5f; // Wstępna prędkość "w dół"
+                    // }
                 }
             }
         }
@@ -67,21 +68,21 @@ namespace FAVE
     {
         constexpr float GRAVITY = -9.81f; // Configurable gravity constant
 
-        log("cell [%d][%d][%d] v: %.2f p: %.2f", 15, 6, 15, m_cells[15][6][15].v, m_cells[15][6][15].p);
+        log("[%.2f] cell [%d][%d][%d] u: %.2f v: %.2f w: %.2f p: %.2f m: %.2f", 15, 6, 15, m_cells[15][6][15].s, m_cells[15][6][15].u, m_cells[15][6][15].v, m_cells[15][6][15].w, m_cells[15][6][15].p, m_cells[15][6][15].m);
         // integrate
-        // for (uint16_t i = 0; i < m_size_x; ++i)
-        // {
-        //     for (uint16_t j = 1; j < m_size_y; ++j) // Start at 1 to avoid boundary violations
-        //     {
-        //         for (uint16_t k = 0; k < m_size_z; ++k)
-        //         {
-        //             if (m_cells[i][j][k].s != 0.0f && m_cells[i][j - 1][k].s != 0.0f && m_cells[i][j][k - 1].s != 0.0f)
-        //             {
-        //                 m_cells[i][j][k].v += p_delta_time * GRAVITY;
-        //             }
-        //         }
-        //     }
-        // }
+        for (uint16_t i = 0; i < m_size_x; ++i)
+        {
+            for (uint16_t j = 1; j < m_size_y; ++j) // Start at 1 to avoid boundary violations
+            {
+                for (uint16_t k = 0; k < m_size_z; ++k)
+                {
+                    if (m_cells[i][j][k].s != 0.0f && m_cells[i][j - 1][k].s != 0.0f && m_cells[i][j][k - 1].s != 0.0f)
+                    {
+                        m_cells[i][j][k].v += p_delta_time * GRAVITY;
+                    }
+                }
+            }
+        }
         // Reset pressure
         for (uint16_t i = 1; i < m_size_x - 1; ++i)
         {
@@ -109,15 +110,20 @@ namespace FAVE
                         float s = m_cells[i + 1][j][k].s + m_cells[i - 1][j][k].s +
                                   m_cells[i][j + 1][k].s + m_cells[i][j - 1][k].s +
                                   m_cells[i][j][k + 1].s + m_cells[i][j][k - 1].s;
-                        if (s == 0.0f)5 1].w - m_cells[i][j][k].w;
+                        if (s == 0.0f)
+                            continue;
+
+                        float div = m_cells[i + 1][j][k].u - m_cells[i][j][k].u +
+                                    m_cells[i][j + 1][k].v - m_cells[i][j][k].v +
+                                    m_cells[i][j][k + 1].w - m_cells[i][j][k].w;
 
                         float p = -div / s;
                         p *= m_over_relaxation;
-                        if (i == 15 && j == 6 && k == 15)
-                        {
-                            log("pressure at [15][6][15]: %.2f      div=%.2f  s = %.2lf", m_cells[i][j][k].p, div, s);
-                            log("u: %.2f v: %.2f w: %.2f", m_cells[i][j][k].u, m_cells[i][j][k].v, m_cells[i][j][k].w);
-                        }
+                        // if (i == 15 && j == 6 && k == 15)
+                        // {
+                        //     log("pressure at [15][6][15]: %.2f      div=%.2f  s = %.2lf", m_cells[i][j][k].p, div, s);
+                        //     log("u: %.2f v: %.2f w: %.2f", m_cells[i][j][k].u, m_cells[i][j][k].v, m_cells[i][j][k].w);
+                        // }
                         m_cells[i][j][k].p += p * c_p;
 
                         m_cells[i][j][k].u -= m_cells[i - 1][j][k].s * p;
@@ -173,6 +179,7 @@ namespace FAVE
                     m_cells[i][j][k].new_u = m_cells[i][j][k].u;
                     m_cells[i][j][k].new_v = m_cells[i][j][k].v;
                     m_cells[i][j][k].new_w = m_cells[i][j][k].w;
+                    m_cells[i][j][k].new_m = m_cells[i][j][k].m;
                     if (m_cells[i][j][k].s != 0.0f && m_cells[i - 1][j][k].s != 0.0f && j < m_size_y - 1 && k < m_size_z - 1)
                     {
                         float x = i * h;
@@ -233,9 +240,34 @@ namespace FAVE
             {
                 for (uint16_t k = 1; k < m_size_z - 1; k++)
                 {
+
+                    if (m_cells[i][j][k].s != 0.0f)
+                    {
+                        float u = (m_cells[i][j][k].u + m_cells[i + 1][j][k].u) * 0.5f;
+                        float v = (m_cells[i][j][k].v + m_cells[i][j + 1][k].v) * 0.5f;
+                        float w = (m_cells[i][j][k].w + m_cells[i][j][k + 1].w) * 0.5f;
+
+                        float x = i * h + h2 - p_delta_time * u;
+                        float y = j * h + h2 - p_delta_time * v;
+                        float z = k * h + h2 - p_delta_time * w;
+                        float s = sample_field(x, y, z, 3);
+
+                        m_cells[i][j][k].new_m = s;
+                    }
+                }
+            }
+        }
+
+        for (uint16_t i = 1; i < m_size_x - 1; i++)
+        {
+            for (uint16_t j = 1; j < m_size_y - 1; j++)
+            {
+                for (uint16_t k = 1; k < m_size_z - 1; k++)
+                {
                     m_cells[i][j][k].u = m_cells[i][j][k].new_u;
                     m_cells[i][j][k].v = m_cells[i][j][k].new_v;
                     m_cells[i][j][k].w = m_cells[i][j][k].new_w;
+                    m_cells[i][j][k].m = m_cells[i][j][k].new_m;
                 }
             }
         }
@@ -333,28 +365,26 @@ namespace FAVE
             {
                 for (uint16_t z = 0; z < m_size_z; ++z)
                 {
-                    if (m_cells[x][y][z].s == 1.0f)
+
+                    glm::vec3 cubePos = glm::vec3(x, y, z) * m_grid_size;
+
+                    for (const auto &vert : cubeVertices)
                     {
-                        glm::vec3 cubePos = glm::vec3(x, y, z) * m_grid_size;
+                        Vertex vertex;
+                        vertex.position = cubePos + vert * m_grid_size;
 
-                        for (const auto &vert : cubeVertices)
-                        {
-                            Vertex vertex;
-                            vertex.position = cubePos + vert * m_grid_size;
+                        // Adjust color based on velocity
+                        // float speed = abs(glm::length(glm::vec3(m_cells[x][y][z].u, m_cells[x][y][z].v, m_cells[x][y][z].w)));
+                        vertex.color = glm::vec3(0.3f * m_cells[x][y][z].m, 0.3f * m_cells[x][y][z].m, 0.7f * m_cells[x][y][z].m);
 
-                            // Adjust color based on velocity
-                            float speed = abs(glm::length(glm::vec3(m_cells[x][y][z].u, m_cells[x][y][z].v, m_cells[x][y][z].w)));
-                            vertex.color = glm::vec3(0.1f + speed, 0.8f * speed, speed);
+                        vertex.normal = glm::normalize(vert);
+                        m_vertices.push_back(vertex);
+                    }
 
-                            vertex.normal = glm::normalize(vert);
-                            m_vertices.push_back(vertex);
-                        }
-
-                        unsigned int offset = m_vertices.size() - cubeVertices.size();
-                        for (const auto &idx : cubeIndices)
-                        {
-                            m_indices.push_back(offset + idx);
-                        }
+                    unsigned int offset = m_vertices.size() - cubeVertices.size();
+                    for (const auto &idx : cubeIndices)
+                    {
+                        m_indices.push_back(offset + idx);
                     }
                 }
             }
@@ -472,9 +502,14 @@ namespace FAVE
                 sx * sy * sz * m_cells[x0][y0][z0].w + tx * sy * sz * m_cells[x1][y0][z0].w + tx * ty * sz * m_cells[x1][y1][z0].w + sx * ty * sz * m_cells[x0][y1][z0].w + sx * sy * tz * m_cells[x0][y0][z1].w + tx * sy * tz * m_cells[x1][y0][z1].w + tx * ty * tz * m_cells[x1][y1][z1].w + sx * ty * tz * m_cells[x0][y1][z1].w;
             break;
         case 3: // S FIELD
-            val =
-                sx * sy * sz * m_cells[x0][y0][z0].s + tx * sy * sz * m_cells[x1][y0][z0].s + tx * ty * sz * m_cells[x1][y1][z0].s + sx * ty * sz * m_cells[x0][y1][z0].s + sx * sy * tz * m_cells[x0][y0][z1].s + tx * sy * tz * m_cells[x1][y0][z1].s + tx * ty * tz * m_cells[x1][y1][z1].s + sx * ty * tz * m_cells[x0][y1][z1].s;
+            // log("x0: %d, y0: %d, z0: %d", x0, y0, z0);
+            // log("x1: %d, y1: %d, z1: %d", x1, y1, z1);
+            // log("tx: %f, ty: %f, tz: %f", tx, ty, tz);
+            // log("sx: %f, sy: %f, sz: %f", sx, sy, sz);
 
+            val =
+                sx * sy * sz * m_cells[x0][y0][z0].m + tx * sy * sz * m_cells[x1][y0][z0].m + tx * ty * sz * m_cells[x1][y1][z0].m + sx * ty * sz * m_cells[x0][y1][z0].m + sx * sy * tz * m_cells[x0][y0][z1].m + tx * sy * tz * m_cells[x1][y0][z1].m + tx * ty * tz * m_cells[x1][y1][z1].m + sx * ty * tz * m_cells[x0][y1][z1].m;
+            // log("val: %f", val);
             break;
         default:
 

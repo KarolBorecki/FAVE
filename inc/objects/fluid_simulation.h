@@ -22,7 +22,9 @@ namespace FAVE
         float v, u, w; // v - up/down vec, u - left/right vec, w - forward/backward vec
         float s;
         float p;
+        float m;
         float new_v, new_u, new_w;
+        float new_s;
         float new_m;
     };
 
@@ -51,7 +53,7 @@ namespace FAVE
         GridCell ***m_cells;
 
         uint16_t m_solver_steps = 20;
-        float m_over_relaxation = 1.2f;
+        float m_over_relaxation = 1.7f;
 
         float m_fluid_density = 1000.0f;
 
