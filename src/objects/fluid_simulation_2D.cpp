@@ -31,11 +31,20 @@ namespace FAVE
 
     void FluidSimulation2D::fixedUpdate(float p_fixed_delta_time)
     {
-        float time_step = find_time_step(p_fixed_delta_time);
+        float dt = find_time_step(p_fixed_delta_time);
         for (uint16_t i = 0; i < m_solver_steps; ++i)
         {
-            solve_incompresabillity(p_fixed_delta_time);
-            advect(p_fixed_delta_time);
+            for(uint16_t x = 1; x < m_size_x - 1; ++x)
+            {
+                for(uint16_t y = 1; y < m_size_y - 1; ++y)
+                {
+                    m_cells[x][y].p = 0.0f;
+                }
+            }
+
+            solve_incompresabillity(dt);
+            advect(dt);
+            extrapolate_velocity();
         }
     }
 
@@ -44,10 +53,9 @@ namespace FAVE
         recognise_geometry();
     }
 
-    void FluidSimulation2D::solve_incompresabillity(float p_fixed_delta_time)
+    void FluidSimulation2D::solve_incompresabillity(float p_dt)
     {
-        float dt = find_time_step(p_fixed_delta_time);
-        float cp = m_fluid_density * m_grid_size / dt;
+        float cp = m_fluid_density * m_grid_size / p_dt;
 
         for (uint8_t iter = 0; iter < m_solver_steps; iter++)
         {
@@ -102,38 +110,46 @@ namespace FAVE
         }
     }
 
-    void FluidSimulation2D::advect(float p_fixed_delta_time)
+    void FluidSimulation2D::advect(float p_dt)
     {
-        float dt = find_time_step(p_fixed_delta_time);
+        float h = m_grid_size;
+        float h2 = 0.5f * h;
 
         for (uint16_t i = 1; i < m_size_x - 1; i++)
         {
             for (uint16_t j = 1; j < m_size_y - 1; j++)
             {
-                if (m_cells[i][j].s == 0.0f)
+                m_cells[i][j].new_u = m_cells[i][j].u;
+                m_cells[i][j].new_v = m_cells[i][j].v;
+                // m_cells[i][j].new_s = m_cells[i][j].s;
+
+                if (m_cells[i][j].s == 0.0f && m_cells[i - 1][j].s == 0.0f)
                 {
-                    m_cells[i][j].new_u = 0.0f;
-                    m_cells[i][j].new_v = 0.0f;
-                    continue;
+                    float x = i * h;
+                    float y = j * h + h2;
+                    float u = avg_u(i, j);
+                    float v = m_cells[i][j].v;
+
+                    x = x - p_dt * u;
+                    y = y - p_dt * v;
+                    u = sample_field(x, y, FieldType_t::U_field);
+
+                    m_cells[i][j].new_u = u;
                 }
 
-                float u = m_cells[i][j].u;
-                float v = m_cells[i][j].v;
+                if (m_cells[i][j].s == 0.0f && m_cells[i][j - 1].s == 0.0f)
+                {
+                    float x = i * h + h2;
+                    float y = j * h;
+                    float u = m_cells[i][j].u;
+                    float v = avg_u(i, j);
 
-                float x = i - u * dt;
-                float y = j - v * dt;
+                    x = x - p_dt * u;
+                    y = y - p_dt * v;
+                    u = sample_field(x, y, FieldType_t::V_field);
 
-                if (x < 0.5f)
-                    x = 0.5f;
-                if (x > m_size_x - 1.5f)
-                    x = m_size_x - 1.5f;
-                if (y < 0.5f)
-                    y = 0.5f;
-                if (y > m_size_y - 1.5f)
-                    y = m_size_y - 1.5f;
-
-                m_cells[i][j].new_u = sample_field(x, y, FieldType_t::U_field);
-                m_cells[i][j].new_v = sample_field(x, y, FieldType_t::V_field);
+                    m_cells[i][j].new_v = v;
+                }
             }
         }
 
@@ -146,7 +162,32 @@ namespace FAVE
             }
         }
 
-        extrapolate_velocity();
+        // actually I advect s here too
+        for (uint16_t i = 1; i < m_size_x - 1; i++)
+        {
+            for (uint16_t j = 1; j < m_size_y - 1; j++)
+            {
+                if (m_cells[i][j].s != 0.0f)
+                {
+                    float u = avg_u(i, j);
+                    float v = avg_v(i, j);
+
+                    float x = i * h + h2 - p_dt * u;
+                    float y = j * h + h2 - p_dt * v;
+                    float s = sample_field(x, y, FieldType_t::S_field);
+
+                    m_cells[i][j].new_s = s;
+                }
+            }
+        }
+
+        for (uint16_t i = 1; i < m_size_x - 1; i++)
+        {
+            for (uint16_t j = 1; j < m_size_y - 1; j++)
+            {
+                m_cells[i][j].s = m_cells[i][j].new_s;
+            }
+        }
     }
 
     float FluidSimulation2D::sample_field(float p_x, float p_y, FieldType_t p_field)

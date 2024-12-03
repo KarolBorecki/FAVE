@@ -43,9 +43,9 @@ namespace FAVE
         float m_grid_size = 1.0f;
 
         float find_time_step(float p_fixed_delta_time);
-        void solve_incompresabillity(float p_fixed_delta_time);
+        void solve_incompresabillity(float p_dt);
         void extrapolate_velocity();
-        void advect(float p_fixed_delta_time);
+        void advect(float p_dt);
 
         void recognise_geometry(); // TODO: Implement this method
 

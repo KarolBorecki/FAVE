@@ -19,10 +19,10 @@ int main()
 
     FAVE::Scene scene;
 
-    FAVE::Shader shaderProgram("./resources/shaders/default.vert", "./resources/shaders/default.frag");
+    FAVE::Shader shaderProgram("/Users/karolborecki/repo/FAVE/resources/shaders/default.vert", "/Users/karolborecki/repo/FAVE/resources/shaders/default.frag");
 
-    FAVE::Texture planksDiffuse("./resources/textures/planks.png", FAVE::TextureType::DIFFUSE, 0, GL_RGBA, GL_UNSIGNED_BYTE);
-    FAVE::Texture planksSpecular("./resources/textures/planksSpec.png", FAVE::TextureType::SPECULAR, 1, GL_RED, GL_UNSIGNED_BYTE);
+    FAVE::Texture planksDiffuse("/Users/karolborecki/repo/FAVE//resources/textures/planks.png", FAVE::TextureType::DIFFUSE, 0, GL_RGBA, GL_UNSIGNED_BYTE);
+    FAVE::Texture planksSpecular("/Users/karolborecki/repo/FAVE//resources/textures/planksSpec.png", FAVE::TextureType::SPECULAR, 1, GL_RED, GL_UNSIGNED_BYTE);
 
     FAVE::Material material(shaderProgram, &planksDiffuse, &planksSpecular);
     // FAVE::Mesh floor(verts, ind, material);
@@ -41,9 +41,9 @@ int main()
     camera.setPosition({15.71f, 8.86f, 38.01f});
     camera.setOrientation({0.03f, 0.0f, -1.29f});
     FAVE::log("attaching camera to controller......");
-    camera.attach(&cameraController);
+    // camera.attach(&cameraController);
     FAVE::log("setting camera to controller......");
-    cameraController.m_camera = &camera;
+    // cameraController.m_camera = &camera;
 
     FAVE::log("adding objects to scene......");
     scene.setCamera(&camera);

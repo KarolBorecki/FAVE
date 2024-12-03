@@ -44,3 +44,8 @@ vgcore*
 # MacOs
 .DS_Store
 *.dSYM/
+
+# external
+# /external/*
+# /src/external/*
+# /inc/external/*
