@@ -27,6 +27,8 @@ namespace FAVE
         float new_v, new_u, new_w;
         float s;
         float new_s;
+        float m;
+        float new_m;
     } GridCell_t;
 
     typedef enum FielType : uint8_t
@@ -46,7 +48,7 @@ namespace FAVE
             m_window = glfwGetCurrentContext();
         }
 
-        void draw(float p_delta_time, Camera *p_camera, Light *p_light);
+        void draw(float p_delta_time, Camera *p_camera, Light *p_light) override;
 
         void destroy() override
         {
@@ -63,7 +65,7 @@ namespace FAVE
 
         float m_fluid_density = 1000.0f;
 
-        float m_grid_size = 1.0f;
+        float m_grid_size = 0.5f;
 
         static constexpr float GRAVITY{-9.8f};
     };

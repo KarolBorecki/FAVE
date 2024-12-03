@@ -28,7 +28,7 @@ int main()
     // FAVE::Mesh floor(verts, ind, material);
 
     FAVE::log("creating object......");
-    FAVE::FluidSimulation2D fluid(material, 0.2f, 1000.0f, 35, 11, 7);
+    FAVE::FluidSimulation2D fluid(material, 1000.0f, 0.25f, 120, 20, 10);
     fluid.setPosition({0.0f, 0.0f, 0.0f});
 
     FAVE::log("creating light......");
@@ -41,9 +41,9 @@ int main()
     camera.setPosition({15.71f, 8.86f, 38.01f});
     camera.setOrientation({0.03f, 0.0f, -1.29f});
     FAVE::log("attaching camera to controller......");
-    // camera.attach(&cameraController);
+    camera.attach(&cameraController);
     FAVE::log("setting camera to controller......");
-    // cameraController.m_camera = &camera;
+    cameraController.m_camera = &camera;
 
     FAVE::log("adding objects to scene......");
     scene.setCamera(&camera);

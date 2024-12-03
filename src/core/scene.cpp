@@ -4,9 +4,13 @@ namespace FAVE
 {
     void Scene::init()
     {
+        if (m_camera == nullptr)
+            throw std::runtime_error("Camera is not set");
         m_camera->start();
         m_camera->startScripts();
 
+        if (m_light == nullptr)
+            throw std::runtime_error("Light is not set");
         m_light->start();
         m_light->startScripts();
 

@@ -39,8 +39,7 @@ namespace FAVE
         GridCell_t **m_cells;
 
         uint16_t m_solver_steps = 20;
-        float m_over_relaxation = 1.7f;
-        float m_grid_size = 1.0f;
+        float m_over_relaxation = 1.9f;
 
         float find_time_step(float p_fixed_delta_time);
         void solve_incompresabillity(float p_dt);

@@ -83,7 +83,7 @@ namespace FAVE
         GLFWwindow *m_window{nullptr};
         Camera *m_camera{nullptr};
 
-        float m_speed = 0.01f;
+        float m_speed = 0.5f;
         float m_sensitivity = 80.0f;
 
     private:

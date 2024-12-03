@@ -3,7 +3,7 @@
 namespace FAVE
 {
     FluidSimulation2D::FluidSimulation2D(Material &p_material, float p_fluid_density, float p_grid_size, uint16_t p_size_x, uint16_t p_size_y, uint16_t p_water_level)
-        : FluidSimulation(p_material, p_fluid_density, m_grid_size), m_size_x(p_size_x), m_size_y(p_size_y), m_water_level(p_water_level)
+        : FluidSimulation::FluidSimulation(p_material, p_fluid_density, p_grid_size), m_size_x(p_size_x), m_size_y(p_size_y), m_water_level(p_water_level)
     {
         m_cells = new GridCell *[m_size_x];
         for (uint16_t x = 0; x < m_size_x; ++x)
@@ -20,11 +20,16 @@ namespace FAVE
                 m_cells[x][y].new_v = m_cells[x][y].v;
                 m_cells[x][y].new_w = m_cells[x][y].w;
 
-                m_cells[x][y].s = (y <= m_water_level) ? 1.0f : 0.0f;
-                m_cells[x][y].new_s = m_cells[x][y].s;
-
                 if (x == 0 || x == m_size_x - 1 || y == 0 || y == m_size_y - 1)
                     m_cells[x][y].s = 0.0f; // TODO this is not solid, this is air
+                    else if (y <= m_water_level)
+                        m_cells[x][y].s = 1.0f;
+                    else
+                        m_cells[x][y].s = 0.0f;
+                m_cells[x][y].new_s = m_cells[x][y].s;
+
+                if (x > 5 && x < m_size_x - 5 && y == m_water_level)
+                    m_cells[x][y].u = -12.0f;
             }
         }
     }
@@ -32,6 +37,7 @@ namespace FAVE
     void FluidSimulation2D::fixedUpdate(float p_fixed_delta_time)
     {
         float dt = find_time_step(p_fixed_delta_time);
+        dt = 0.0001f;
         for (uint16_t i = 0; i < m_solver_steps; ++i)
         {
             for(uint16_t x = 1; x < m_size_x - 1; ++x)
@@ -39,6 +45,8 @@ namespace FAVE
                 for(uint16_t y = 1; y < m_size_y - 1; ++y)
                 {
                     m_cells[x][y].p = 0.0f;
+                    if (m_cells[x][y].s != 0.0 && m_cells[x][y-1].s != 0.0)
+                        m_cells[x][y].u += dt * GRAVITY;
                 }
             }
 
@@ -64,10 +72,7 @@ namespace FAVE
                 for (uint16_t j = 1; j < m_size_y - 1; j++)
                 {
                     if (m_cells[i][j].s == 0.0f)
-                    {
-                        m_cells[i][j].p = 0.0f;
                         continue;
-                    }
 
                     float sx0 = m_cells[i - 1][j].s;
                     float sx1 = m_cells[i + 1][j].s;
@@ -75,16 +80,13 @@ namespace FAVE
                     float sy1 = m_cells[i][j + 1].s;
                     float s = sx0 + sx1 + sy0 + sy1;
                     if (s == 0.0f)
-                    {
-                        // m_cells[i][j].p = 0.0f;
                         continue;
-                    }
 
                     float div = (m_cells[i + 1][j].u - m_cells[i][j].u) + (m_cells[i][j + 1].v - m_cells[i][j].v);
                     float p = -div / s;
                     p *= m_over_relaxation;
 
-                    m_cells[i][j].p = p;
+                    m_cells[i][j].p += p * cp;
 
                     m_cells[i][j].u -= sx0 * p;
                     m_cells[i + 1][j].u += sx1 * p;
@@ -93,6 +95,8 @@ namespace FAVE
                 }
             }
         }
+        
+        log("cell[%d][%d] u = %.2f v = %.2f p = %.2f", 10, 10, m_cells[10][10].u, m_cells[10][10].v, m_cells[10][10].p);
     }
 
     void FluidSimulation2D::extrapolate_velocity()
@@ -115,20 +119,19 @@ namespace FAVE
         float h = m_grid_size;
         float h2 = 0.5f * h;
 
-        for (uint16_t i = 1; i < m_size_x - 1; i++)
+        for (uint16_t i = 1; i < m_size_x; i++)
         {
-            for (uint16_t j = 1; j < m_size_y - 1; j++)
+            for (uint16_t j = 1; j < m_size_y; j++)
             {
                 m_cells[i][j].new_u = m_cells[i][j].u;
                 m_cells[i][j].new_v = m_cells[i][j].v;
-                // m_cells[i][j].new_s = m_cells[i][j].s;
 
                 if (m_cells[i][j].s == 0.0f && m_cells[i - 1][j].s == 0.0f)
                 {
                     float x = i * h;
                     float y = j * h + h2;
-                    float u = avg_u(i, j);
-                    float v = m_cells[i][j].v;
+                    float u = m_cells[i][j].u;
+                    float v = avg_v(i, j);
 
                     x = x - p_dt * u;
                     y = y - p_dt * v;
@@ -141,8 +144,8 @@ namespace FAVE
                 {
                     float x = i * h + h2;
                     float y = j * h;
-                    float u = m_cells[i][j].u;
-                    float v = avg_u(i, j);
+                    float u = avg_u(i, j);
+                    float v = m_cells[i][j].v;
 
                     x = x - p_dt * u;
                     y = y - p_dt * v;
@@ -169,8 +172,8 @@ namespace FAVE
             {
                 if (m_cells[i][j].s != 0.0f)
                 {
-                    float u = avg_u(i, j);
-                    float v = avg_v(i, j);
+                    float u = (m_cells[i][j].u + m_cells[i + 1][j].u) * 0.5f;
+                    float v = (m_cells[i][j].v + m_cells[i + 1][j].v) * 0.5f;
 
                     float x = i * h + h2 - p_dt * u;
                     float y = j * h + h2 - p_dt * v;
@@ -188,37 +191,68 @@ namespace FAVE
                 m_cells[i][j].s = m_cells[i][j].new_s;
             }
         }
+        log("cell[%d][%d] u = %.2f v = %.2f s = %.2f", 10, 10, m_cells[10][10].u, m_cells[10][10].v, m_cells[10][10].s);
     }
 
     float FluidSimulation2D::sample_field(float p_x, float p_y, FieldType_t p_field)
     {
-        uint16_t x = (uint16_t)p_x;
-        uint16_t y = (uint16_t)p_y;
-        float fx = p_x - x;
-        float fy = p_y - y;
+        float h = m_grid_size;
+        float h2 = 0.5f * h;
+        float h1 = 1.0f / h;
+
+        float x = fmax(h, fmin(p_x, m_size_x * h));
+        float y = fmax(h, fmin(p_y, m_size_y * h));
+
+        float dx = 0.0f;
+        float dy = 0.0f;
 
         switch (p_field)
         {
         case FieldType_t::U_field:
-            return (1.0f - fx) * (1.0f - fy) * m_cells[x][y].u +
-                   fx * (1.0f - fy) * m_cells[x + 1][y].u +
-                   (1.0f - fx) * fy * m_cells[x][y + 1].u +
-                   fx * fy * m_cells[x + 1][y + 1].u;
+            dy = h2;
+            break;
         case FieldType_t::V_field:
-            return (1.0f - fx) * (1.0f - fy) * m_cells[x][y].v +
-                   fx * (1.0f - fy) * m_cells[x + 1][y].v +
-                   (1.0f - fx) * fy * m_cells[x][y + 1].v +
-                   fx * fy * m_cells[x + 1][y + 1].v;
+            dx=h2;
+            break; 
         case FieldType_t::W_field:
-            return (1.0f - fx) * (1.0f - fy) * m_cells[x][y].w +
-                   fx * (1.0f - fy) * m_cells[x + 1][y].w +
-                   (1.0f - fx) * fy * m_cells[x][y + 1].w +
-                   fx * fy * m_cells[x + 1][y + 1].w;
+            break;
         case FieldType_t::S_field:
-            return (1.0f - fx) * (1.0f - fy) * m_cells[x][y].s +
-                   fx * (1.0f - fy) * m_cells[x + 1][y].s +
-                   (1.0f - fx) * fy * m_cells[x][y + 1].s +
-                   fx * fy * m_cells[x + 1][y + 1].s;
+            dx=h2;
+            dy=h2;
+        default:
+            return 0.0f;
+        }
+
+        uint16_t x0 = fmin(m_size_x - 1, floor((x - dx) * h1));
+        float tx = ((x - dx) - x0 * h) * h1;
+        uint16_t x1 = fmin(x0 + 1, m_size_x - 1);
+
+        uint16_t y0 = fmin(m_size_y - 1, floor((y - dy) * h1));
+        float ty = ((y - dy) - y0 * h) * h1;
+        uint16_t y1 = fmin(y0 + 1, m_size_y - 1);
+
+        float sx = 1.0f - tx;
+        float sy = 1.0f - ty;
+
+        switch (p_field)
+        {
+        case FieldType_t::U_field:
+            return sx*sy*m_cells[x0][y0].u 
+            + tx*sy*m_cells[x1][y0].u 
+            + sx*ty*m_cells[x0][y1].u 
+            + tx*ty*m_cells[x1][y1].u;
+        case FieldType_t::V_field:
+            return sx*sy*m_cells[x0][y0].v
+            + tx*sy*m_cells[x1][y0].v
+            + sx*ty*m_cells[x0][y1].v
+            + tx*ty*m_cells[x1][y1].v;
+        case FieldType_t::W_field:
+            return 0.0f;
+        case FieldType_t::S_field:
+            return sx*sy*m_cells[x0][y0].s
+            + tx*sy*m_cells[x1][y0].s
+            + sx*ty*m_cells[x0][y1].s
+            + tx*ty*m_cells[x1][y1].s;
         default:
             return 0.0f;
         }
@@ -226,12 +260,12 @@ namespace FAVE
 
     float FluidSimulation2D::avg_u(uint16_t p_i, uint16_t p_j)
     {
-        return 0.25f * (m_cells[p_i][p_j].u + m_cells[p_i + 1][p_j].u + m_cells[p_i][p_j + 1].u + m_cells[p_i + 1][p_j + 1].u);
+        return 0.25f * (m_cells[p_i][p_j].u + m_cells[p_i-1][p_j].u + m_cells[p_i][p_j - 1].u + m_cells[p_i - 1][p_j - 1].u);
     }
 
     float FluidSimulation2D::avg_v(uint16_t p_i, uint16_t p_j)
     {
-        return 0.25f * (m_cells[p_i][p_j].v + m_cells[p_i + 1][p_j].v + m_cells[p_i][p_j + 1].v + m_cells[p_i + 1][p_j + 1].v);
+        return 0.25f * (m_cells[p_i][p_j].v + m_cells[p_i - 1][p_j].v + m_cells[p_i][p_j - 1].v + m_cells[p_i - 1][p_j - 1].v);
     }
 
     float FluidSimulation2D::find_time_step(float p_fixed_delta_time)
@@ -274,8 +308,9 @@ namespace FAVE
         {
             for (uint16_t y = 0; y < m_size_y; ++y)
             {
+                if (m_cells[x][y].s == 0.0f)
+                    continue;
                 glm::vec3 cubePos = glm::vec3(x, y, 0) * m_grid_size;
-
                 for (const auto &vert : cubeVertices)
                 {
                     Vertex vertex;
@@ -283,7 +318,9 @@ namespace FAVE
 
                     // Adjust color based on velocity
                     float speed = abs(glm::length(glm::vec3(m_cells[x][y].u, m_cells[x][y].v, m_cells[x][y].w)));
-                    vertex.color = glm::vec3(0.3f * speed + 0.1f, 0.3f * speed + 0.1f, 0.7f * speed + 0.1f);
+                    float integrator = 1.0f / speed;
+                    log("%d %d %.2f %.2f", x, y, speed, integrator);
+                    vertex.color = glm::vec3(1.0f * integrator, 1.0f * integrator, 1.0f * integrator);
 
                     vertex.normal = glm::normalize(vert);
                     m_vertices.push_back(vertex);
