@@ -1,11 +1,14 @@
 #ifndef FAVE_FLUID_SIMULATION_H
 #define FAVE_FLUID_SIMULATION_H
 
-#include <array>
-#include <cmath>
-#include <chrono>
-#include <time.h>
 #include <stdlib.h>
+#include <cmath>
+#include <time.h>
+#include <chrono>
+#include <array>
+#include <vector>
+
+#include <glm/glm.hpp>
 
 #include "buffers/vao.h"
 #include "buffers/vbo.h"
@@ -15,63 +18,54 @@
 #include "objects/render_object.h"
 #include "materials/material.h"
 
-#define FAVE_2D_FLUID_SIMULATION
-
 namespace FAVE
 {
-    struct GridCell
+    typedef struct GridCell
     {
-        float v, u, w; // v - up/down vec, u - left/right vec, w - forward/backward vec
-        float s;
         float p;
-        float m;
+        float v, u, w; // v - up/down vec, u - left/right vec, w - forward/backward vec
         float new_v, new_u, new_w;
+        float s;
         float new_s;
-        float new_m;
-    };
+    } GridCell_t;
 
+    typedef enum FielType : uint8_t
+    {
+        U_field = 0,
+        V_field = 1,
+        W_field = 2,
+        S_field = 3
+    } FieldType_t;
+
+    // TODO rename to GridFluidSimulation
     class FluidSimulation : public RenderObject
     {
     public:
-        FluidSimulation(Material &p_material, uint16_t p_size_x, uint16_t p_size_y, uint16_t p_size_z, uint16_t p_water_level, float p_grid_size);
-        ~FluidSimulation();
+        FluidSimulation(Material &p_material, float p_fluid_density, float p_grid_size) : m_material(p_material), m_fluid_density(p_fluid_density), m_grid_size(p_grid_size)
+        {
+            m_window = glfwGetCurrentContext();
+        }
 
         void draw(float p_delta_time, Camera *p_camera, Light *p_light);
-        void update_physics(float deltaTime);
 
-        void destroy();
+        void destroy() override
+        {
+            m_vao.destroy();
+        }
 
-    private:
+    protected:
         GLFWwindow *m_window{nullptr};
         Material &m_material;
-
-        uint16_t m_size_x;
-        uint16_t m_size_y;
-        uint16_t m_size_z;
-        uint16_t m_water_level;
-        float m_grid_size = 1.0f;
-
-        glm::vec3 m_gravity = glm::vec3(0.0f, -9.8f, 0.0f);
-        GridCell ***m_cells;
-
-        uint16_t m_solver_steps = 20;
-        float m_over_relaxation = 1.7f;
-
-        float m_fluid_density = 1000.0f;
-
-        // glm::vec3 m_sphereCenter = glm::vec3(10.0f, 10.0f, 10.0f);
-        // float m_sphereRadius = 5.0f;
-        // float m_collisionDamping = 0.9f;
 
         VAO m_vao;
         std::vector<Vertex> m_vertices;
         std::vector<GLuint> m_indices;
 
-        void recognise_geometry();
-        float sample_field(float p_x, float p_y, float p_z, uint8_t p_field); // 0 - U_field, 1 - V_field, 2 - N_field, 3 - S_field, 4 - P_field
-        float avg_u(uint16_t p_i, uint16_t p_j, uint16_t p_k);
-        float avg_v(uint16_t p_i, uint16_t p_j, uint16_t p_k);
-        float avg_w(uint16_t p_i, uint16_t p_j, uint16_t p_k);
+        float m_fluid_density = 1000.0f;
+
+        float m_grid_size = 1.0f;
+
+        static constexpr float GRAVITY{-9.8f};
     };
 }
 

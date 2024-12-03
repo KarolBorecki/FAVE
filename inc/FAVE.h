@@ -21,6 +21,8 @@
 #include "objects/render_object.h"
 #include "objects/mesh.h"
 #include "objects/fluid_simulation.h"
+#include "objects/fluid_simulation_2D.h"
+// #include "objects/fluid_simulation_3D.h"
 #include "objects/light.h"
 #include "objects/camera.h"
 

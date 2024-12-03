@@ -32,17 +32,27 @@ namespace FAVE
             p_script->attachTo(this);
         }
 
-        void start()
+        void startScripts()
         {
             for (auto &script : m_scripts)
                 script->start();
         }
 
-        void update(float p_delta_time)
+        void updateScripts(float p_delta_time)
         {
             for (auto &script : m_scripts)
                 script->update(p_delta_time);
         }
+
+        void fixedUpdateScripts(float p_fixed_delta_time)
+        {
+            for (auto &script : m_scripts)
+                script->fixedUpdate(p_fixed_delta_time);
+        }
+
+        virtual void start() {};
+        virtual void update(float p_delta_time) {};
+        virtual void fixedUpdate(float p_fixed_delta_time) {};
 
     protected:
         glm::vec3 m_scale = glm::vec3(1.0f, 1.0f, 1.0f);

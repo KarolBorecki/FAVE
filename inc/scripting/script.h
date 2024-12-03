@@ -19,6 +19,8 @@ namespace FAVE
 
         virtual void update(float p_delta_time) {};
 
+        virtual void fixedUpdate(float p_fixed_delta_time) {};
+
         void attachTo(Object *p_object) { m_object = p_object; }
 
     protected:

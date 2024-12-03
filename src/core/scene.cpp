@@ -5,20 +5,37 @@ namespace FAVE
     void Scene::init()
     {
         m_camera->start();
+        m_camera->startScripts();
+
         m_light->start();
+        m_light->startScripts();
+
         for (auto &object : m_objects)
+        {
             object->start();
+            object->startScripts();
+        }
     }
 
     void Scene::render(float p_delta_time) // TODO deltaTime
     {
         for (auto &object : m_objects)
         {
-            object->draw(p_delta_time, m_camera, m_light);
             object->update(p_delta_time); // TODO isnt it gonna slow down drawing process?
+            object->fixedUpdate(m_fixed_delta_time);
+            object->updateScripts(p_delta_time);
+            object->fixedUpdateScripts(m_fixed_delta_time);
+            object->draw(p_delta_time, m_camera, m_light);
 
             m_camera->update(p_delta_time);
+            m_camera->fixedUpdate(m_fixed_delta_time);
+            m_camera->updateScripts(p_delta_time);
+            m_camera->fixedUpdateScripts(m_fixed_delta_time);
+
             m_light->update(p_delta_time);
+            m_light->fixedUpdate(m_fixed_delta_time);
+            m_light->updateScripts(p_delta_time);
+            m_light->fixedUpdateScripts(m_fixed_delta_time);
         }
     }
 
