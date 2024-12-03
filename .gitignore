@@ -46,6 +46,6 @@ vgcore*
 *.dSYM/
 
 # external
-# /external/*
-# /src/external/*
-# /inc/external/*
+/external/*
+/src/external/*
+/inc/external/*
