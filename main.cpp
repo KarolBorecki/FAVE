@@ -1,5 +1,6 @@
 #include "FAVE.h"
 
+#define MAX_FILEPATH_LENGTH 100
 FAVE::Vertex vertices[] =
     { //               COORDINATES           /            COLORS          /           NORMALS         /       TEXTURE COORDINATES    //
         FAVE::Vertex{glm::vec3(-1.0f, 0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f), glm::vec2(0.0f, 0.0f)},
@@ -8,6 +9,21 @@ FAVE::Vertex vertices[] =
         FAVE::Vertex{glm::vec3(1.0f, 0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f), glm::vec2(1.0f, 0.0f)}};
 
 GLuint indices[] = {0, 1, 2, 0, 2, 3};
+
+char default_vertex_shader_path[MAX_FILEPATH_LENGTH];
+char default_fragment_shader_path[MAX_FILEPATH_LENGTH];
+char planks_texture_path[MAX_FILEPATH_LENGTH];
+char planks_specular_texture_path[MAX_FILEPATH_LENGTH];
+const char *get_resources_path(char *dest, const char *resource_name)
+{
+    memset(&(dest[0]), 0, strlen(dest));
+    FAVE::log("dest: \"%s\"", dest);
+    const char *resources_dir = "./resources/";
+    strcat(dest, resources_dir);
+    strcat(dest, resource_name);
+    FAVE::log("dest: \"%s\"", dest);
+    return dest;
+}
 
 int main()
 {
@@ -19,16 +35,16 @@ int main()
 
     FAVE::Scene scene;
 
-    FAVE::Shader shaderProgram("/Users/karolborecki/repo/FAVE/resources/shaders/default.vert", "/Users/karolborecki/repo/FAVE/resources/shaders/default.frag");
+    FAVE::Shader shaderProgram(get_resources_path(default_vertex_shader_path, "shaders/default.vert"), get_resources_path(default_fragment_shader_path, "shaders/default.frag"));
 
-    FAVE::Texture planksDiffuse("/Users/karolborecki/repo/FAVE//resources/textures/planks.png", FAVE::TextureType::DIFFUSE, 0, GL_RGBA, GL_UNSIGNED_BYTE);
-    FAVE::Texture planksSpecular("/Users/karolborecki/repo/FAVE//resources/textures/planksSpec.png", FAVE::TextureType::SPECULAR, 1, GL_RED, GL_UNSIGNED_BYTE);
+    FAVE::Texture planksDiffuse(get_resources_path(planks_texture_path, "textures/planks.png"), FAVE::TextureType::DIFFUSE, 0, GL_RGBA, GL_UNSIGNED_BYTE);
+    FAVE::Texture planksSpecular(get_resources_path(planks_specular_texture_path, "textures/planksSpec.png"), FAVE::TextureType::SPECULAR, 1, GL_RED, GL_UNSIGNED_BYTE);
 
     FAVE::Material material(shaderProgram, &planksDiffuse, &planksSpecular);
     // FAVE::Mesh floor(verts, ind, material);
 
     FAVE::log("creating object......");
-    FAVE::FluidSimulation2D fluid(material, 1000.0f, 0.25f, 120, 20, 10);
+    FAVE::FluidSimulation2D fluid(material, 1000.0f, 0.25f, 120, 70, 100);
     fluid.setPosition({0.0f, 0.0f, 0.0f});
 
     FAVE::log("creating light......");
