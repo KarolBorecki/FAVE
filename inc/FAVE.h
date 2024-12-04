@@ -33,3 +33,4 @@
 #include "core/core.h"
 
 #include "scripting/camera_controller.h"
+#include "scripting/fluid_controller.h"

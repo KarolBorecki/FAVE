@@ -16,5 +16,6 @@ namespace FAVE
             return (contents);
         }
         FAVE::throwError("Could not open file: %s", filename);
+        return "";
     }
 }

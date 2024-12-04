@@ -16,7 +16,7 @@ namespace FAVE
         {
             if (m_camera == nullptr)
             {
-                throwError("CameraController script requires a Camera component to be attached to the same GameObject.");
+                throwError("CameraController script requires a Camera component to be attached.");
             }
 
             m_window = glfwGetCurrentContext();
@@ -91,4 +91,4 @@ namespace FAVE
     };
 }
 
-#endif
+#endif // FAVE_CAMERA_CONTROLLER_H

@@ -44,7 +44,10 @@ int main()
     // FAVE::Mesh floor(verts, ind, material);
 
     FAVE::log("creating object......");
-    FAVE::FluidSimulation2D fluid(material, 1000.0f, 0.25f, 120, 70, 100);
+    FAVE::FluidController fluidController;
+    FAVE::FluidSimulation2D fluid(material, 1000.0f, 0.25f, 120, 70, 50);
+    fluid.attach(&fluidController);
+    fluidController.m_fluid = &fluid;
     fluid.setPosition({0.0f, 0.0f, 0.0f});
 
     FAVE::log("creating light......");

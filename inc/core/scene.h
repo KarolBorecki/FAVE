@@ -39,7 +39,7 @@ namespace FAVE
         uint16_t m_width{1};
         uint16_t m_height{1};
 
-        float m_fixed_delta_time{1.0f / 60.0f};
+        float m_fixed_delta_time{1.0f / 30.0f};
     };
 }
 

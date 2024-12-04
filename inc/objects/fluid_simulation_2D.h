@@ -31,6 +31,8 @@ namespace FAVE
         void update(float p_delta_time) override;
         void fixedUpdate(float p_fixed_delta_time) override;
 
+        void applyForce(glm::vec2 p_force, glm::vec2 p_position, float p_radius) override;
+
     private:
         uint16_t m_size_x;
         uint16_t m_size_y;
@@ -38,8 +40,8 @@ namespace FAVE
 
         GridCell_t **m_cells;
 
-        uint16_t m_solver_steps = 4;
-        float m_over_relaxation = 1.9f;
+        uint16_t m_solver_steps = 16;
+        float m_over_relaxation = 1.1f;
 
         float find_time_step(float p_fixed_delta_time);
         void solve_incompresabillity(float p_dt);

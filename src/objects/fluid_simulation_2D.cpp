@@ -1,5 +1,9 @@
 #include "objects/fluid_simulation_2D.h"
 
+// #define OBSERVE
+uint16_t observed_x = 60;
+uint16_t observed_y = 50;
+
 namespace FAVE
 {
     FluidSimulation2D::FluidSimulation2D(Material &p_material, float p_fluid_density, float p_grid_size, uint16_t p_size_x, uint16_t p_size_y, uint16_t p_water_level)
@@ -22,10 +26,10 @@ namespace FAVE
 
                 if (x == 0 || x == m_size_x - 1 || y == 0 || y == m_size_y - 1)
                     m_cells[x][y].s = 0.0f; // TODO this is not solid, this is air
-                    else if (y <= m_water_level)
-                        m_cells[x][y].s = 1.0f;
-                    else
-                        m_cells[x][y].s = 0.0f;
+                else if (y <= m_water_level)
+                    m_cells[x][y].s = 1.0f;
+                else
+                    m_cells[x][y].s = 0.0f;
                 m_cells[x][y].new_s = m_cells[x][y].s;
 
                 if (x > 5 && x < m_size_x - 5 && y == m_water_level)
@@ -37,16 +41,15 @@ namespace FAVE
     void FluidSimulation2D::fixedUpdate(float p_fixed_delta_time)
     {
         float dt = find_time_step(p_fixed_delta_time);
-        dt = 0.0001f;
         for (uint16_t i = 0; i < m_solver_steps; ++i)
         {
-            for(uint16_t x = 1; x < m_size_x - 1; ++x)
+            for (uint16_t x = 1; x < m_size_x - 1; ++x)
             {
-                for(uint16_t y = 1; y < m_size_y - 1; ++y)
+                for (uint16_t y = 1; y < m_size_y - 1; ++y)
                 {
                     m_cells[x][y].p = 0.0f;
-                    // if (m_cells[x][y].s != 0.0 && m_cells[x][y-1].s != 0.0)
-                        // m_cells[x][y].u += dt * GRAVITY;
+                    if (m_cells[x][y].s != 0.0 && m_cells[x][y - 1].s != 0.0)
+                        m_cells[x][y].v += dt * GRAVITY;
                 }
             }
 
@@ -61,7 +64,29 @@ namespace FAVE
         recognise_geometry();
     }
 
-    void FluidSimulation2D::solve_incompresabillity(float p_dt)
+    void FluidSimulation2D::applyForce(glm::vec2 p_force, glm::vec2 p_position, float p_radius)
+    {
+        uint16_t x0 = fmax(0, floor((p_position.x - p_radius)));
+        uint16_t x1 = fmin(m_size_x - 1, ceil((p_position.x + p_radius)));
+        uint16_t y0 = fmax(0, floor((p_position.y - p_radius)));
+        uint16_t y1 = fmin(m_size_y - 1, ceil((p_position.y + p_radius)));
+
+        for (uint16_t x = x0; x <= x1; ++x)
+        {
+            for (uint16_t y = y0; y <= y1; ++y)
+            {
+                if (m_cells[x][y].s == 0.0f)
+                    continue;
+                m_cells[x][y].u += p_force.x;
+                m_cells[x][y].u += p_force.y;
+
+                log("applied force to cella[%d][%d] u = %.2f v = %.2f s = %.2f", x, y, m_cells[x][y].u, m_cells[x][y].v, m_cells[x][y].s);
+            }
+        }
+    }
+
+    void
+    FluidSimulation2D::solve_incompresabillity(float p_dt)
     {
         float cp = m_fluid_density * m_grid_size / p_dt;
 
@@ -85,8 +110,10 @@ namespace FAVE
                     float div = (m_cells[i + 1][j].u - m_cells[i][j].u) + (m_cells[i][j + 1].v - m_cells[i][j].v);
                     float p = -div / s;
                     p *= m_over_relaxation;
-                    if (i == 10 && j == 10){
-                        log("cell[%d][%d] u = %.2f v = %.2f p = %.2f     pLoc = %.2f div = %.2f s = %.2f", 10, 10, m_cells[10][10].u, m_cells[10][10].v, m_cells[10][10].p, p, div, s);
+#ifdef OBSERVE
+                    if (i == observed_x && j == observed_y)
+                    {
+                        log("cell[%d][%d] u = %.2f v = %.2f p = %.2f     pLoc = %.2f div = %.2f s = %.2f", observed_x, observed_y, m_cells[observed_x][observed_y].u, m_cells[observed_x][observed_y].v, m_cells[observed_x][observed_y].p, p, div, s);
                         log("S:");
                         log("     %.2f     ", sy1);
                         log("%.2f %.2f %.2f", sx0, m_cells[i][j].s, sx1);
@@ -94,20 +121,21 @@ namespace FAVE
                         log("speeeeed:");
                         log("     %.2f     ", m_cells[i][j].v);
                         log("%.2f      %.2f", m_cells[i][j].u, m_cells[i + 1][j].u);
-                        log("     %.2f     ", m_cells[i][j-1].v);
+                        log("     %.2f     ", m_cells[i][j - 1].v);
                     }
+#endif
                     m_cells[i][j].p += p * cp;
 
                     m_cells[i][j].u -= sx0 * p;
                     m_cells[i + 1][j].u += sx1 * p;
                     m_cells[i][j].v -= sy0 * p;
                     m_cells[i][j + 1].v += sy1 * p;
-                    
                 }
             }
         }
-
+#ifdef OBSERVE
         log("--------------------");
+#endif
     }
 
     void FluidSimulation2D::extrapolate_velocity()
@@ -202,7 +230,9 @@ namespace FAVE
                 m_cells[i][j].m = m_cells[i][j].new_m;
             }
         }
-        log("cell[%d][%d] u = %.2f v = %.2f s = %.2f", 10, 10, m_cells[10][10].u, m_cells[10][10].v, m_cells[10][10].s);
+#ifdef OBSERVE
+        log("cell[%d][%d] u = %.2f v = %.2f s = %.2f", observed_x, observed_y, m_cells[observed_x][observed_y].u, m_cells[observed_x][observed_y].v, m_cells[observed_x][observed_y].s);
+#endif
     }
 
     float FluidSimulation2D::sample_field(float p_x, float p_y, FieldType_t p_field)
@@ -223,13 +253,13 @@ namespace FAVE
             dy = h2;
             break;
         case FieldType_t::V_field:
-            dx=h2;
-            break; 
+            dx = h2;
+            break;
         case FieldType_t::W_field:
             break;
         case FieldType_t::S_field:
-            dx=h2;
-            dy=h2;
+            dx = h2;
+            dy = h2;
         default:
             return 0.0f;
         }
@@ -248,22 +278,13 @@ namespace FAVE
         switch (p_field)
         {
         case FieldType_t::U_field:
-            return sx*sy*m_cells[x0][y0].u 
-            + tx*sy*m_cells[x1][y0].u 
-            + sx*ty*m_cells[x0][y1].u 
-            + tx*ty*m_cells[x1][y1].u;
+            return sx * sy * m_cells[x0][y0].u + tx * sy * m_cells[x1][y0].u + sx * ty * m_cells[x0][y1].u + tx * ty * m_cells[x1][y1].u;
         case FieldType_t::V_field:
-            return sx*sy*m_cells[x0][y0].v
-            + tx*sy*m_cells[x1][y0].v
-            + sx*ty*m_cells[x0][y1].v
-            + tx*ty*m_cells[x1][y1].v;
+            return sx * sy * m_cells[x0][y0].v + tx * sy * m_cells[x1][y0].v + sx * ty * m_cells[x0][y1].v + tx * ty * m_cells[x1][y1].v;
         case FieldType_t::W_field:
             return 0.0f;
         case FieldType_t::S_field:
-            return sx*sy*m_cells[x0][y0].s
-            + tx*sy*m_cells[x1][y0].s
-            + sx*ty*m_cells[x0][y1].s
-            + tx*ty*m_cells[x1][y1].s;
+            return sx * sy * m_cells[x0][y0].s + tx * sy * m_cells[x1][y0].s + sx * ty * m_cells[x0][y1].s + tx * ty * m_cells[x1][y1].s;
         default:
             return 0.0f;
         }
@@ -271,7 +292,7 @@ namespace FAVE
 
     float FluidSimulation2D::avg_u(uint16_t p_i, uint16_t p_j)
     {
-        return 0.25f * (m_cells[p_i][p_j].u + m_cells[p_i-1][p_j].u + m_cells[p_i][p_j - 1].u + m_cells[p_i - 1][p_j - 1].u);
+        return 0.25f * (m_cells[p_i][p_j].u + m_cells[p_i - 1][p_j].u + m_cells[p_i][p_j - 1].u + m_cells[p_i - 1][p_j - 1].u);
     }
 
     float FluidSimulation2D::avg_v(uint16_t p_i, uint16_t p_j)

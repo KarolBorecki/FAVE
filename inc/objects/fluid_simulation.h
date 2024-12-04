@@ -55,6 +55,8 @@ namespace FAVE
             m_vao.destroy();
         }
 
+        virtual void applyForce(glm::vec2 p_force, glm::vec2 p_position, float p_radius) = 0;
+
     protected:
         GLFWwindow *m_window{nullptr};
         Material &m_material;
