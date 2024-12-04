@@ -389,7 +389,7 @@ namespace FAVE
         {
             for (uint16_t y = 0; y < m_size_y; ++y)
             {
-                if (m_cells[x][y].s == 0.0f)
+                if (m_cells[x][y].s == 0.0f || m_cells[x][y].p < 0.0f)
                     continue;
                 glm::vec3 cubePos = glm::vec3(x, y, 0) * m_grid_size;
                 for (const auto &vert : cubeVertices)
