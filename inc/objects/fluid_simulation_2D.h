@@ -38,7 +38,7 @@ namespace FAVE
 
         GridCell_t **m_cells;
 
-        uint16_t m_solver_steps = 20;
+        uint16_t m_solver_steps = 4;
         float m_over_relaxation = 1.9f;
 
         float find_time_step(float p_fixed_delta_time);
@@ -51,6 +51,8 @@ namespace FAVE
         float sample_field(float p_x, float p_y, FieldType_t p_field);
         float avg_u(uint16_t p_i, uint16_t p_j);
         float avg_v(uint16_t p_i, uint16_t p_j);
+
+        std::array<float, 3> getSciColor(float val, float minVal, float maxVal);
     };
 }
 

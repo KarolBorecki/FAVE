@@ -29,7 +29,7 @@ namespace FAVE
                 m_cells[x][y].new_s = m_cells[x][y].s;
 
                 if (x > 5 && x < m_size_x - 5 && y == m_water_level)
-                    m_cells[x][y].u = -12.0f;
+                    m_cells[x][y].v = -10.0f;
             }
         }
     }
@@ -45,8 +45,8 @@ namespace FAVE
                 for(uint16_t y = 1; y < m_size_y - 1; ++y)
                 {
                     m_cells[x][y].p = 0.0f;
-                    if (m_cells[x][y].s != 0.0 && m_cells[x][y-1].s != 0.0)
-                        m_cells[x][y].u += dt * GRAVITY;
+                    // if (m_cells[x][y].s != 0.0 && m_cells[x][y-1].s != 0.0)
+                        // m_cells[x][y].u += dt * GRAVITY;
                 }
             }
 
@@ -85,18 +85,29 @@ namespace FAVE
                     float div = (m_cells[i + 1][j].u - m_cells[i][j].u) + (m_cells[i][j + 1].v - m_cells[i][j].v);
                     float p = -div / s;
                     p *= m_over_relaxation;
-
+                    if (i == 10 && j == 10){
+                        log("cell[%d][%d] u = %.2f v = %.2f p = %.2f     pLoc = %.2f div = %.2f s = %.2f", 10, 10, m_cells[10][10].u, m_cells[10][10].v, m_cells[10][10].p, p, div, s);
+                        log("S:");
+                        log("     %.2f     ", sy1);
+                        log("%.2f %.2f %.2f", sx0, m_cells[i][j].s, sx1);
+                        log("     %.2f     ", sy0);
+                        log("speeeeed:");
+                        log("     %.2f     ", m_cells[i][j].v);
+                        log("%.2f      %.2f", m_cells[i][j].u, m_cells[i + 1][j].u);
+                        log("     %.2f     ", m_cells[i][j-1].v);
+                    }
                     m_cells[i][j].p += p * cp;
 
                     m_cells[i][j].u -= sx0 * p;
                     m_cells[i + 1][j].u += sx1 * p;
                     m_cells[i][j].v -= sy0 * p;
                     m_cells[i][j + 1].v += sy1 * p;
+                    
                 }
             }
         }
-        
-        log("cell[%d][%d] u = %.2f v = %.2f p = %.2f", 10, 10, m_cells[10][10].u, m_cells[10][10].v, m_cells[10][10].p);
+
+        log("--------------------");
     }
 
     void FluidSimulation2D::extrapolate_velocity()
@@ -177,9 +188,9 @@ namespace FAVE
 
                     float x = i * h + h2 - p_dt * u;
                     float y = j * h + h2 - p_dt * v;
-                    float s = sample_field(x, y, FieldType_t::S_field);
+                    float m = sample_field(x, y, FieldType_t::S_field);
 
-                    m_cells[i][j].new_s = s;
+                    m_cells[i][j].new_m = m;
                 }
             }
         }
@@ -188,7 +199,7 @@ namespace FAVE
         {
             for (uint16_t j = 1; j < m_size_y - 1; j++)
             {
-                m_cells[i][j].s = m_cells[i][j].new_s;
+                m_cells[i][j].m = m_cells[i][j].new_m;
             }
         }
         log("cell[%d][%d] u = %.2f v = %.2f s = %.2f", 10, 10, m_cells[10][10].u, m_cells[10][10].v, m_cells[10][10].s);
@@ -285,6 +296,43 @@ namespace FAVE
         return time_step;
     }
 
+    std::array<float, 3> FluidSimulation2D::getSciColor(float val, float minVal, float maxVal)
+    {
+        val = fmin(fmax(val, minVal), maxVal - 0.0001);
+        float d = maxVal - minVal;
+        val = d == 0.0 ? 0.5 : (val - minVal) / d;
+        float m = 0.25;
+        uint8_t num = floor(val / m);
+        float s = (val - num * m) / m;
+        float r, g, b;
+
+        switch (num)
+        {
+        case 0:
+            r = 0.0;
+            g = s;
+            b = 1.0;
+            break;
+        case 1:
+            r = 0.0;
+            g = 1.0;
+            b = 1.0 - s;
+            break;
+        case 2:
+            r = s;
+            g = 1.0;
+            b = 0.0;
+            break;
+        case 3:
+            r = 1.0;
+            g = 1.0 - s;
+            b = 0.0;
+            break;
+        }
+
+        return {1.0f * r, 1.0f * g, 1.0f * b};
+    }
+
     void FluidSimulation2D::recognise_geometry()
     {
         m_vertices.clear();
@@ -303,6 +351,18 @@ namespace FAVE
             1, 5, 6, 6, 2, 1,
             3, 2, 6, 6, 7, 3,
             4, 5, 1, 1, 0, 4};
+        float min_p = m_cells[0][0].p;
+        float max_p = m_cells[0][0].p;
+        for (uint16_t x = 0; x < m_size_x; ++x)
+        {
+            for (uint16_t y = 0; y < m_size_y; ++y)
+            {
+                if (m_cells[x][y].p < min_p)
+                    min_p = m_cells[x][y].p;
+                if (m_cells[x][y].p > max_p)
+                    max_p = m_cells[x][y].p;
+            }
+        }
 
         for (uint16_t x = 0; x < m_size_x; ++x)
         {
@@ -316,11 +376,8 @@ namespace FAVE
                     Vertex vertex;
                     vertex.position = cubePos + vert * m_grid_size;
 
-                    // Adjust color based on velocity
-                    float speed = abs(glm::length(glm::vec3(m_cells[x][y].u, m_cells[x][y].v, m_cells[x][y].w)));
-                    float integrator = 1.0f / speed;
-                    log("%d %d %.2f %.2f", x, y, speed, integrator);
-                    vertex.color = glm::vec3(1.0f * integrator, 1.0f * integrator, 1.0f * integrator);
+                    std::array<float, 3> color = getSciColor(m_cells[x][y].p, min_p, max_p);
+                    vertex.color = glm::vec3(color[0], color[1], color[2]);
 
                     vertex.normal = glm::normalize(vert);
                     m_vertices.push_back(vertex);
