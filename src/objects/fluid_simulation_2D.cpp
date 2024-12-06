@@ -42,8 +42,8 @@ namespace FAVE
     {
         float dt = find_time_step(p_fixed_delta_time);
 
-        m_current_min_pressure = m_cells[0][0].p;
-        m_current_max_pressure = m_cells[0][0].p;
+        m_current_min_pressure = FLT_MAX;
+        m_current_max_pressure = FLT_MIN;
         float pressure_sum = 0.0f;
         for (uint16_t x = 0; x < m_size_x; ++x)
         {
@@ -148,17 +148,23 @@ namespace FAVE
                     m_cells[i + 1][j].u += sx1 * p;
                     m_cells[i][j].v -= sy0 * p;
                     m_cells[i][j + 1].v += sy1 * p;
-
-                    // if (m_cells[i][j].s != 0.0f)
-                    // {
-                    //     m_cells[i][j].p -= 0.1f * m_current_avg_pressure;
-                    // }
                 }
             }
         }
 #ifdef OBSERVE
         log("--------------------");
 #endif
+
+        // for (uint16_t i = 0; i < m_size_x; i++)
+        // {
+        //     for (uint16_t j = 0; j < m_size_y; j++)
+        //     {
+        //         if (m_cells[i][j].s != 0.0f)
+        //         {
+        //             m_cells[i][j].p -= 0.1f * m_current_avg_pressure;
+        //         }
+        //     }
+        // }
     }
 
     void FluidSimulation2D::extrapolate_velocity()
