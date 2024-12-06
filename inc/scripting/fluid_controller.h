@@ -31,7 +31,7 @@ namespace FAVE
         {
             if (glfwGetKey(m_window, GLFW_KEY_O) == GLFW_PRESS)
             {
-                log("O key pressed");
+                log("Applying force");
                 m_fluid->applyForce({0.0f, m_force}, {50.0f, 50.0f}, m_radius);
             }
         }
@@ -40,7 +40,7 @@ namespace FAVE
         GLFWwindow *m_window{nullptr};
         FluidSimulation *m_fluid{nullptr};
 
-        float m_force = 7.0f;
+        float m_force = 10.0f;
         float m_radius = 10.0f;
     };
 }

@@ -40,13 +40,18 @@ namespace FAVE
 
         GridCell_t **m_cells;
 
-        uint16_t m_solver_steps = 16;
-        float m_over_relaxation = 1.1f;
+        uint16_t m_solver_steps = 15;   // 40
+        float m_over_relaxation = 1.2f; // 1.9
+
+        float m_current_dt = 0.0f;
+        float m_current_avg_pressure = 0.0f;
+        float m_current_max_pressure = 0.0f;
+        float m_current_min_pressure = 0.0f;
 
         float find_time_step(float p_fixed_delta_time);
-        void solve_incompresabillity(float p_dt);
+        void solve_incompresabillity();
         void extrapolate_velocity();
-        void advect(float p_dt);
+        void advect();
 
         void recognise_geometry(); // TODO: Implement this method
 

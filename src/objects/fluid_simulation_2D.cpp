@@ -1,7 +1,7 @@
 #include "objects/fluid_simulation_2D.h"
 
 // #define OBSERVE
-uint16_t observed_x = 60;
+uint16_t observed_x = 50;
 uint16_t observed_y = 50;
 
 namespace FAVE
@@ -41,6 +41,24 @@ namespace FAVE
     void FluidSimulation2D::fixedUpdate(float p_fixed_delta_time)
     {
         float dt = find_time_step(p_fixed_delta_time);
+
+        m_current_min_pressure = m_cells[0][0].p;
+        m_current_max_pressure = m_cells[0][0].p;
+        float pressure_sum = 0.0f;
+        for (uint16_t x = 0; x < m_size_x; ++x)
+        {
+            for (uint16_t y = 0; y < m_size_y; ++y)
+            {
+                if (m_cells[x][y].p < m_current_min_pressure)
+                    m_current_min_pressure = m_cells[x][y].p;
+                if (m_cells[x][y].p > m_current_max_pressure)
+                    m_current_max_pressure = m_cells[x][y].p;
+
+                pressure_sum += m_cells[x][y].p;
+            }
+        }
+        m_current_avg_pressure = pressure_sum / (m_size_x * m_size_y);
+
         for (uint16_t i = 0; i < m_solver_steps; ++i)
         {
             for (uint16_t x = 1; x < m_size_x - 1; ++x)
@@ -53,8 +71,8 @@ namespace FAVE
                 }
             }
 
-            solve_incompresabillity(dt);
-            advect(dt);
+            solve_incompresabillity();
+            advect();
             extrapolate_velocity();
         }
     }
@@ -80,15 +98,15 @@ namespace FAVE
                 m_cells[x][y].u += p_force.x;
                 m_cells[x][y].u += p_force.y;
 
-                log("applied force to cella[%d][%d] u = %.2f v = %.2f s = %.2f", x, y, m_cells[x][y].u, m_cells[x][y].v, m_cells[x][y].s);
+                log("applied force to cella[%d][%d] u = %.2f v = %.2f s = %.2f p=%.2f", x, y, m_cells[x][y].u, m_cells[x][y].v, m_cells[x][y].s, m_cells[x][y].p);
             }
         }
     }
 
     void
-    FluidSimulation2D::solve_incompresabillity(float p_dt)
+    FluidSimulation2D::solve_incompresabillity()
     {
-        float cp = m_fluid_density * m_grid_size / p_dt;
+        float cp = m_fluid_density * m_grid_size / m_current_dt;
 
         for (uint8_t iter = 0; iter < m_solver_steps; iter++)
         {
@@ -130,6 +148,11 @@ namespace FAVE
                     m_cells[i + 1][j].u += sx1 * p;
                     m_cells[i][j].v -= sy0 * p;
                     m_cells[i][j + 1].v += sy1 * p;
+
+                    // if (m_cells[i][j].s != 0.0f)
+                    // {
+                    //     m_cells[i][j].p -= 0.1f * m_current_avg_pressure;
+                    // }
                 }
             }
         }
@@ -153,7 +176,7 @@ namespace FAVE
         }
     }
 
-    void FluidSimulation2D::advect(float p_dt)
+    void FluidSimulation2D::advect()
     {
         float h = m_grid_size;
         float h2 = 0.5f * h;
@@ -172,8 +195,8 @@ namespace FAVE
                     float u = m_cells[i][j].u;
                     float v = avg_v(i, j);
 
-                    x = x - p_dt * u;
-                    y = y - p_dt * v;
+                    x = x - m_current_dt * u;
+                    y = y - m_current_dt * v;
                     u = sample_field(x, y, FieldType_t::U_field);
 
                     m_cells[i][j].new_u = u;
@@ -186,8 +209,8 @@ namespace FAVE
                     float u = avg_u(i, j);
                     float v = m_cells[i][j].v;
 
-                    x = x - p_dt * u;
-                    y = y - p_dt * v;
+                    x = x - m_current_dt * u;
+                    y = y - m_current_dt * v;
                     u = sample_field(x, y, FieldType_t::V_field);
 
                     m_cells[i][j].new_v = v;
@@ -204,7 +227,7 @@ namespace FAVE
             }
         }
 
-        // actually I advect s here too
+        // actually I advect m here too
         for (uint16_t i = 1; i < m_size_x - 1; i++)
         {
             for (uint16_t j = 1; j < m_size_y - 1; j++)
@@ -214,8 +237,8 @@ namespace FAVE
                     float u = (m_cells[i][j].u + m_cells[i + 1][j].u) * 0.5f;
                     float v = (m_cells[i][j].v + m_cells[i + 1][j].v) * 0.5f;
 
-                    float x = i * h + h2 - p_dt * u;
-                    float y = j * h + h2 - p_dt * v;
+                    float x = i * h + h2 - m_current_dt * u;
+                    float y = j * h + h2 - m_current_dt * v;
                     float m = sample_field(x, y, FieldType_t::S_field);
 
                     m_cells[i][j].new_m = m;
@@ -230,6 +253,58 @@ namespace FAVE
                 m_cells[i][j].m = m_cells[i][j].new_m;
             }
         }
+        // // TODO rename x -> i and y -> j
+        // for (uint16_t x = 1; x < m_size_x - 1; ++x)
+        // {
+        //     for (uint16_t y = 1; y < m_size_y - 1; ++y)
+        //     {
+        //         m_cells[x][y].new_s = m_cells[x][y].s;
+        //         // Current cell position
+        //         glm::vec2 current_pos = glm::vec2(x * m_grid_size, y * m_grid_size);
+
+        //         // Velocity at the current cell
+        //         glm::vec2 vel = glm::vec2(m_cells[x][y].u, m_cells[x][y].v);
+
+        //         // Trace backward to find the previous position
+        //         glm::vec2 prev_pos = current_pos - m_current_dt * vel;
+
+        //         // Map the previous position to grid indices
+        //         float prev_x = prev_pos.x / m_grid_size;
+        //         float prev_y = prev_pos.y / m_grid_size;
+
+        //         // Clamp the position to stay within the grid bounds
+        //         prev_x = glm::clamp(prev_x, 1.0f, float(m_size_x - 2));
+        //         prev_y = glm::clamp(prev_y, 1.0f, float(m_size_y - 2));
+
+        //         // Interpolate the scalar value at the previous position
+        //         int i0 = int(prev_x);
+        //         int j0 = int(prev_y);
+        //         int i1 = i0 + 1;
+        //         int j1 = j0 + 1;
+
+        //         float sx = prev_x - i0;
+        //         float sy = prev_y - j0;
+
+        //         // Bi-linear interpolation
+        //         float interpolated_value =
+        //             (1 - sx) * (1 - sy) * m_cells[i0][j0].s +
+        //             (1 - sx) * sy * m_cells[i0][j1].s +
+        //             sx * (1 - sy) * m_cells[i1][j0].s +
+        //             sx * sy * m_cells[i1][j1].s;
+
+        //         // Update the scalar field
+        //         m_cells[x][y].new_s = interpolated_value;
+        //     }
+        // }
+
+        // for (uint16_t x = 1; x < m_size_x - 1; ++x)
+        // {
+        //     for (uint16_t y = 1; y < m_size_y - 1; ++y)
+        //     {
+        //         m_cells[x][y].s = m_cells[x][y].new_s;
+        //     }
+        // }
+
 #ifdef OBSERVE
         log("cell[%d][%d] u = %.2f v = %.2f s = %.2f", observed_x, observed_y, m_cells[observed_x][observed_y].u, m_cells[observed_x][observed_y].v, m_cells[observed_x][observed_y].s);
 #endif
@@ -302,6 +377,7 @@ namespace FAVE
 
     float FluidSimulation2D::find_time_step(float p_fixed_delta_time)
     {
+        const float CFL = 0.5f;
         float max_vel = 0.0f;
         for (uint16_t x = 1; x < m_size_x - 1; ++x)
         {
@@ -313,8 +389,11 @@ namespace FAVE
             }
         }
 
-        float time_step = m_grid_size / max_vel;
-        return time_step;
+        m_current_dt = CFL * (m_grid_size / max_vel);
+        m_current_dt = p_fixed_delta_time;
+        m_current_dt = (m_grid_size / max_vel);
+
+        return m_current_dt;
     }
 
     std::array<float, 3> FluidSimulation2D::getSciColor(float val, float minVal, float maxVal)
@@ -372,32 +451,31 @@ namespace FAVE
             1, 5, 6, 6, 2, 1,
             3, 2, 6, 6, 7, 3,
             4, 5, 1, 1, 0, 4};
-        float min_p = m_cells[0][0].p;
-        float max_p = m_cells[0][0].p;
-        for (uint16_t x = 0; x < m_size_x; ++x)
-        {
-            for (uint16_t y = 0; y < m_size_y; ++y)
-            {
-                if (m_cells[x][y].p < min_p)
-                    min_p = m_cells[x][y].p;
-                if (m_cells[x][y].p > max_p)
-                    max_p = m_cells[x][y].p;
-            }
-        }
 
+        log("min_p = %.2f max_p = %.2f avg_p = %.2f", m_current_min_pressure, m_current_max_pressure, m_current_avg_pressure);
         for (uint16_t x = 0; x < m_size_x; ++x)
         {
             for (uint16_t y = 0; y < m_size_y; ++y)
             {
-                if (m_cells[x][y].s == 0.0f || m_cells[x][y].p < 0.0f)
-                    continue;
+                // if (m_cells[x][y].s == 0.0f)
+                //     continue;
                 glm::vec3 cubePos = glm::vec3(x, y, 0) * m_grid_size;
                 for (const auto &vert : cubeVertices)
                 {
                     Vertex vertex;
                     vertex.position = cubePos + vert * m_grid_size;
 
-                    std::array<float, 3> color = getSciColor(m_cells[x][y].p, min_p, max_p);
+                    std::array<float, 3> color = getSciColor(m_cells[x][y].p, m_current_min_pressure, m_current_max_pressure);
+#ifdef OBSERVE
+                    if (x == observed_x && y == observed_y)
+                    {
+                        color = {1.0f, 1.0f, 1.0f};
+                    }
+#endif
+                    if (m_cells[x][y].s == 0.0f)
+                    {
+                        color = {0.1f, 0.1f, 0.1f};
+                    }
                     vertex.color = glm::vec3(color[0], color[1], color[2]);
 
                     vertex.normal = glm::normalize(vert);
