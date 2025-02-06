@@ -4,6 +4,7 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <array>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -15,34 +16,71 @@
 #include "inc/buffers/vbo.h"
 #include "inc/buffers/ebo.h"
 
-struct Config
+bool first_input_click = true;
+
+struct CoreConfig
 {
+    uint32_t window_width = 1200;
+    uint32_t window_height = 900;
+};
+
+struct Camera
+{
+    glm::vec3 position = glm::vec3(15.71f, 8.86f, 38.01f);
+    glm::vec3 direction = glm::vec3(0.0f, 0.0f, -1.0f);
+    glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
+
     float fov = 45.0f;
     float near_plane = 0.1f;
     float far_plane = 100.0f;
-    uint32_t window_width = 1200;
-    uint32_t window_height = 900;
-    glm::vec3 camera_position = glm::vec3(15.71f, 8.86f, 38.01f);
-    glm::vec3 camera_up = glm::vec3(0.0f, 1.0f, 0.0f);
-    glm::vec3 camera_direction = glm::vec3(0.0f, 0.0f, -1.0f);
+
+    float speed = 0.05f;
+    float sensitivity = 100.0f;
 };
 
-Config config;
+struct GridCell
+{
+    float p;
+    float v, u, w; // v - up/down vec, u - left/right vec, w - forward/backward vec
+    float new_v, new_u, new_w;
+    float s;
+    float new_s;
+    float m;
+    float new_m;
+};
+
+struct Marker
+{
+    glm::vec3 position;
+    glm::vec3 velocity;
+    float pressure;
+};
+
+struct MacGrid
+{
+    std::vector<std::vector<GridCell>> cells;
+    std::vector<Marker> markers;
+    uint16_t size_x;
+    uint16_t size_y;
+    float cell_size;
+};
+
+CoreConfig config;
+Camera camera;
+MacGrid mac;
+
 GLFWwindow *window;
 GLuint shaderProgram;
 
-std::vector<Vertex> vertices = {
-    {{-1.0f, 0.0f, 1.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}},
-    {{-1.0f, 0.0f, -1.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
-    {{1.0f, 0.0f, -1.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
-    {{1.0f, 0.0f, 1.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 0.0f}}};
-std::vector<GLuint> indices = {0, 1, 2, 0, 2, 3};
+std::vector<Vertex> vertices = {};
+std::vector<GLuint> indices = {};
 
 std::string loadShaderFile(const char *filename);
 bool initializeWindow();
 GLuint createShaderProgram();
-void setupBuffers(VAO &vao, VBO &vbo, EBO &ebo);
+void setupBuffers(VAO &vao);
 void processInput();
+void transformGridToVerticies();
 void render(VAO &vao);
 void cleanup();
 
@@ -148,6 +186,141 @@ void processInput()
     {
         glfwSetWindowShouldClose(window, true);
     }
+
+    float camera_speed = camera.speed;
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+        camera.position += camera_speed * camera.direction;
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+        camera.position -= camera_speed * camera.direction;
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        camera.position -= glm::normalize(glm::cross(camera.direction, camera.up)) * camera_speed;
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        camera.position += glm::normalize(glm::cross(camera.direction, camera.up)) * camera_speed;
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+        camera.position += camera_speed * camera.up;
+    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+        camera.position -= camera_speed * camera.up;
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
+    {
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+
+        if (first_input_click)
+        {
+            glfwSetCursorPos(window, config.window_width / 2, config.window_height / 2);
+            first_input_click = false;
+        }
+
+        double mouse_x, mouse_y;
+        glfwGetCursorPos(window, &mouse_x, &mouse_y);
+
+        float rot_x = camera.sensitivity * (float)(mouse_y - (config.window_height / 2)) / config.window_height;
+        float rot_y = camera.sensitivity * (float)(mouse_x - (config.window_width / 2)) / config.window_width;
+
+        glm::quat rotation_quat_x = glm::angleAxis(glm::radians(-rot_x), glm::normalize(glm::cross(camera.direction, camera.up)));
+        glm::vec3 new_orientation = rotation_quat_x * camera.direction;
+
+        float dot_product = glm::dot(new_orientation, camera.up);
+        if (glm::abs(glm::degrees(glm::acos(dot_product)) - 90.0f) <= 85.0f)
+        {
+            camera.direction = new_orientation;
+        }
+
+        glm::quat rotation_quat_y = glm::angleAxis(glm::radians(-rot_y), camera.up);
+        camera.direction = rotation_quat_y * camera.direction;
+
+        glfwSetCursorPos(window, config.window_width / 2, config.window_height / 2);
+    }
+    else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE)
+    {
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        first_input_click = true;
+    }
+}
+
+std::array<float, 3> getSciColor(float val, float minVal, float maxVal)
+{
+    val = fmin(fmax(val, minVal), maxVal - 0.0001);
+    float d = maxVal - minVal;
+    val = d == 0.0 ? 0.5 : (val - minVal) / d;
+    float m = 0.25;
+    uint8_t num = floor(val / m);
+    float s = (val - num * m) / m;
+    float r, g, b;
+
+    switch (num)
+    {
+    case 0:
+        r = 0.0;
+        g = s;
+        b = 1.0;
+        break;
+    case 1:
+        r = 0.0;
+        g = 1.0;
+        b = 1.0 - s;
+        break;
+    case 2:
+        r = s;
+        g = 1.0;
+        b = 0.0;
+        break;
+    case 3:
+        r = 1.0;
+        g = 1.0 - s;
+        b = 0.0;
+        break;
+    }
+
+    return {1.0f * r, 1.0f * g, 1.0f * b};
+}
+
+void transformGridToVerticies()
+{
+    vertices.clear();
+    indices.clear();
+
+    std::array<glm::vec3, 8> cubeVertices = {
+        glm::vec3(-0.5f, -0.5f, -0.5f), glm::vec3(0.5f, -0.5f, -0.5f),
+        glm::vec3(0.5f, 0.5f, -0.5f), glm::vec3(-0.5f, 0.5f, -0.5f),
+        glm::vec3(-0.5f, -0.5f, 0.5f), glm::vec3(0.5f, -0.5f, 0.5f),
+        glm::vec3(0.5f, 0.5f, 0.5f), glm::vec3(-0.5f, 0.5f, 0.5f)};
+
+    std::array<unsigned int, 36> cubeIndices = {
+        0, 1, 2, 2, 3, 0,
+        4, 5, 6, 6, 7, 4,
+        4, 0, 3, 3, 7, 4,
+        1, 5, 6, 6, 2, 1,
+        3, 2, 6, 6, 7, 3,
+        4, 5, 1, 1, 0, 4};
+
+    for (uint16_t x = 0; x < mac.size_x; ++x)
+    {
+        for (uint16_t y = 0; y < mac.size_y; ++y)
+        {
+            glm::vec3 cubePos = glm::vec3(x, y, 0) * mac.cell_size;
+            for (const auto &vert : cubeVertices)
+            {
+                Vertex vertex;
+                vertex.position = cubePos + vert * mac.cell_size;
+
+                std::array<float, 3> color = getSciColor(mac.cells[x][y].p, -100.0f, 100.0f);
+                if (mac.cells[x][y].s == 0.0f)
+                {
+                    color = {0.1f, 0.1f, 0.1f};
+                }
+                vertex.color = glm::vec3(color[0], color[1], color[2]);
+
+                vertex.normal = glm::normalize(vert);
+                vertices.push_back(vertex);
+            }
+
+            unsigned int offset = vertices.size() - cubeVertices.size();
+            for (const auto &idx : cubeIndices)
+            {
+                indices.push_back(offset + idx);
+            }
+        }
+    }
 }
 
 void render(VAO &vao)
@@ -155,11 +328,11 @@ void render(VAO &vao)
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glm::mat4 view = glm::lookAt(config.camera_position, config.camera_position + config.camera_direction, config.camera_up);
-    glm::mat4 projection = glm::perspective(glm::radians(config.fov),
+    glm::mat4 view = glm::lookAt(camera.position, camera.position + camera.direction, camera.up);
+    glm::mat4 projection = glm::perspective(glm::radians(camera.fov),
                                             (float)config.window_width / (float)config.window_height,
-                                            config.near_plane,
-                                            config.far_plane);
+                                            camera.near_plane,
+                                            camera.far_plane);
     glm::mat4 cameraMatrix = projection * view;
 
     glUseProgram(shaderProgram);
