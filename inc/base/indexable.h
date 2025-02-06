@@ -3,18 +3,15 @@
 
 #include "base/indexable.h"
 
-namespace FAVE
+class Indexable
 {
-    class Indexable
-    {
-    public:
-        Indexable() = default;
+public:
+    Indexable() = default;
 
-        GLuint id() const { return m_ID; }
+    GLuint id() const { return m_ID; }
 
-    protected:
-        GLuint m_ID;
-    };
-}
+protected:
+    GLuint m_ID;
+};
 
 #endif // FAVE_INDEXABLE_H

@@ -3,23 +3,19 @@
 
 #include <glad/glad.h>
 
-#include "logging/logger.h"
 #include "buffers/buffer.h"
 #include "buffers/vbo.h"
 
-namespace FAVE
+class VAO : public Buffer
 {
-	class VAO : public Buffer
-	{
-	public:
-		VAO();
+public:
+	VAO();
 
-		void bind() override;
-		void unbind() override;
-		void destroy() override;
+	void bind() override;
+	void unbind() override;
+	void destroy() override;
 
-		void linkAttrib(VBO &p_VBO, GLuint p_layout, GLuint p_num_components, GLenum p_type, GLsizeiptr p_stride, void *p_offset);
-	};
-}
+	void linkAttrib(VBO &p_VBO, GLuint p_layout, GLuint p_num_components, GLenum p_type, GLsizeiptr p_stride, void *p_offset);
+};
 
 #endif // FAVE_VAO_H

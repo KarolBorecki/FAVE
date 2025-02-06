@@ -6,21 +6,24 @@
 #include <glm/glm.hpp>
 #include <glad/glad.h>
 
-#include "logging/logger.h"
-#include "base/definitions.h"
 #include "buffers/buffer.h"
 
-namespace FAVE
+struct Vertex
 {
-	class VBO : public Buffer
-	{
-	public:
-		VBO(std::vector<Vertex> &p_vertices);
+	glm::vec3 position;
+	glm::vec3 normal;
+	glm::vec3 color;
+	glm::vec2 texUV;
+};
 
-		void bind() override;
-		void unbind() override;
-		void destroy() override;
-	};
-}
+class VBO : public Buffer
+{
+public:
+	VBO(std::vector<Vertex> &p_vertices);
+
+	void bind() override;
+	void unbind() override;
+	void destroy() override;
+};
 
 #endif // FAVE_VBO_H

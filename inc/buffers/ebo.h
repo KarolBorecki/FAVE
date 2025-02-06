@@ -5,20 +5,16 @@
 
 #include <glad/glad.h>
 
-#include "logging/logger.h"
 #include "buffers/buffer.h"
 
-namespace FAVE
+class EBO : public Buffer
 {
-	class EBO : public Buffer
-	{
-	public:
-		EBO(std::vector<GLuint> &indices);
+public:
+	EBO(std::vector<GLuint> &indices);
 
-		void bind() override;
-		void unbind() override;
-		void destroy() override;
-	};
-}
+	void bind() override;
+	void unbind() override;
+	void destroy() override;
+};
 
 #endif // FAVE_EBO_H
