@@ -31,6 +31,13 @@ namespace FAVE
         float new_m;
     } GridCell_t;
 
+    typedef struct Marker
+    {
+        glm::vec3 position;
+        glm::vec3 velocity;
+        float pressure;
+    } Marker_t;
+
     typedef enum FielType : uint8_t
     {
         U_field = 0,

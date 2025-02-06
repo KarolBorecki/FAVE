@@ -37,28 +37,34 @@ namespace FAVE
         uint16_t m_size_x;
         uint16_t m_size_y;
         uint16_t m_water_level;
+        float h = 0.0f;
+        float h_inv = 0.0f;
 
         GridCell_t **m_cells;
 
-        uint16_t m_solver_steps = 15;   // 40
-        float m_over_relaxation = 1.2f; // 1.9
+        uint16_t m_solver_steps = 15;
+        float m_over_relaxation = 1.9f;
+        float m_flip_coefficient = 0.9f;
 
         float m_current_dt = 0.0f;
         float m_current_avg_pressure = 0.0f;
         float m_current_max_pressure = 0.0f;
         float m_current_min_pressure = 0.0f;
 
-        float find_time_step(float p_fixed_delta_time);
-        void solve_incompresabillity();
-        void extrapolate_velocity();
-        void advect();
 
+        // numerical calculation methods to solve fluid
+        void integrate_particles();
+        void push_particles_apart();
+        void handle_particle_collision();
+        void transfer_velocities();
+        void update_particle_density();
+        void solve_incompresabillity();
+
+        // methods to visualize the fluid
         void recognise_geometry(); // TODO: Implement this method
 
-        float sample_field(float p_x, float p_y, FieldType_t p_field);
-        float avg_u(uint16_t p_i, uint16_t p_j);
-        float avg_v(uint16_t p_i, uint16_t p_j);
-
+        // methods utils
+        float find_time_step(float p_fixed_delta_time);
         std::array<float, 3> getSciColor(float val, float minVal, float maxVal);
     };
 }

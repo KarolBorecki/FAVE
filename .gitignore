@@ -49,3 +49,6 @@ vgcore*
 /external/*
 /src/external/*
 /inc/external/*
+
+# temporary
+/tmp
