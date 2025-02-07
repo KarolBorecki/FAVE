@@ -2,20 +2,19 @@
 #define FAVE_VAO_H
 
 #include <glad/glad.h>
+#include <stdlib.h>
 
-#include "buffers/buffer.h"
-#include "buffers/vbo.h"
+#include "vbo.h"
 
-class VAO : public Buffer
+typedef struct
 {
-public:
-	VAO();
+	GLuint ID;
+} VAO;
 
-	void bind() override;
-	void unbind() override;
-	void destroy() override;
-
-	void linkAttrib(VBO &p_VBO, GLuint p_layout, GLuint p_num_components, GLenum p_type, GLsizeiptr p_stride, void *p_offset);
-};
+void VAO_init(VAO *vao);
+void VAO_linkAttrib(GLuint layout, GLuint num_components, GLenum type, GLsizeiptr stride, void *offset);
+void VAO_bind(VAO *vao);
+void VAO_unbind();
+void VAO_destroy(VAO *vao);
 
 #endif // FAVE_VAO_H

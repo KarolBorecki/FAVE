@@ -1,7 +1,7 @@
 TARGET = FAVE
 
-CXX = g++
-CXXFLAGS = -g -Wall -std=c++20 -Iinc -Iinc/external #TODO remove -g
+CC = g++
+CFLAGS = -g -Wall -Iinc -Iinc/external #TODO remove -g
 
 LIBS = -ldl -lglfw -lGL 
 
@@ -9,17 +9,17 @@ SRC_DIR = src
 OBJ_DIR = build
 INC_DIR = inc
 
-SRCS := $(wildcard $(SRC_DIR)/**/*.cpp) $(SRC_DIR)/external/glad.c $(SRC_DIR)/external/stb/stb.cpp ./main.cpp
-OBJS := $(patsubst $(SRC_DIR)/%.cpp,$(OBJ_DIR)/%.o,$(SRCS))
+SRCS := $(wildcard $(SRC_DIR)/**/*.c) $(wildcard $(SRC_DIR)/*.c) $(SRC_DIR)/external/glad.c $(SRC_DIR)/external/stb/stb.cpp ./main.c
+OBJS := $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/%.o,$(SRCS))
 
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	@mkdir -p $(dir $@)
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -c $< -o $@
 
 $(OBJ_DIR):
 	@mkdir -p $(OBJ_DIR)

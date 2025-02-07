@@ -1,12 +1,13 @@
 #ifndef FAVE_VBO_H
 #define FAVE_VBO_H
 
-#include <vector>
-
-#include <glm/glm.hpp>
 #include <glad/glad.h>
+#include <glm/glm.hpp>
 
-#include "buffers/buffer.h"
+typedef struct
+{
+	GLuint ID;
+} VBO;
 
 struct Vertex
 {
@@ -16,14 +17,10 @@ struct Vertex
 	glm::vec2 texUV;
 };
 
-class VBO : public Buffer
-{
-public:
-	VBO(std::vector<Vertex> &p_vertices);
-
-	void bind() override;
-	void unbind() override;
-	void destroy() override;
-};
+void VBO_init(VBO *vbo, size_t size);
+void VBO_bind(VBO *vbo);
+void VBO_update(VBO *vbo, Vertex *vertices, size_t size);
+void VBO_unbind();
+void VBO_destroy(VBO *vbo);
 
 #endif // FAVE_VBO_H

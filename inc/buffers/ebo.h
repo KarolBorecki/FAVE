@@ -1,20 +1,18 @@
 #ifndef FAVE_EBO_H
 #define FAVE_EBO_H
 
-#include <vector>
-
 #include <glad/glad.h>
+#include <stdlib.h>
 
-#include "buffers/buffer.h"
-
-class EBO : public Buffer
+typedef struct
 {
-public:
-	EBO(std::vector<GLuint> &indices);
+	GLuint ID;
+} EBO;
 
-	void bind() override;
-	void unbind() override;
-	void destroy() override;
-};
+void EBO_init(EBO *ebo, size_t size);
+void EBO_bind(EBO *ebo);
+void EBO_update(EBO *ebo, GLuint *indices, size_t size);
+void EBO_unbind();
+void EBO_destroy(EBO *ebo);
 
 #endif // FAVE_EBO_H
