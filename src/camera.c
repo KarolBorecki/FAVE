@@ -1,56 +1,92 @@
 #include "camera.h"
 
-void processCameraInput(GLFWwindow *window, Camera &camera)
+void Camera_init(Camera *camera, GLFWwindow *window, float fov, float near, float far)
 {
     int window_width, window_height;
     glfwGetWindowSize(window, &window_width, &window_height);
+    camera->projection_mat = glm::perspective(glm::radians(fov), (float)window_width / (float)window_height, near, far);
+    camera->view_mat = glm::lookAt(camera->position, camera->position + camera->direction, camera->up);
+    camera->cam_mat = camera->projection_mat * camera->view_mat;
+}
 
-    float camera_speed = camera.speed;
+void Camera_processInput(Camera *camera, GLFWwindow *window)
+{
+    uint8_t update_mat = false;
+    int window_width, window_height;
+    glfwGetWindowSize(window, &window_width, &window_height);
+
+    float camera_speed = camera->speed;
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        camera.position += camera_speed * camera.direction;
+    {
+        camera->position += camera_speed * camera->direction;
+        update_mat = true;
+    }
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        camera.position -= camera_speed * camera.direction;
+    {
+        camera->position -= camera_speed * camera->direction;
+        update_mat = true;
+    }
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        camera.position -= glm::normalize(glm::cross(camera.direction, camera.up)) * camera_speed;
+    {
+        camera->position -= glm::normalize(glm::cross(camera->direction, camera->up)) * camera_speed;
+        update_mat = true;
+    }
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        camera.position += glm::normalize(glm::cross(camera.direction, camera.up)) * camera_speed;
+    {
+        camera->position += glm::normalize(glm::cross(camera->direction, camera->up)) * camera_speed;
+        update_mat = true;
+    }
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-        camera.position += camera_speed * camera.up;
+    {
+        camera->position += camera_speed * camera->up;
+        update_mat = true;
+    }
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-        camera.position -= camera_speed * camera.up;
+    {
+        camera->position -= camera_speed * camera->up;
+        update_mat = true;
+    }
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
     {
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 
-        if (camera.first_input_click)
+        if (camera->first_input_click)
         {
             glfwSetCursorPos(window, window_width / 2, window_height / 2);
-            camera.first_input_click = false;
+            camera->first_input_click = false;
         }
 
         double mouse_x, mouse_y;
         glfwGetCursorPos(window, &mouse_x, &mouse_y);
 
-        float rot_x = camera.sensitivity * (float)(mouse_y - (window_height / 2)) / window_height;
-        float rot_y = camera.sensitivity * (float)(mouse_x - (window_width / 2)) / window_width;
+        float rot_x = camera->sensitivity * (float)(mouse_y - (window_height / 2)) / window_height;
+        float rot_y = camera->sensitivity * (float)(mouse_x - (window_width / 2)) / window_width;
 
-        glm::quat rotation_quat_x = glm::angleAxis(glm::radians(-rot_x), glm::normalize(glm::cross(camera.direction, camera.up)));
-        glm::vec3 new_orientation = rotation_quat_x * camera.direction;
+        glm::quat rotation_quat_x = glm::angleAxis(glm::radians(-rot_x), glm::normalize(glm::cross(camera->direction, camera->up)));
+        glm::vec3 new_orientation = rotation_quat_x * camera->direction;
 
-        float dot_product = glm::dot(new_orientation, camera.up);
+        float dot_product = glm::dot(new_orientation, camera->up);
         if (glm::abs(glm::degrees(glm::acos(dot_product)) - 90.0f) <= 85.0f)
         {
-            camera.direction = new_orientation;
+            camera->direction = new_orientation;
         }
 
-        glm::quat rotation_quat_y = glm::angleAxis(glm::radians(-rot_y), camera.up);
-        camera.direction = rotation_quat_y * camera.direction;
+        glm::quat rotation_quat_y = glm::angleAxis(glm::radians(-rot_y), camera->up);
+        camera->direction = rotation_quat_y * camera->direction;
 
         glfwSetCursorPos(window, window_width / 2, window_height / 2);
+        update_mat = true;
     }
     else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE)
     {
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-        camera.first_input_click = true;
+        camera->first_input_click = true;
+        update_mat = true;
+    }
+
+    if (update_mat)
+    {
+        camera->view_mat = glm::lookAt(camera->position, camera->position + camera->direction, camera->up);
+        camera->cam_mat = camera->projection_mat * camera->view_mat;
     }
 }

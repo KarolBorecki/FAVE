@@ -1,14 +1,14 @@
 #include "mac.h"
 
-void MAC_init(MacGrid &grid, uint16_t size_x, uint16_t size_y, float cell_size)
+void MAC_init(MacGrid *grid, uint16_t size_x, uint16_t size_y, float cell_size)
 {
-    grid.size_x = size_x;
-    grid.size_y = size_y;
-    grid.cell_size = cell_size;
-    grid.inv_cell_size = 1.0f / cell_size;
+    grid->size_x = size_x;
+    grid->size_y = size_y;
+    grid->cell_size = cell_size;
+    grid->inv_cell_size = 1.0f / cell_size;
 
-    grid.cells = (GridCell **)malloc(size_x * sizeof(GridCell *));
-    if (!grid.cells)
+    grid->cells = (GridCell **)malloc(size_x * sizeof(GridCell *));
+    if (!grid->cells)
     {
         fprintf(stderr, "Failed to allocate memory for grid cells\n");
         exit(EXIT_FAILURE);
@@ -16,21 +16,21 @@ void MAC_init(MacGrid &grid, uint16_t size_x, uint16_t size_y, float cell_size)
 
     for (uint16_t x = 0; x < size_x; ++x)
     {
-        grid.cells[x] = (GridCell *)malloc(size_y * sizeof(GridCell));
-        if (!grid.cells[x])
+        grid->cells[x] = (GridCell *)malloc(size_y * sizeof(GridCell));
+        if (!grid->cells[x])
         {
             fprintf(stderr, "Failed to allocate memory for grid cells\n");
             exit(EXIT_FAILURE);
         }
     }
 
-    grid.markers = (Marker *)malloc(size_x * size_y * 4 * sizeof(Marker));
+    grid->markers = (Marker *)malloc(size_x * size_y * 4 * sizeof(Marker));
 
     for (uint16_t x = 0; x < size_x; ++x)
     {
         for (uint16_t y = 0; y < size_y; ++y)
         {
-            grid.cells[x][y] = {
+            grid->cells[x][y] = {
                 0.0f,
                 0.0f, 0.0f, 0.0f,
                 0.0f, 0.0f, 0.0f,
@@ -44,26 +44,26 @@ void MAC_init(MacGrid &grid, uint16_t size_x, uint16_t size_y, float cell_size)
     {
         for (uint16_t y = 1; y < size_y - 1; ++y)
         {
-            if (grid.cells[x][y].type == FLUID)
+            if (grid->cells[x][y].type == FLUID)
             {
                 for (int i = 0; i < 4; ++i)
                 {
                     Marker marker;
                     marker.position = glm::vec3(
-                        (x + 0.25f * (i % 2)) * grid.cell_size,
-                        (y + 0.25f * (i / 2)) * grid.cell_size,
+                        (x + 0.25f * (i % 2)) * grid->cell_size,
+                        (y + 0.25f * (i / 2)) * grid->cell_size,
                         0.0f);
                     marker.velocity = glm::vec3(0.0f);
                     marker.density = 1.0f;
                     marker.rest_density = 1.0f;
-                    grid.markers[current_marker++] = marker;
+                    grid->markers[current_marker++] = marker;
                 }
             }
         }
     }
 }
 
-void MAC_transformGridToVerticies(MacGrid &grid, Vertex *vertices, GLuint *indices)
+void MAC_transformGridToVerticies(MacGrid *grid, Vertex *vertices, GLuint *indices)
 {
     glm::vec3 cubeVertices[8] = {
         {-0.5f, -0.5f, -0.5f}, 
@@ -86,14 +86,14 @@ void MAC_transformGridToVerticies(MacGrid &grid, Vertex *vertices, GLuint *indic
     size_t vert_index = 0;
     size_t ind_index = 0;
 
-    for (uint16_t x = 0; x < grid.size_x; ++x)
+    for (uint16_t x = 0; x < grid->size_x; ++x)
     {
-        for (uint16_t y = 0; y < grid.size_y; ++y)
+        for (uint16_t y = 0; y < grid->size_y; ++y)
         {
-            glm::vec3 cubePos = glm::vec3(x, y, 0) * grid.cell_size;
+            glm::vec3 cubePos = glm::vec3(x, y, 0) * grid->cell_size;
             for (int i = 0; i < 8; i++)
             {
-                vertices[vert_index].position = cubePos + cubeVertices[i] * grid.cell_size;
+                vertices[vert_index].position = cubePos + cubeVertices[i] * grid->cell_size;
                 vertices[vert_index].color = glm::vec3(1.0f, 1.0f, 1.0f);
                 vertices[vert_index].normal = glm::normalize(cubeVertices[i]);
                 vert_index++;

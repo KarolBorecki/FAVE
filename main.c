@@ -14,6 +14,7 @@
 
 #include "inc/mac.h"
 
+#include "inc/buffers/shader.h"
 #include "inc/buffers/vao.h"
 #include "inc/buffers/vbo.h"
 #include "inc/buffers/ebo.h"
@@ -24,18 +25,13 @@
 #define VERTICIES_SIZE 200000
 #define INDICIES_SIZE 200000
 
-struct CoreConfig
+typedef struct 
 {
     uint32_t window_width = 1200;
     uint32_t window_height = 900;
-};
+} CoreConfig;
 
 CoreConfig config;
-Camera camera;
-MacGrid mac;
-
-GLFWwindow *window;
-GLuint shaderProgram;
 
 void framebufferSizeCallback(GLFWwindow *window, int width, int height)
 {
@@ -44,52 +40,24 @@ void framebufferSizeCallback(GLFWwindow *window, int width, int height)
     glViewport(0, 0, width, height);
 }
 
-char *loadShaderFile(const char *filename)
-{
-    FILE *file = fopen(filename, "r");
-    if (!file)
-    {
-        fprintf(stderr, "Error loading shader: %s\n", filename);
-        return NULL;
-    }
-
-    fseek(file, 0, SEEK_END);
-    long fileSize = ftell(file);
-    rewind(file);
-
-    char *buffer = (char *)malloc(fileSize + 1);
-    if (!buffer)
-    {
-        fprintf(stderr, "Memory allocation failed for shader file\n");
-        fclose(file);
-        return NULL;
-    }
-
-    fread(buffer, 1, fileSize, file);
-    buffer[fileSize] = '\0'; 
-
-    fclose(file);
-    return buffer;
-}
-
-bool initializeWindow()
+GLFWwindow *initializeWindow()
 {
     if (!glfwInit())
     {
         fprintf(stderr, "Failed to initialize GLFW\n");
-        return false;
+        return NULL;
     }
 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    window = glfwCreateWindow(config.window_width, config.window_height, "FLUID SIMULATION", nullptr, nullptr);
+    GLFWwindow *window = glfwCreateWindow(config.window_width, config.window_height, "FLUID SIMULATION", NULL, NULL);
     if (!window)
     {
         fprintf(stderr, "Failed to create GLFW window\n");
         glfwTerminate();
-        return false;
+        return NULL;
     }
 
     glfwMakeContextCurrent(window);
@@ -98,47 +66,20 @@ bool initializeWindow()
     if (!gladLoadGL())
     {
         fprintf(stderr, "Failed to initialize GLAD\n");
-        return false;
+        return NULL;
     }
 
     glEnable(GL_DEPTH_TEST);
-    return true;
+    return window;
 }
 
-GLuint createShaderProgram()
-{
-    const char *vertexShaderSource = loadShaderFile("./resources/shaders/default.vert");
-    const char *fragmentShaderSource = loadShaderFile("./resources/shaders/default.frag");
-
-    GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertexShader, 1, &vertexShaderSource, nullptr);
-    glCompileShader(vertexShader);
-
-    GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentShader, 1, &fragmentShaderSource, nullptr);
-    glCompileShader(fragmentShader);
-
-    GLuint program = glCreateProgram();
-    glAttachShader(program, vertexShader);
-    glAttachShader(program, fragmentShader);
-    glLinkProgram(program);
-
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
-
-    free((void *)vertexShaderSource);
-    free((void *)fragmentShaderSource);
-
-    return program;
-}
-
-void processInput()
+void processInput(Camera* camera, GLFWwindow *window)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     {
         glfwSetWindowShouldClose(window, true);
     }
-    processCameraInput(window, camera);
+    Camera_processInput(camera, window);
 }
 
 void setupBuffers(VAO &vao, VBO &vbo, EBO &ebo)
@@ -161,27 +102,20 @@ void setupBuffers(VAO &vao, VBO &vbo, EBO &ebo)
     EBO_unbind();
 }
 
-void render(Camera &camera, VAO &vao, VBO &vbo, EBO &ebo, Vertex *vertices, GLuint *indices)
+void render(GLFWwindow* window, Camera &camera, Shader& shaderProgram, VAO &vao, VBO &vbo, EBO &ebo, Vertex *vertices, GLuint *indices)
 {
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glm::mat4 view = glm::lookAt(camera.position, camera.position + camera.direction, camera.up);
-    glm::mat4 projection = glm::perspective(glm::radians(camera.fov),
-                                            (float)config.window_width / (float)config.window_height,
-                                            camera.near_plane,
-                                            camera.far_plane);
-    glm::mat4 cameraMatrix = projection * view;
+    Shader_use(&shaderProgram);
 
-    glUseProgram(shaderProgram);
+    Shader_setVector3f(&shaderProgram, "scale", 1.0f, 1.0f, 1.0f);
+    Shader_setVector3f(&shaderProgram, "rotation", 0.0f, 0.0f, 0.0f);
+    Shader_setVector3f(&shaderProgram, "position", 0.0f, 0.0f, 0.0f);
 
-    glUniform3f(glGetUniformLocation(shaderProgram, "scale"), 1.0f, 1.0f, 1.0f);
-    glUniform3f(glGetUniformLocation(shaderProgram, "rotation"), 0.0f, 0.0f, 0.0f);
-    glUniform3f(glGetUniformLocation(shaderProgram, "position"), 0.0f, 0.0f, 0.0f);
-
-    glUniform4f(glGetUniformLocation(shaderProgram, "lightColor"), 1.0f, 1.0f, 1.0f, 1.0f);
-    glUniform3f(glGetUniformLocation(shaderProgram, "lightPos"), 0.0f, 10.0f, 0.0f);
-    glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "camMatrix"), 1, GL_FALSE, glm::value_ptr(cameraMatrix));
+    Shader_setVector4f(&shaderProgram, "lightColor", 1.0f, 1.0f, 1.0f, 1.0f);
+    Shader_setVector3f(&shaderProgram, "lightPos", 0.0f, 10.0f, 0.0f);
+    Shader_setMatrix4f(&shaderProgram, "camMatrix", glm::value_ptr(camera.cam_mat));
 
     VBO_bind(&vbo);
     VBO_update(&vbo, vertices, VERTICIES_SIZE);
@@ -200,22 +134,24 @@ void render(Camera &camera, VAO &vao, VBO &vbo, EBO &ebo, Vertex *vertices, GLui
     glfwPollEvents();
 }
 
-void cleanup()
+void cleanup(Shader* shaderProgram, GLFWwindow *window)
 {
-    glDeleteProgram(shaderProgram);
+    Shader_destroy(shaderProgram);
     glfwDestroyWindow(window);
     glfwTerminate();
 }
 
 int main()
 {
-    if (!initializeWindow())
-        return -1;
+    GLFWwindow *window = initializeWindow();
+
+        if (!window) return -1;
 
     Vertex *vertices = (Vertex *)calloc(VERTICIES_SIZE, sizeof(Vertex));
     GLuint *indices = (GLuint *)calloc(INDICIES_SIZE, sizeof(GLuint));
 
-    shaderProgram = createShaderProgram();
+    Shader shaderProgram;
+    Shader_init(&shaderProgram, "./resources/shaders/default.vert", "./resources/shaders/default.frag");
 
     VAO vao;
     VBO vbo;
@@ -223,15 +159,19 @@ int main()
 
     setupBuffers(vao, vbo, ebo);
 
-    MAC_init(mac, 50, 50, 1.0f);
+    Camera camera;
+    Camera_init(&camera, window, 45.0f, 0.1f, 100.0f);
+
+    MacGrid mac;
+    MAC_init(&mac, 50, 50, 1.0f);
 
     while (!glfwWindowShouldClose(window))
     {
-        processInput();
-        MAC_transformGridToVerticies(mac, vertices, indices);
-        render(camera, vao, vbo, ebo, vertices, indices);
+        processInput(&camera, window);
+        MAC_transformGridToVerticies(&mac, vertices, indices);
+        render(window, camera, shaderProgram, vao, vbo, ebo, vertices, indices);
     }
 
-    cleanup();
+    cleanup(&shaderProgram, window);
     return 0;
 }

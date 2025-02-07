@@ -19,9 +19,14 @@ typedef struct
     float sensitivity = 100.0f;
 
     uint8_t first_input_click = false;
+
+    glm::mat4 view_mat;
+    glm::mat4 projection_mat;
+    glm::mat4 cam_mat;
 } Camera;
 
+void Camera_init(Camera *camera, GLFWwindow *window, float fov, float near_plane, float far_plane);
 // Note: This function opropable needs dt
-void processCameraInput(GLFWwindow *window, Camera &camera);
+void Camera_processInput(Camera *camera, GLFWwindow *window);
 
 #endif // FAVE_CAMERA_H

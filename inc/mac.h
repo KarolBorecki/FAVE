@@ -51,7 +51,7 @@ typedef  struct
     float density;
 } MacGrid;
 
-void MAC_init(MacGrid &grid, uint16_t size_x, uint16_t size_y, float cell_size);
-void MAC_transformGridToVerticies(MacGrid &grid, Vertex *vertices, GLuint *indices);
+void MAC_init(MacGrid *grid, uint16_t size_x, uint16_t size_y, float cell_size);
+void MAC_transformGridToVerticies(MacGrid *grid, Vertex *vertices, GLuint *indices);
 
 #endif // FAVE_MAC_H
