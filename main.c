@@ -184,10 +184,10 @@ int main(int argc, char **argv)
     GLuint *obstacleIndices = (GLuint *)calloc(INDICIES_SIZE, sizeof(GLuint));
 
     Shader_t fluidShader;
-    Shader_init(&fluidShader, "shaders/default.vert", "shaders/default.frag");
+    Shader_init(&fluidShader, "shaders/fluid.vert", "shaders/fluid.frag");
 
     Shader_t obstacleShader;
-    Shader_init(&obstacleShader, "shaders/default.vert", "shaders/default.frag");
+    Shader_init(&obstacleShader, "shaders/obstacle.vert", "shaders/obstacle.frag");
 
     VAO_t fluidVao, obstacleVao;
     VBO_t fluidVbo, obstacleVbo;

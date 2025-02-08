@@ -131,74 +131,56 @@ void MAC_handleObstacle(MacGrid_t *grid, glm::vec3 obstaclePos, float obstacleRa
         }
     }
 }
+void MAC_integrateParticles(MacGrid_t *grid, float dt, float gravity)
+{
+    for (int i = 1; i < grid->size_x - 1; i++)
+    {
+        for (int j = 1; j < grid->size_y - 1; j++)
+        {
+            if (grid->cells[i][j].type == FLUID)
+            {
+                grid->cells[i][j].v += dt * gravity;
+                grid->cells[i][j].u += grid->cells[i][j].du * dt;
+                grid->cells[i][j].v += grid->cells[i][j].dv * dt;
+            }
+        }
+    }
+}
+
+void MAC_pushParticlesApart(MacGrid_t *grid, int numIters)
+{
+    // Placeholder function for particle separation logic
+}
+
+void MAC_handleParticleCollisions(MacGrid_t *grid, float obstacleX, float obstacleY, float obstacleRadius)
+{
+    // Placeholder function for handling particle-obstacle collisions
+}
+
+void MAC_transferVelocities(MacGrid_t *grid, int toGrid, float flipRatio)
+{
+    // Placeholder function for velocity transfer between grid and particles
+}
+
+void MAC_updateParticleDensity(MacGrid_t *grid)
+{
+    // Placeholder function for updating particle density field
+}
+
+void MAC_solveIncompressibility(MacGrid_t *grid, int numIters, float dt, float overRelaxation)
+{
+    // Placeholder function for solving the incompressibility constraint
+}
 
 void MAC_update(MacGrid_t *grid, float dt)
 {
-    // 1. Zachowanie poprzednich wartości prędkości
-    for (uint16_t x = 0; x < grid->size_x; ++x)
-    {
-        for (uint16_t y = 0; y < grid->size_y; ++y)
-        {
-            GridCell_t *cell = &grid->cells[x][y];
-            if (cell->type == FLUID)
-            {
-                cell->prevu = cell->u;
-                cell->prevv = cell->v;
-                cell->prevw = cell->w;
-                // Zerowanie siły na nową iterację
-                cell->du = 0.0f;
-                cell->dv = 0.0f;
-                cell->dw = 0.0f;
-            }
-        }
-    }
-
-    // 2. Aktualizacja prędkości zgodnie z siłami
-    for (uint16_t x = 0; x < grid->size_x; ++x)
-    {
-        for (uint16_t y = 0; y < grid->size_y; ++y)
-        {
-            GridCell_t *cell = &grid->cells[x][y];
-            if (cell->type == FLUID)
-            {
-                cell->u += dt * (-cell->du + cell->s * (cell->prevu - cell->u));
-                cell->v += dt * (-cell->dv + cell->s * (cell->prevv - cell->v));
-                cell->w += dt * (-cell->dw + cell->s * (cell->prevw - cell->w));
-            }
-        }
-    }
-
-    // 3. Korekcja ciśnienia w oparciu o zmiany prędkości
-    for (uint16_t x = 0; x < grid->size_x; ++x)
-    {
-        for (uint16_t y = 0; y < grid->size_y; ++y)
-        {
-            GridCell_t *cell = &grid->cells[x][y];
-            if (cell->type == FLUID)
-            {
-                cell->p += dt * ((cell->u - cell->prevu) + (cell->v - cell->prevv) + (cell->w - cell->prevw));
-            }
-        }
-    }
-
-    // 4. Aktualizacja znaczników (Markerów) zgodnie z prędkością komórek
-    for (uint16_t i = 0; i < grid->size_x * grid->size_y * 4; ++i)
-    {
-        Marker_t *marker = &grid->markers[i];
-        marker->position += marker->velocity * dt;
-
-        uint16_t x = static_cast<uint16_t>(marker->position.x / grid->cell_size);
-        uint16_t y = static_cast<uint16_t>(marker->position.y / grid->cell_size);
-
-        if (x < grid->size_x && y < grid->size_y)
-        {
-            GridCell_t *cell = &grid->cells[x][y];
-            if (cell->type == FLUID)
-            {
-                marker->velocity += glm::vec3(cell->du, cell->dv, cell->dw) * dt;
-            }
-        }
-    }
+    MAC_integrateParticles(grid, dt, -9.81f);
+    MAC_pushParticlesApart(grid, 10);
+    MAC_handleParticleCollisions(grid, 0.0f, 0.0f, 1.0f);
+    MAC_transferVelocities(grid, 1, 1.9f);
+    MAC_updateParticleDensity(grid);
+    MAC_solveIncompressibility(grid, 10, dt, 1.2f);
+    MAC_transferVelocities(grid, 0, 0.95f);
 }
 
 void MAC_transformGridToVerticies(MacGrid_t *grid, Vertex_t *vertices, GLuint *indices)

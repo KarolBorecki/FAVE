@@ -11,7 +11,6 @@ out vec3 color;
 out vec2 texCoord;
 
 uniform mat4 camMatrix;
-
 uniform vec3 scale;
 uniform vec3 rotation;
 uniform vec3 position;
@@ -57,7 +56,7 @@ void main()
     );
 
     crntPos = vec3(model * vec4(aPos, 1.0));
-    Normal = mat3(transpose(inverse(model))) * aNormal; // poprawnie transformowany normal
+    Normal = mat3(transpose(inverse(model))) * aNormal; 
     color = aColor;
     texCoord = aTex;
 
