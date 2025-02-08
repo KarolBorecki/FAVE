@@ -103,3 +103,8 @@ void Camera_processInput(Camera_t *camera, GLFWwindow *window)
         camera->cam_mat = camera->projection_mat * camera->view_mat;
     }
 }
+
+void Camera_destroy(Camera_t *camera)
+{
+    // Nothing to do here
+}

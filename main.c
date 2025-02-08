@@ -13,6 +13,7 @@
 #include "inc/camera.h"
 
 #include "inc/mac.h"
+#include "inc/obstacle.h"
 
 #include "inc/buffers/shader.h"
 #include "inc/buffers/vao.h"
@@ -65,6 +66,7 @@ GLFWwindow *initializeWindow()
     if (!gladLoadGL())
     {
         fprintf(stderr, "Failed to initialize GLAD\n");
+        glfwTerminate();
         return NULL;
     }
 
@@ -72,13 +74,12 @@ GLFWwindow *initializeWindow()
     return window;
 }
 
-void processInput(Camera_t *camera, GLFWwindow *window)
+void processInput(GLFWwindow *window)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     {
         glfwSetWindowShouldClose(window, true);
     }
-    Camera_processInput(camera, window);
 }
 
 void setupBuffers(VAO_t &vao, VBO_t &vbo, EBO_t &ebo)
@@ -100,14 +101,29 @@ void setupBuffers(VAO_t &vao, VBO_t &vbo, EBO_t &ebo)
     VBO_unbind();
     EBO_unbind();
 }
+void setupObstacleBuffers(VAO_t &vao, VBO_t &vbo, EBO_t &ebo)
+{
+    VAO_init(&vao);
+    VBO_init(&vbo, VERTICIES_SIZE);
+    EBO_init(&ebo, INDICIES_SIZE);
+
+    VAO_bind(&vao);
+    VBO_bind(&vbo);
+    EBO_bind(&ebo);
+
+    VAO_linkAttrib(0, 3, GL_FLOAT, sizeof(Vertex), (void *)0);                   // Pozycja
+    VAO_linkAttrib(1, 3, GL_FLOAT, sizeof(Vertex), (void *)(3 * sizeof(float))); // Normale
+    VAO_linkAttrib(2, 3, GL_FLOAT, sizeof(Vertex), (void *)(6 * sizeof(float))); // Kolor
+    VAO_linkAttrib(3, 2, GL_FLOAT, sizeof(Vertex), (void *)(9 * sizeof(float))); // Współrzędne UV
+
+    VAO_unbind();
+    VBO_unbind();
+    EBO_unbind();
+}
 
 void render(GLFWwindow *window, Camera_t &camera, Shader_t &shaderProgram, VAO_t &vao, VBO_t &vbo, EBO_t &ebo, Vertex_t *vertices, GLuint *indices)
 {
-    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
     Shader_use(&shaderProgram);
-
     Shader_setVector3f(&shaderProgram, "scale", 1.0f, 1.0f, 1.0f);
     Shader_setVector3f(&shaderProgram, "rotation", 0.0f, 0.0f, 0.0f);
     Shader_setVector3f(&shaderProgram, "position", 0.0f, 0.0f, 0.0f);
@@ -128,16 +144,6 @@ void render(GLFWwindow *window, Camera_t &camera, Shader_t &shaderProgram, VAO_t
     VAO_unbind();
     VBO_unbind();
     EBO_unbind();
-
-    glfwSwapBuffers(window);
-    glfwPollEvents();
-}
-
-void cleanup(Shader_t *shaderProgram, GLFWwindow *window)
-{
-    Shader_destroy(shaderProgram);
-    glfwDestroyWindow(window);
-    glfwTerminate();
 }
 
 int main(int argc, char **argv)
@@ -174,14 +180,21 @@ int main(int argc, char **argv)
     Vertex_t *vertices = (Vertex *)calloc(VERTICIES_SIZE, sizeof(Vertex));
     GLuint *indices = (GLuint *)calloc(INDICIES_SIZE, sizeof(GLuint));
 
-    Shader_t shaderProgram;
-    Shader_init(&shaderProgram, "shaders/default.vert", "shaders/default.frag");
+    Vertex_t *obstacleVertices = (Vertex *)calloc(VERTICIES_SIZE, sizeof(Vertex));
+    GLuint *obstacleIndices = (GLuint *)calloc(INDICIES_SIZE, sizeof(GLuint));
 
-    VAO_t vao;
-    VBO_t vbo;
-    EBO_t ebo;
+    Shader_t fluidShader;
+    Shader_init(&fluidShader, "shaders/default.vert", "shaders/default.frag");
 
-    setupBuffers(vao, vbo, ebo);
+    Shader_t obstacleShader;
+    Shader_init(&obstacleShader, "shaders/default.vert", "shaders/default.frag");
+
+    VAO_t fluidVao, obstacleVao;
+    VBO_t fluidVbo, obstacleVbo;
+    EBO_t fluidEbo, obstacleEbo;
+
+    setupBuffers(fluidVao, fluidVbo, fluidEbo);
+    setupObstacleBuffers(obstacleVao, obstacleVbo, obstacleEbo);
 
     Camera_t camera;
     Camera_init(&camera, window, 45.0f, 0.1f, 100.0f);
@@ -189,13 +202,47 @@ int main(int argc, char **argv)
     MacGrid_t mac;
     MAC_init(&mac, 50, 50, 1.0f);
 
+    Obstacle_t obstacle;
+    Obstacle_init(&obstacle, glm::vec3(0.0f, 0.0f, 0.0f), 1.0f, 0.3f);
+
     while (!glfwWindowShouldClose(window))
     {
-        processInput(&camera, window);
+        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        processInput(window);
+        Camera_processInput(&camera, window);
+        Obstacle_processInput(&obstacle, window);
+
+        MAC_handleObstacle(&mac, obstacle.position, obstacle.radius);
+        MAC_update(&mac, 0.1f);
+
         MAC_transformGridToVerticies(&mac, vertices, indices);
-        render(window, camera, shaderProgram, vao, vbo, ebo, vertices, indices);
+        Obstacle_transformToVertices(&obstacle, obstacleVertices, obstacleIndices);
+
+        render(window, camera, fluidShader, fluidVao, fluidVbo, fluidEbo, vertices, indices);
+        render(window, camera, obstacleShader, obstacleVao, obstacleVbo, obstacleEbo, obstacleVertices, obstacleIndices);
+
+        glfwSwapBuffers(window);
+        glfwPollEvents();
     }
 
-    cleanup(&shaderProgram, window);
+    Obstacle_destroy(&obstacle);
+    MAC_destroy(&mac);
+    VAO_destroy(&fluidVao);
+    VBO_destroy(&fluidVbo);
+    EBO_destroy(&fluidEbo);
+    VAO_destroy(&obstacleVao);
+    VBO_destroy(&obstacleVbo);
+    EBO_destroy(&obstacleEbo);
+    Shader_destroy(&fluidShader);
+    Shader_destroy(&obstacleShader);
+    Camera_destroy(&camera);
+    free(vertices);
+    free(indices);
+    free(obstacleVertices);
+    free(obstacleIndices);
+    glfwDestroyWindow(window);
+    glfwTerminate();
     return 0;
 }

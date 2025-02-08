@@ -72,6 +72,134 @@ void MAC_init(MacGrid_t *grid, uint16_t size_x, uint16_t size_y, float cell_size
         }
     }
 }
+void MAC_handleObstacle(MacGrid_t *grid, glm::vec3 obstaclePos, float obstacleRadius)
+{
+    float h = 1.0f / grid->inv_cell_size;
+    float r = grid->marker_radius;
+    float or2 = obstacleRadius * obstacleRadius;
+    float minDist = obstacleRadius + r;
+    float minDist2 = minDist * minDist;
+
+    float minX = h + r;
+    float maxX = (grid->size_x - 1) * h - r;
+    float minY = h + r;
+    float maxY = (grid->size_y - 1) * h - r;
+
+    for (uint16_t i = 0; i < grid->size_x * grid->size_y * 4; i++)
+    {
+        Marker_t &marker = grid->markers[i];
+
+        float dx = marker.position.x - obstaclePos.x;
+        float dy = marker.position.y - obstaclePos.y;
+        float d2 = dx * dx + dy * dy;
+
+        // Kolizja z przeszkodą
+        if (d2 < minDist2)
+        {
+            float d = sqrtf(d2);
+            if (d > 0.0f) // Unikanie dzielenia przez zero
+            {
+                float s = (minDist - d) / d;
+                marker.position.x += dx * s;
+                marker.position.y += dy * s;
+            }
+
+            // Można dodać prędkość przeszkody, jeśli jest dynamiczna
+            marker.velocity = glm::vec3(0.0f, 0.0f, 0.0f); // Przykładowe wyzerowanie prędkości po kolizji
+        }
+
+        // Kolizje ze ścianami siatki
+        if (marker.position.x < minX)
+        {
+            marker.position.x = minX;
+            marker.velocity.x = 0.0f;
+        }
+        if (marker.position.x > maxX)
+        {
+            marker.position.x = maxX;
+            marker.velocity.x = 0.0f;
+        }
+        if (marker.position.y < minY)
+        {
+            marker.position.y = minY;
+            marker.velocity.y = 0.0f;
+        }
+        if (marker.position.y > maxY)
+        {
+            marker.position.y = maxY;
+            marker.velocity.y = 0.0f;
+        }
+    }
+}
+
+void MAC_update(MacGrid_t *grid, float dt)
+{
+    // 1. Zachowanie poprzednich wartości prędkości
+    for (uint16_t x = 0; x < grid->size_x; ++x)
+    {
+        for (uint16_t y = 0; y < grid->size_y; ++y)
+        {
+            GridCell_t *cell = &grid->cells[x][y];
+            if (cell->type == FLUID)
+            {
+                cell->prevu = cell->u;
+                cell->prevv = cell->v;
+                cell->prevw = cell->w;
+                // Zerowanie siły na nową iterację
+                cell->du = 0.0f;
+                cell->dv = 0.0f;
+                cell->dw = 0.0f;
+            }
+        }
+    }
+
+    // 2. Aktualizacja prędkości zgodnie z siłami
+    for (uint16_t x = 0; x < grid->size_x; ++x)
+    {
+        for (uint16_t y = 0; y < grid->size_y; ++y)
+        {
+            GridCell_t *cell = &grid->cells[x][y];
+            if (cell->type == FLUID)
+            {
+                cell->u += dt * (-cell->du + cell->s * (cell->prevu - cell->u));
+                cell->v += dt * (-cell->dv + cell->s * (cell->prevv - cell->v));
+                cell->w += dt * (-cell->dw + cell->s * (cell->prevw - cell->w));
+            }
+        }
+    }
+
+    // 3. Korekcja ciśnienia w oparciu o zmiany prędkości
+    for (uint16_t x = 0; x < grid->size_x; ++x)
+    {
+        for (uint16_t y = 0; y < grid->size_y; ++y)
+        {
+            GridCell_t *cell = &grid->cells[x][y];
+            if (cell->type == FLUID)
+            {
+                cell->p += dt * ((cell->u - cell->prevu) + (cell->v - cell->prevv) + (cell->w - cell->prevw));
+            }
+        }
+    }
+
+    // 4. Aktualizacja znaczników (Markerów) zgodnie z prędkością komórek
+    for (uint16_t i = 0; i < grid->size_x * grid->size_y * 4; ++i)
+    {
+        Marker_t *marker = &grid->markers[i];
+        marker->position += marker->velocity * dt;
+
+        uint16_t x = static_cast<uint16_t>(marker->position.x / grid->cell_size);
+        uint16_t y = static_cast<uint16_t>(marker->position.y / grid->cell_size);
+
+        if (x < grid->size_x && y < grid->size_y)
+        {
+            GridCell_t *cell = &grid->cells[x][y];
+            if (cell->type == FLUID)
+            {
+                marker->velocity += glm::vec3(cell->du, cell->dv, cell->dw) * dt;
+            }
+        }
+    }
+}
 
 void MAC_transformGridToVerticies(MacGrid_t *grid, Vertex_t *vertices, GLuint *indices)
 {
@@ -116,4 +244,14 @@ void MAC_transformGridToVerticies(MacGrid_t *grid, Vertex_t *vertices, GLuint *i
             }
         }
     }
+}
+
+void MAC_destroy(MacGrid_t *grid)
+{
+    for (uint16_t x = 0; x < grid->size_x; ++x)
+    {
+        free(grid->cells[x]);
+    }
+    free(grid->cells);
+    free(grid->markers);
 }

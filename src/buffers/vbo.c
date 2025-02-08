@@ -5,6 +5,7 @@ void VBO_init(VBO_t *vbo, size_t size)
     glGenBuffers(1, &vbo->ID);
     glBindBuffer(GL_ARRAY_BUFFER, vbo->ID);
     glBufferData(GL_ARRAY_BUFFER, size * sizeof(Vertex), NULL, GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 void VBO_bind(VBO_t *vbo)
@@ -25,9 +26,6 @@ void VBO_unbind()
 
 void VBO_destroy(VBO_t *vbo)
 {
-    if (glIsBuffer(vbo->ID))
-    {
-        glDeleteBuffers(1, &vbo->ID);
-        vbo->ID = 0;
-    }
+    glDeleteBuffers(1, &vbo->ID);
+    vbo->ID = 0;
 }

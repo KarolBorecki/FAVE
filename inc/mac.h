@@ -39,8 +39,8 @@ typedef struct MacGrid
     uint16_t size_x;
     uint16_t size_y;
 
-    GridCell** cells;
-    Marker* markers;
+    GridCell **cells;
+    Marker *markers;
 
     float cell_size;
     float inv_cell_size;
@@ -52,6 +52,9 @@ typedef struct MacGrid
 } MacGrid_t;
 
 void MAC_init(MacGrid_t *grid, uint16_t size_x, uint16_t size_y, float cell_size);
+void MAC_handleObstacle(MacGrid_t *grid, glm::vec3 obstaclePos, float obstacleRadius);
+void MAC_update(MacGrid_t *grid, float dt);
 void MAC_transformGridToVerticies(MacGrid_t *grid, Vertex *vertices, GLuint *indices);
+void MAC_destroy(MacGrid_t *grid);
 
 #endif // FAVE_MAC_H

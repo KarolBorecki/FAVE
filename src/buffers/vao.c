@@ -23,9 +23,6 @@ void VAO_unbind()
 
 void VAO_destroy(VAO_t *vao)
 {
-    if (glIsVertexArray(vao->ID))
-    {
-        glDeleteVertexArrays(1, &vao->ID);
-        vao->ID = 0;
-    }
+    glDeleteVertexArrays(1, &vao->ID);
+    vao->ID = 0;
 }
