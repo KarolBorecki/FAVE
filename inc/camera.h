@@ -6,27 +6,27 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-typedef struct 
+typedef struct Camera
 {
-    glm::vec3 position = glm::vec3(15.71f, 8.86f, 38.01f);
-    glm::vec3 direction = glm::vec3(0.0f, 0.0f, -1.0f);
-    glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
+    glm::vec3 position;
+    glm::vec3 direction;
+    glm::vec3 up;
 
-    float fov = 45.0f;
-    float near_plane = 0.1f;
-    float far_plane = 100.0f;
-    float speed = 0.05f;
-    float sensitivity = 100.0f;
+    float fov;
+    float near_plane;
+    float far_plane;
+    float speed;
+    float sensitivity;
 
-    uint8_t first_input_click = false;
+    uint8_t first_input_click;
 
     glm::mat4 view_mat;
     glm::mat4 projection_mat;
     glm::mat4 cam_mat;
-} Camera;
+} Camera_t;
 
-void Camera_init(Camera *camera, GLFWwindow *window, float fov, float near_plane, float far_plane);
+void Camera_init(Camera_t *camera, GLFWwindow *window, float fov, float near_plane, float far_plane);
 // Note: This function opropable needs dt
-void Camera_processInput(Camera *camera, GLFWwindow *window);
+void Camera_processInput(Camera_t *camera, GLFWwindow *window);
 
 #endif // FAVE_CAMERA_H

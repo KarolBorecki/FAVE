@@ -21,17 +21,16 @@
 
 #include "inc/data.h"
 
-
 #define VERTICIES_SIZE 200000
 #define INDICIES_SIZE 200000
 
-typedef struct 
+typedef struct CoreConfig
 {
-    uint32_t window_width = 1200;
-    uint32_t window_height = 900;
-} CoreConfig;
+    uint32_t window_width;
+    uint32_t window_height;
+} CoreConfig_t;
 
-CoreConfig config;
+CoreConfig_t config;
 
 void framebufferSizeCallback(GLFWwindow *window, int width, int height)
 {
@@ -73,7 +72,7 @@ GLFWwindow *initializeWindow()
     return window;
 }
 
-void processInput(Camera* camera, GLFWwindow *window)
+void processInput(Camera_t *camera, GLFWwindow *window)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     {
@@ -82,7 +81,7 @@ void processInput(Camera* camera, GLFWwindow *window)
     Camera_processInput(camera, window);
 }
 
-void setupBuffers(VAO &vao, VBO &vbo, EBO &ebo)
+void setupBuffers(VAO_t &vao, VBO_t &vbo, EBO_t &ebo)
 {
     VAO_init(&vao);
     VBO_init(&vbo, VERTICIES_SIZE);
@@ -102,7 +101,7 @@ void setupBuffers(VAO &vao, VBO &vbo, EBO &ebo)
     EBO_unbind();
 }
 
-void render(GLFWwindow* window, Camera &camera, Shader& shaderProgram, VAO &vao, VBO &vbo, EBO &ebo, Vertex *vertices, GLuint *indices)
+void render(GLFWwindow *window, Camera_t &camera, Shader_t &shaderProgram, VAO_t &vao, VBO_t &vbo, EBO_t &ebo, Vertex_t *vertices, GLuint *indices)
 {
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -134,35 +133,60 @@ void render(GLFWwindow* window, Camera &camera, Shader& shaderProgram, VAO &vao,
     glfwPollEvents();
 }
 
-void cleanup(Shader* shaderProgram, GLFWwindow *window)
+void cleanup(Shader_t *shaderProgram, GLFWwindow *window)
 {
     Shader_destroy(shaderProgram);
     glfwDestroyWindow(window);
     glfwTerminate();
 }
 
-int main()
+int main(int argc, char **argv)
 {
+    config.window_width = 800;
+    config.window_height = 600;
+
+    if (argc >= 3)
+    {
+        char *endptr_w, *endptr_h;
+        uint32_t w = (uint32_t)strtoul(argv[1], &endptr_w, 10);
+        uint32_t h = (uint32_t)strtoul(argv[2], &endptr_h, 10);
+
+        if (*endptr_w == '\0' && *endptr_h == '\0' && w > 0 && h > 0)
+        {
+            config.window_width = w;
+            config.window_height = h;
+        }
+        else
+        {
+            fprintf(stderr, "Invalid window size arguments. Using default 800x600.\n");
+        }
+    }
+    else
+    {
+        printf("Usage: %s <width> <height>\nUsing default: 800x600\n", argv[0]);
+    }
+
     GLFWwindow *window = initializeWindow();
 
-        if (!window) return -1;
+    if (!window)
+        return -1;
 
-    Vertex *vertices = (Vertex *)calloc(VERTICIES_SIZE, sizeof(Vertex));
+    Vertex_t *vertices = (Vertex *)calloc(VERTICIES_SIZE, sizeof(Vertex));
     GLuint *indices = (GLuint *)calloc(INDICIES_SIZE, sizeof(GLuint));
 
-    Shader shaderProgram;
-    Shader_init(&shaderProgram, "./resources/shaders/default.vert", "./resources/shaders/default.frag");
+    Shader_t shaderProgram;
+    Shader_init(&shaderProgram, "shaders/default.vert", "shaders/default.frag");
 
-    VAO vao;
-    VBO vbo;
-    EBO ebo;
+    VAO_t vao;
+    VBO_t vbo;
+    EBO_t ebo;
 
     setupBuffers(vao, vbo, ebo);
 
-    Camera camera;
+    Camera_t camera;
     Camera_init(&camera, window, 45.0f, 0.1f, 100.0f);
 
-    MacGrid mac;
+    MacGrid_t mac;
     MAC_init(&mac, 50, 50, 1.0f);
 
     while (!glfwWindowShouldClose(window))

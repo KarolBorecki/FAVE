@@ -1,11 +1,13 @@
 #include "mac.h"
 
-void MAC_init(MacGrid *grid, uint16_t size_x, uint16_t size_y, float cell_size)
+void MAC_init(MacGrid_t *grid, uint16_t size_x, uint16_t size_y, float cell_size)
 {
     grid->size_x = size_x;
     grid->size_y = size_y;
     grid->cell_size = cell_size;
     grid->inv_cell_size = 1.0f / cell_size;
+    grid->marker_radius = 0.1f;
+    grid->marker_inv_radius = 1.0f / (2.2f * grid->marker_radius);
 
     grid->cells = (GridCell **)malloc(size_x * sizeof(GridCell *));
     if (!grid->cells)
@@ -24,21 +26,28 @@ void MAC_init(MacGrid *grid, uint16_t size_x, uint16_t size_y, float cell_size)
         }
     }
 
-    grid->markers = (Marker *)malloc(size_x * size_y * 4 * sizeof(Marker));
-
     for (uint16_t x = 0; x < size_x; ++x)
     {
         for (uint16_t y = 0; y < size_y; ++y)
         {
-            grid->cells[x][y] = {
-                0.0f,
-                0.0f, 0.0f, 0.0f,
-                0.0f, 0.0f, 0.0f,
-                0.0f, 0.0f, 0.0f,
-                1.0f,
-                FLUID};
+            GridCell_t cell = {
+                .p = 0.0f,
+                .v = 0.0f,
+                .u = 0.0f,
+                .w = 0.0f,
+                .dv = 0.0f,
+                .du = 0.0f,
+                .dw = 0.0f,
+                .prevv = 0.0f,
+                .prevu = 0.0f,
+                .prevw = 0.0f,
+                .s = 1.0f,
+                .type = FLUID};
+            grid->cells[x][y] = cell;
         }
     }
+
+    grid->markers = (Marker_t *)malloc(size_x * size_y * 4 * sizeof(Marker));
     uint16_t current_marker = 0;
     for (uint16_t x = 1; x < size_x - 1; ++x)
     {
@@ -48,7 +57,7 @@ void MAC_init(MacGrid *grid, uint16_t size_x, uint16_t size_y, float cell_size)
             {
                 for (int i = 0; i < 4; ++i)
                 {
-                    Marker marker;
+                    Marker_t marker;
                     marker.position = glm::vec3(
                         (x + 0.25f * (i % 2)) * grid->cell_size,
                         (y + 0.25f * (i / 2)) * grid->cell_size,
@@ -56,6 +65,7 @@ void MAC_init(MacGrid *grid, uint16_t size_x, uint16_t size_y, float cell_size)
                     marker.velocity = glm::vec3(0.0f);
                     marker.density = 1.0f;
                     marker.rest_density = 1.0f;
+                    marker.color = glm::vec4(1.0f);
                     grid->markers[current_marker++] = marker;
                 }
             }
@@ -63,17 +73,17 @@ void MAC_init(MacGrid *grid, uint16_t size_x, uint16_t size_y, float cell_size)
     }
 }
 
-void MAC_transformGridToVerticies(MacGrid *grid, Vertex *vertices, GLuint *indices)
+void MAC_transformGridToVerticies(MacGrid_t *grid, Vertex_t *vertices, GLuint *indices)
 {
     glm::vec3 cubeVertices[8] = {
-        {-0.5f, -0.5f, -0.5f}, 
-        {0.5f, -0.5f, -0.5f}, 
-        {0.5f, 0.5f, -0.5f}, 
-        {-0.5f, 0.5f, -0.5f}, 
-        {-0.5f, -0.5f, 0.5f}, 
-        {0.5f, -0.5f, 0.5f}, 
-        {0.5f, 0.5f, 0.5f}, 
-        {-0.5f, 0.5f, 0.5f}};
+        glm::vec3(-0.5f, -0.5f, -0.5f),
+        glm::vec3(0.5f, -0.5f, -0.5f),
+        glm::vec3(0.5f, 0.5f, -0.5f),
+        glm::vec3(-0.5f, 0.5f, -0.5f),
+        glm::vec3(-0.5f, -0.5f, 0.5f),
+        glm::vec3(0.5f, -0.5f, 0.5f),
+        glm::vec3(0.5f, 0.5f, 0.5f),
+        glm::vec3(-0.5f, 0.5f, 0.5f)};
 
     GLuint cubeIndices[36] = {
         0, 1, 2, 2, 3, 0,

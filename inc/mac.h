@@ -15,26 +15,26 @@ enum CellType : uint8_t
     AIR = 2
 };
 
-typedef struct 
+typedef struct GridCell
 {
     float p;
     float v, u, w; // v - up/down vec, u - left/right vec, w - forward/backward vec
-    float dv, dy, dw;
+    float dv, du, dw;
     float prevv, prevu, prevw;
     float s;
     CellType type;
-} GridCell;
+} GridCell_t;
 
-typedef struct 
+typedef struct Marker
 {
     glm::vec3 position;
     glm::vec3 velocity;
-    glm::vec4 color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+    glm::vec4 color;
     float density;
     float rest_density;
-} Marker;
+} Marker_t;
 
-typedef  struct 
+typedef struct MacGrid
 {
     uint16_t size_x;
     uint16_t size_y;
@@ -45,13 +45,13 @@ typedef  struct
     float cell_size;
     float inv_cell_size;
 
-    float marker_radius = 0.1f;
-    float marker_inv_radius = 1.0f / (2.2f * marker_radius);
+    float marker_radius;
+    float marker_inv_radius;
 
     float density;
-} MacGrid;
+} MacGrid_t;
 
-void MAC_init(MacGrid *grid, uint16_t size_x, uint16_t size_y, float cell_size);
-void MAC_transformGridToVerticies(MacGrid *grid, Vertex *vertices, GLuint *indices);
+void MAC_init(MacGrid_t *grid, uint16_t size_x, uint16_t size_y, float cell_size);
+void MAC_transformGridToVerticies(MacGrid_t *grid, Vertex *vertices, GLuint *indices);
 
 #endif // FAVE_MAC_H

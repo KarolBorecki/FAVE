@@ -1,17 +1,30 @@
 #include "camera.h"
 
-void Camera_init(Camera *camera, GLFWwindow *window, float fov, float near, float far)
+void Camera_init(Camera_t *camera, GLFWwindow *window, float fov, float near, float far)
 {
     int window_width, window_height;
     glfwGetWindowSize(window, &window_width, &window_height);
+
+    camera->position = glm::vec3(15.71f, 8.86f, 38.01f);
+    camera->direction = glm::vec3(0.0f, 0.0f, -1.0f);
+    camera->up = glm::vec3(0.0f, 1.0f, 0.0f);
+
+    camera->fov = fov;
+    camera->near_plane = near;
+    camera->far_plane = far;
+    camera->speed = 0.05f;
+    camera->sensitivity = 100.0f;
+
+    camera->first_input_click = 0;
+
     camera->projection_mat = glm::perspective(glm::radians(fov), (float)window_width / (float)window_height, near, far);
     camera->view_mat = glm::lookAt(camera->position, camera->position + camera->direction, camera->up);
     camera->cam_mat = camera->projection_mat * camera->view_mat;
 }
 
-void Camera_processInput(Camera *camera, GLFWwindow *window)
+void Camera_processInput(Camera_t *camera, GLFWwindow *window)
 {
-    uint8_t update_mat = false;
+    uint8_t update_mat = 0;
     int window_width, window_height;
     glfwGetWindowSize(window, &window_width, &window_height);
 
@@ -19,32 +32,32 @@ void Camera_processInput(Camera *camera, GLFWwindow *window)
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
     {
         camera->position += camera_speed * camera->direction;
-        update_mat = true;
+        update_mat = 1;
     }
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
     {
         camera->position -= camera_speed * camera->direction;
-        update_mat = true;
+        update_mat = 1;
     }
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
     {
         camera->position -= glm::normalize(glm::cross(camera->direction, camera->up)) * camera_speed;
-        update_mat = true;
+        update_mat = 1;
     }
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
     {
         camera->position += glm::normalize(glm::cross(camera->direction, camera->up)) * camera_speed;
-        update_mat = true;
+        update_mat = 1;
     }
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
     {
         camera->position += camera_speed * camera->up;
-        update_mat = true;
+        update_mat = 1;
     }
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
     {
         camera->position -= camera_speed * camera->up;
-        update_mat = true;
+        update_mat = 1;
     }
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
     {
@@ -53,7 +66,7 @@ void Camera_processInput(Camera *camera, GLFWwindow *window)
         if (camera->first_input_click)
         {
             glfwSetCursorPos(window, window_width / 2, window_height / 2);
-            camera->first_input_click = false;
+            camera->first_input_click = 0;
         }
 
         double mouse_x, mouse_y;
@@ -75,13 +88,13 @@ void Camera_processInput(Camera *camera, GLFWwindow *window)
         camera->direction = rotation_quat_y * camera->direction;
 
         glfwSetCursorPos(window, window_width / 2, window_height / 2);
-        update_mat = true;
+        update_mat = 1;
     }
     else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE)
     {
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-        camera->first_input_click = true;
-        update_mat = true;
+        camera->first_input_click = 1;
+        update_mat = 1;
     }
 
     if (update_mat)

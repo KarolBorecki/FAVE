@@ -1,11 +1,11 @@
 #include "buffers/vao.h"
 
-void VAO_init(VAO *vao)
+void VAO_init(VAO_t *vao)
 {
     glGenVertexArrays(1, &vao->ID);
 }
 
-void VAO_bind(VAO *vao)
+void VAO_bind(VAO_t *vao)
 {
     glBindVertexArray(vao->ID);
 }
@@ -21,7 +21,7 @@ void VAO_unbind()
     glBindVertexArray(0);
 }
 
-void VAO_destroy(VAO *vao)
+void VAO_destroy(VAO_t *vao)
 {
     if (glIsVertexArray(vao->ID))
     {

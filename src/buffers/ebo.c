@@ -1,18 +1,18 @@
 #include "buffers/ebo.h"
 
-void EBO_init(EBO *ebo, size_t size)
+void EBO_init(EBO_t *ebo, size_t size)
 {
     glGenBuffers(1, &ebo->ID);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo->ID);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, size * sizeof(GLuint), {}, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, size * sizeof(GLuint), NULL, GL_STATIC_DRAW);
 }
 
-void EBO_bind(EBO *ebo)
+void EBO_bind(EBO_t *ebo)
 {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo->ID);
 }
 
-void EBO_update(EBO *ebo, GLuint *indices, size_t size)
+void EBO_update(EBO_t *ebo, GLuint *indices, size_t size)
 {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo->ID);
     glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, size * sizeof(GLuint), indices);
@@ -23,7 +23,7 @@ void EBO_unbind()
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
-void EBO_destroy(EBO *ebo)
+void EBO_destroy(EBO_t *ebo)
 {
     if (glIsBuffer(ebo->ID))
     {
