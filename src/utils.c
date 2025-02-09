@@ -77,3 +77,26 @@ char *loadResourceFileContent(const char *filename)
     fclose(file);
     return buffer;
 }
+
+double clampd(double d, double min, double max)
+{
+    const double t = d < min ? min : d;
+    return t > max ? max : t;
+}
+
+float clampf(float d, float min, float max)
+{
+    const float t = d < min ? min : d;
+    return t > max ? max : t;
+}
+
+int clamp(int d, int min, int max)
+{
+    const int t = d < min ? min : d;
+    return t > max ? max : t;
+}
+
+float random_float(float min, float max)
+{
+    return min + (float)rand() / (float)(RAND_MAX) * (max - min);
+}

@@ -2,6 +2,7 @@
 #define FAVE_MAC_H
 
 #include <cstdio>
+#include <math.h>
 
 #include <glm/glm.hpp>
 
@@ -22,6 +23,7 @@ typedef struct GridCell
     float dv, du, dw;
     float prevv, prevu, prevw;
     float s;
+    float density;
     CellType type;
 } GridCell_t;
 
@@ -30,14 +32,14 @@ typedef struct Marker
     glm::vec3 position;
     glm::vec3 velocity;
     glm::vec4 color;
-    float density;
-    float rest_density;
 } Marker_t;
 
 typedef struct MacGrid
 {
     uint16_t size_x;
     uint16_t size_y;
+
+    uint16_t num_markers;
 
     GridCell **cells;
     Marker *markers;
@@ -49,6 +51,7 @@ typedef struct MacGrid
     float marker_inv_radius;
 
     float density;
+    float rest_density;
 } MacGrid_t;
 
 void MAC_init(MacGrid_t *grid, uint16_t size_x, uint16_t size_y, float cell_size);
