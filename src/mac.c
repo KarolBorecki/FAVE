@@ -5,7 +5,7 @@ void MAC_init(MacGrid_t *grid, uint16_t size_x, uint16_t size_y, float cell_size
     grid->size_x = size_x;
     grid->size_y = size_y;
     grid->total_size = size_x * size_y;
-    grid->num_markers = grid->total_size;
+    grid->num_markers = grid->total_size * 4;
     grid->cell_size = cell_size;
     grid->inv_cell_size = 1.0f / cell_size;
     grid->marker_radius = 0.1f;
@@ -133,6 +133,7 @@ void MAC_handleObstacle(MacGrid_t *grid, Obstacle_t *obstacle, float dt)
 
         if (d2 < minDist2)
         {
+            printf("d2: %f, minDist2: %f\n", d2, minDist2);
             marker.velocity = obstacle->velocity;
         }
 
@@ -549,70 +550,67 @@ void MAC_updateParticleDensity(MacGrid_t *grid)
     }
 }
 
-// void MAC_solveIncompressibility(MacGrid_t *grid, int numIters, float dt, float overRelaxation)
-// {
-//     for (uint32_t cellIndex = 0; cellIndex < grid->total_size; cellIndex++)
-//     {
+void MAC_solveIncompressibility(MacGrid_t *grid, int numIters, float dt, float overRelaxation)
+{
+    for (uint32_t cellIndex = 0; cellIndex < grid->total_size; cellIndex++)
+    {
+        grid->cells[cellIndex].p = 0.0f;
+        grid->cells[cellIndex].prevu = grid->cells[cellIndex].u;
+        grid->cells[cellIndex].prevv = grid->cells[cellIndex].v;
+    }
 
-//             GridCell_t *cell = &grid->cells[cellIndex];
-//             cell->p = 0.0f;
-//             cell->prevu = cell->u;
-//             cell->prevv = cell->v;
+    uint16_t n = grid->size_y;
+    float cp = grid->density * grid->cell_size / dt;
 
-//     }
+    for (uint8_t iter = 0; iter < numIters; iter++)
+    {
+        for (uint16_t grid_x = 1; grid_x < grid->size_x; grid_x++)
+        {
+            for (uint16_t grid_y = 1; grid_y < grid->size_y - 1; grid_y++)
+            {
+                GridCell_t *center = &grid->cells[grid_x * n + grid_y];
+                GridCell_t *right = &grid->cells[(grid_x + 1) * n + grid_y];
+                GridCell_t *left = &grid->cells[(grid_x - 1) * n + grid_y];
+                GridCell_t *top = &grid->cells[grid_x * n + (grid_y + 1)];
+                GridCell_t *bottom = &grid->cells[grid_x * n + (grid_y - 1)];
 
-//     float n = grid->size_y;
-//     float cp = grid->density * grid->cell_size / dt;
+                if (center->type != FLUID)
+                {
+                    continue;
+                }
+                // float s = grid->cells[x][y].s;
+                float sx0 = left->s;
+                float sx1 = right->s;
+                float sy0 = bottom->s;
+                float sy1 = top->s;
+                float s = sx0 + sx1 + sy0 + sy1;
 
-//     for (uint8_t iter = 0; iter < numIters; iter++)
-//     {
-//         for (uint16_t cellIndex = 1; cellIndex < grid->total_size ; cellIndex++)
-//         {
-//             for (uint16_t grid_y = 1; grid_y < grid->size_y - 1; grid_y++)
-//             {
-//                 GridCell_t *center = &grid->cells[grid_x][grid_y];
-//                 GridCell_t *right = &grid->cells[grid_x + 1][grid_y];
-//                 GridCell_t *left = &grid->cells[grid_x - 1][grid_y];
-//                 GridCell_t *top = &grid->cells[grid_x][grid_y + 1];
-//                 GridCell_t *bottom = &grid->cells[grid_x][grid_y - 1];
+                if (s == 0.0f)
+                    continue;
 
-//                 if (center->type != FLUID)
-//                 {
-//                     continue;
-//                 }
-//                 // float s = grid->cells[x][y].s;
-//                 float sx0 = left->s;
-//                 float sx1 = right->s;
-//                 float sy0 = bottom->s;
-//                 float sy1 = top->s;
-//                 float s = sx0 + sx1 + sy0 + sy1;
+                float div = right->u - center->u + top->v - center->v;
 
-//                 if (s == 0.0f)
-//                     continue;
+                if (grid->rest_density > 0.0f) // compensate drift
+                {
+                    float k = 1.0f;
+                    float compression = center->density - grid->rest_density;
+                    if (compression > 0.0f)
+                    {
+                        div = div - k * compression;
+                    }
+                }
 
-//                 float div = right->u - center->u + top->v - center->v;
-
-//                 if (grid->rest_density > 0.0f) // compensate drift
-//                 {
-//                     float k = 1.0f;
-//                     float compression = center->density - grid->rest_density;
-//                     if (compression > 0.0f)
-//                     {
-//                         div = div - k * compression;
-//                     }
-//                 }
-
-//                 float p = -div / s;
-//                 p *= overRelaxation;
-//                 center->p += cp * p;
-//                 center->u -= sx0 * p;
-//                 right->u += sx1 * p;
-//                 center->v -= sy0 * p;
-//                 top->v += sy1 * p;
-//             }
-//         }
-//     }
-// }
+                float p = -div / s;
+                p *= overRelaxation;
+                center->p += cp * p;
+                center->u -= sx0 * p;
+                right->u += sx1 * p;
+                center->v -= sy0 * p;
+                top->v += sy1 * p;
+            }
+        }
+    }
+}
 
 void MAC_update(MacGrid_t *grid, float dt)
 {
@@ -620,8 +618,8 @@ void MAC_update(MacGrid_t *grid, float dt)
     MAC_pushParticlesApart(grid, 10);
     MAC_transferVelocities(grid, 1, 1.9f);
     MAC_updateParticleDensity(grid);
-    // MAC_solveIncompressibility(grid, 10, dt, 1.2f);
-    // MAC_transferVelocities(grid, 0, 0.95f);
+    MAC_solveIncompressibility(grid, 10, dt, 1.2f);
+    MAC_transferVelocities(grid, 0, 0.95f);
 }
 
 Pair_t MAC_transformGridToVerticies(MacGrid_t *grid, Vertex_t *vertices, GLuint *indices)
@@ -658,15 +656,15 @@ Pair_t MAC_transformGridToVerticies(MacGrid_t *grid, Vertex_t *vertices, GLuint 
                 vertices[vert_index].position = cubePos + cubeVertices[i] * grid->cell_size;
                 if (grid->cells[cellIndex].type == FLUID)
                 {
-                    vertices[vert_index].color = glm::vec3(0.0f, 0.0f, 1.0f);
+                    vertices[vert_index].color = glm::vec3(0.15f, 0.4f, 0.99f);
                 }
                 else if (grid->cells[cellIndex].type == SOLID)
                 {
                     vertices[vert_index].color = glm::vec3(1.0f, 1.0f, 1.0f);
                 }
-                else
+                else if (grid->cells[cellIndex].type == AIR)
                 {
-                    vertices[vert_index].color = glm::vec3(0.0f, 1.0f, 0.0f);
+                    vertices[vert_index].color = glm::vec3(0.53f, 0.81f, 0.94f);
                 }
                 vertices[vert_index].normal = glm::normalize(cubeVertices[i]);
                 vert_index++;
