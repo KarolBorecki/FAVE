@@ -238,7 +238,7 @@ void MAC_pushParticlesApart(MacGrid_t *grid, int numIters)
             {
                 for (uint16_t yi = y0; yi <= y1; yi++)
                 {
-                    uint16_t cellIndex = xi + grid->size_y * yi;
+                    uint16_t cellIndex = xi * grid->size_y + yi;
                     uint16_t first = grid->first_cell_marker[cellIndex];
                     uint16_t last = grid->first_cell_marker[cellIndex + 1];
                     // printf("cellIndex: %d, first: %d, last: %d\n", cellIndex, first, last);
