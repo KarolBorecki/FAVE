@@ -1,8 +1,8 @@
 #include "mac.h"
-uint16_t getMarkerCellIndex(MacGrid_t *grid, Marker_t &marker)
+int getMarkerCellIndex(MacGrid_t *grid, Marker_t &marker)
 {
     // printf("marker.position.x: %f, marker.position.y: %f\n", marker.position.x, marker.position.y);
-    // printf("marker grid x: %d, marker grid d: %d\n", (uint16_t)clamp((int)floorf(marker.position.x * grid->inv_cell_size), 0, grid->size_x - 1), (uint16_t)clamp((int)floorf(marker.position.y * grid->inv_cell_size), 0, grid->size_y - 1));
+    // printf("marker grid x: %d, marker grid d: %d\n", (int)clamp((int)floorf(marker.position.x * grid->inv_cell_size), 0, grid->size_x - 1), (int)clamp((int)floorf(marker.position.y * grid->inv_cell_size), 0, grid->size_y - 1));
     return clamp((int)floorf(marker.position.x * grid->inv_cell_size), 0, grid->size_x - 1) * grid->size_y + clamp((int)floorf(marker.position.y * grid->inv_cell_size), 0, grid->size_y - 1);
 }
 
@@ -11,11 +11,11 @@ GridCell_t &getMarkerCell(MacGrid_t *grid, Marker_t &marker)
     return grid->cells[getMarkerCellIndex(grid, marker)];
 }
 
-GridCell_t &getCell(MacGrid_t *grid, uint16_t x, uint16_t y)
+GridCell_t &getCell(MacGrid_t *grid, int x, int y)
 {
     return grid->cells[x * grid->size_y + y];
 }
-void MAC_init(MacGrid_t *grid, float density, uint16_t size_x, uint16_t size_y, float cell_size)
+void MAC_init(MacGrid_t *grid, float density, int size_x, int size_y, float cell_size)
 {
     grid->density = density;
     grid->size_x = size_x;
@@ -35,7 +35,7 @@ void MAC_init(MacGrid_t *grid, float density, uint16_t size_x, uint16_t size_y, 
         exit(EXIT_FAILURE);
     }
 
-    for (uint16_t cellIndex = 0; cellIndex < grid->total_size; ++cellIndex)
+    for (int cellIndex = 0; cellIndex < grid->total_size; ++cellIndex)
     {
         grid->cells[cellIndex].p = 0.0f;
         grid->cells[cellIndex].v = 0.0f;
@@ -51,9 +51,9 @@ void MAC_init(MacGrid_t *grid, float density, uint16_t size_x, uint16_t size_y, 
         grid->cells[cellIndex].density = 0.0f;
     }
 
-    for (uint16_t x = 0; x < grid->size_x; x++)
+    for (int x = 0; x < grid->size_x; x++)
     {
-        for (uint16_t y = 0; y < grid->size_y; y++)
+        for (int y = 0; y < grid->size_y; y++)
         {
             if (x == 0 || x == grid->size_x - 1 || y == 0)
             {
@@ -76,6 +76,11 @@ void MAC_init(MacGrid_t *grid, float density, uint16_t size_x, uint16_t size_y, 
     {
         grid->markers[i].position.x = fmodf(i * 1.724356f, size_x * cell_size);
         grid->markers[i].position.y = fmodf(i * 1.863312f, size_y * cell_size);
+        if (i == 0)
+        {
+            grid->markers[i].position.x = 3.5f;
+            grid->markers[i].position.y = 3.5f;
+        }
         grid->markers[i].position.z = 0.0f;
 
         grid->markers[i].velocity.x = 0.0f;
@@ -87,44 +92,52 @@ void MAC_init(MacGrid_t *grid, float density, uint16_t size_x, uint16_t size_y, 
         grid->markers[i].color.z = 1.0f;
         grid->markers[i].color.w = 1.0f;
 
-        uint16_t cellIndex = getMarkerCellIndex(grid, grid->markers[i]);
+        int cellIndex = getMarkerCellIndex(grid, grid->markers[i]);
         // grid->cells[cellIndex].type = FLUID;
         // grid->cells[cellIndex].s = 1.0f;
     }
 
-    grid->num_cell_markers = (uint16_t *)malloc(grid->total_size * sizeof(uint16_t));
+    grid->num_cell_markers = (int *)malloc(grid->total_size * sizeof(int));
     if (!grid->num_cell_markers)
     {
         fprintf(stderr, "Failed to allocate memory for num_cell_markers\n");
         exit(EXIT_FAILURE);
     }
-    for (uint16_t i = 0; i < grid->total_size; ++i)
+    for (int i = 0; i < grid->total_size; ++i)
     {
 
         grid->num_cell_markers[i] = 0;
     }
 
-    grid->first_cell_marker = (uint16_t *)malloc((grid->total_size + 1) * sizeof(uint16_t));
+    grid->first_cell_marker = (int *)malloc((grid->total_size + 1) * sizeof(int));
     if (!grid->first_cell_marker)
     {
         fprintf(stderr, "Failed to allocate memory for first_cell_marker\n");
         exit(EXIT_FAILURE);
     }
-    for (uint16_t i = 0; i < grid->total_size + 1; ++i)
+    for (int i = 0; i < grid->total_size + 1; ++i)
     {
 
         grid->first_cell_marker[i] = 0;
     }
 
-    grid->cell_marker_ids = (uint16_t *)malloc(grid->num_markers * sizeof(uint16_t));
+    grid->cell_marker_ids = (int *)malloc(grid->num_markers * sizeof(int));
     if (!grid->cell_marker_ids)
     {
         fprintf(stderr, "Failed to allocate memory for cell_marker_ids\n");
         exit(EXIT_FAILURE);
     }
-    for (uint16_t i = 0; i < grid->num_markers; ++i)
+    for (int i = 0; i < grid->num_markers; ++i)
     {
         grid->cell_marker_ids[i] = 0;
+    }
+
+    for (int cellIndex = 0; cellIndex < grid->total_size; cellIndex++)
+    {
+        if (isnan(grid->cells[cellIndex].v) || isnan(grid->cells[cellIndex].u))
+        {
+            printf("[MAC_init] NaN detected in div at [%d] -> u: %f, v: %f\n", cellIndex, grid->cells[cellIndex].u, grid->cells[cellIndex].v);
+        }
     }
 }
 
@@ -141,7 +154,7 @@ void MAC_handleObstacle(MacGrid_t *grid, Obstacle_t *obstacle, float dt)
     float minY = h + r;
     float maxY = (grid->size_y - 1) * h - r;
 
-    for (uint16_t i = 0; i < grid->num_markers; i++)
+    for (int i = 0; i < grid->num_markers; i++)
     {
         Marker_t &marker = grid->markers[i];
 
@@ -180,39 +193,47 @@ void MAC_handleObstacle(MacGrid_t *grid, Obstacle_t *obstacle, float dt)
 
 void MAC_integrateParticles(MacGrid_t *grid, float dt, float gravity)
 {
-    for (uint16_t marker_index = 0; marker_index < grid->num_markers; marker_index++)
+    printf("\n______MAC_integrateParticles\n");
+    for (int marker_index = 0; marker_index < grid->num_markers; marker_index++)
     {
-        grid->markers[marker_index].velocity.y += dt * gravity;
+        // grid->markers[marker_index].velocity.y += dt * gravity; WTF is this? why causing NaNs?
         grid->markers[marker_index].position.x += grid->markers[marker_index].velocity.x * dt;
         grid->markers[marker_index].position.y += grid->markers[marker_index].velocity.y * dt;
-        // printf("marker_index: %d, x: %f, y: %f\n", marker_index, grid->markers[marker_index].position.x, grid->markers[marker_index].position.y);
+    }
+    for (int cellIndex = 0; cellIndex < grid->total_size; cellIndex++)
+    {
+        if (isnan(grid->cells[cellIndex].v) || isnan(grid->cells[cellIndex].u))
+        {
+            printf("[MAC_integrateParticles] NaN detected in div at [%d] -> u: %f, v: %f\n", cellIndex, grid->cells[cellIndex].u, grid->cells[cellIndex].v);
+        }
     }
 }
 
 void MAC_pushParticlesApart(MacGrid_t *grid, int numIters)
 {
+    printf("\n______MAC_pushParticlesApart\n");
     float colorDiffusionCoeff = 0.001f;
 
-    for (uint16_t i = 0; i < grid->total_size; i++)
+    for (int i = 0; i < grid->total_size; i++)
     {
         grid->num_cell_markers[i] = 0;
     }
 
     // KROK 1 zliczenie ile markerów jest w każdej komórce
     // printf("BUILDING num_cell_markers\n");
-    for (uint16_t marker_index = 0; marker_index < grid->num_markers; marker_index++)
+    for (int marker_index = 0; marker_index < grid->num_markers; marker_index++)
     {
         Marker_t &marker = grid->markers[marker_index];
-        uint16_t cellIndex = getMarkerCellIndex(grid, marker);
+        int cellIndex = getMarkerCellIndex(grid, marker);
         grid->num_cell_markers[cellIndex]++;
         // printf("cellIndexes.x: %d, cellIndexes.y: %d\n", cellIndexes.x, cellIndexes.y);
         // printf("grid->num_cell_markers[%d]: %d\n", cellIndex, grid->num_cell_markers[cellIndex]);
     }
 
     // KROK 2
-    uint16_t first = 0;
+    int first = 0;
     // printf("BUILDING  \n");
-    for (uint16_t i = 0; i < grid->total_size; i++)
+    for (int i = 0; i < grid->total_size; i++)
     {
         first += grid->num_cell_markers[i];
         grid->first_cell_marker[i] = first;
@@ -221,10 +242,10 @@ void MAC_pushParticlesApart(MacGrid_t *grid, int numIters)
     grid->first_cell_marker[grid->total_size] = grid->num_markers;
 
     // printf("BUILDING cell_marker_ids\n");
-    for (uint16_t marker_index = 0; marker_index < grid->num_markers; marker_index++)
+    for (int marker_index = 0; marker_index < grid->num_markers; marker_index++)
     {
         Marker_t &marker = grid->markers[marker_index];
-        uint16_t cellIndex = getMarkerCellIndex(grid, marker);
+        int cellIndex = getMarkerCellIndex(grid, marker);
         grid->first_cell_marker[cellIndex]--;
         if (grid->first_cell_marker[cellIndex] >= grid->num_markers || grid->first_cell_marker[cellIndex] < 0)
         {
@@ -237,34 +258,34 @@ void MAC_pushParticlesApart(MacGrid_t *grid, int numIters)
     float minDist = grid->marker_radius * 2.0f;
     float minDist2 = minDist * minDist;
 
-    for (uint8_t iter = 0; iter < numIters; iter++)
+    for (int iter = 0; iter < numIters; iter++)
     {
-        for (uint16_t marker_index = 0; marker_index < grid->num_markers; marker_index++)
+        for (int marker_index = 0; marker_index < grid->num_markers; marker_index++)
         {
             float px = grid->markers[marker_index].position.x;
             float py = grid->markers[marker_index].position.y;
 
             float pxi = floorf(px * grid->marker_inv_spacing);
             float pyi = floorf(py * grid->marker_inv_spacing);
-            uint16_t x0 = MAX(pxi - 1, 0);
-            uint16_t y0 = MAX(pyi - 1, 0);
-            uint16_t x1 = MIN(pxi + 1, grid->size_x - 1);
-            uint16_t y1 = MIN(pyi + 1, grid->size_y - 1);
+            int x0 = MAX(pxi - 1, 0);
+            int y0 = MAX(pyi - 1, 0);
+            int x1 = MIN(pxi + 1, grid->size_x - 1);
+            int y1 = MIN(pyi + 1, grid->size_y - 1);
 
             // printf("analysing marker nr %d x1 = %d   y1 = %d     x0 = %d  y0 = %d\n", marker_index, x1, y1, x0, y0);
 
-            for (uint16_t xi = x0; xi <= x1; xi++)
+            for (int xi = x0; xi <= x1; xi++)
             {
-                for (uint16_t yi = y0; yi <= y1; yi++)
+                for (int yi = y0; yi <= y1; yi++)
                 {
-                    uint16_t cellIndex = xi * grid->size_y + yi;
-                    uint16_t first = grid->first_cell_marker[cellIndex];
-                    uint16_t last = grid->first_cell_marker[cellIndex + 1];
+                    int cellIndex = xi * grid->size_y + yi;
+                    int first = grid->first_cell_marker[cellIndex];
+                    int last = grid->first_cell_marker[cellIndex + 1];
                     // printf("cellIndex: %d, first: %d, last: %d\n", cellIndex, first, last);
 
-                    for (uint16_t cell_marker_index = first; cell_marker_index < last; cell_marker_index++)
+                    for (int cell_marker_index = first; cell_marker_index < last; cell_marker_index++)
                     {
-                        uint16_t other_marker_id = grid->cell_marker_ids[cell_marker_index];
+                        int other_marker_id = grid->cell_marker_ids[cell_marker_index];
                         if (other_marker_id == marker_index)
                             continue;
 
@@ -287,7 +308,7 @@ void MAC_pushParticlesApart(MacGrid_t *grid, int numIters)
                         grid->markers[other_marker_id].position.x += dx;
                         grid->markers[other_marker_id].position.y += dy;
 
-                        // uint16_t other_marker_index = grid->cell_marker_ids[cell_marker_index];
+                        // int other_marker_index = grid->cell_marker_ids[cell_marker_index];
                         // if (other_marker_index == marker_index)
                         //     continue;
 
@@ -316,18 +337,26 @@ void MAC_pushParticlesApart(MacGrid_t *grid, int numIters)
             }
         }
     }
+    for (int cellIndex = 0; cellIndex < grid->total_size; cellIndex++)
+    {
+        if (isnan(grid->cells[cellIndex].v) || isnan(grid->cells[cellIndex].u))
+        {
+            printf("[MAC_pushParticlesApart] NaN detected in div at [%d] -> u: %f, v: %f\n", cellIndex, grid->cells[cellIndex].u, grid->cells[cellIndex].v);
+        }
+    }
 }
 
 void MAC_transferVelocities(MacGrid_t *grid, int toGrid, float flipRatio)
 {
-    uint16_t n = grid->size_y;
+    printf("\n______MAC_transferVelocities %s\n", toGrid ? "TO GRID" : "FROM GRID");
+    int n = grid->size_y;
     float h = grid->cell_size;
     float h1 = grid->inv_cell_size;
     float h2 = 0.5f * h;
 
     if (toGrid)
     {
-        for (uint16_t cellIndex = 0; cellIndex < grid->total_size; cellIndex++)
+        for (int cellIndex = 0; cellIndex < grid->total_size; cellIndex++)
         {
             grid->cells[cellIndex].prevu = grid->cells[cellIndex].u;
             grid->cells[cellIndex].prevv = grid->cells[cellIndex].v;
@@ -338,31 +367,31 @@ void MAC_transferVelocities(MacGrid_t *grid, int toGrid, float flipRatio)
             grid->cells[cellIndex].type = grid->cells[cellIndex].s == 0.0f ? SOLID : AIR;
         }
 
-        for (uint16_t marker_index = 0; marker_index < grid->num_markers; marker_index++)
+        for (int marker_index = 0; marker_index < grid->num_markers; marker_index++)
         {
-            uint16_t cellIndex = getMarkerCellIndex(grid, grid->markers[marker_index]);
+            int cellIndex = getMarkerCellIndex(grid, grid->markers[marker_index]);
             if (grid->cells[cellIndex].type != SOLID)
                 grid->cells[cellIndex].type = FLUID;
         }
     }
 
-    for (uint8_t component = 0; component < 2; component++)
+    for (int component = 0; component < 2; component++)
     {
         float dx = component == 0 ? 0.0f : h2;
         float dy = component == 0 ? h2 : 0.0f;
 
-        for (uint16_t marker_index = 0; marker_index < grid->num_markers; marker_index++)
+        for (int marker_index = 0; marker_index < grid->num_markers; marker_index++)
         {
             float x = clampf(grid->markers[marker_index].position.x, h, (grid->size_x - 1) * h);
             float y = clampf(grid->markers[marker_index].position.y, h, (grid->size_y - 1) * h);
 
-            uint16_t x0 = MIN(floorf((x - dx) * h1), grid->size_x - 2);
+            int x0 = MIN(floorf((x - dx) * h1), grid->size_x - 2);
             float tx = (x - dx - x0 * h) * h1;
-            uint16_t x1 = MIN(x0 + 1, grid->size_x - 2);
+            int x1 = MIN(x0 + 1, grid->size_x - 2);
 
-            uint16_t y0 = MIN(floorf((y - dy) * h1), grid->size_y - 2);
+            int y0 = MIN(floorf((y - dy) * h1), grid->size_y - 2);
             float ty = (y - dy - y0 * h) * h1;
-            uint16_t y1 = MIN(y0 + 1, grid->size_y - 2);
+            int y1 = MIN(y0 + 1, grid->size_y - 2);
 
             float sx = 1.0f - tx;
             float sy = 1.0f - ty;
@@ -372,10 +401,10 @@ void MAC_transferVelocities(MacGrid_t *grid, int toGrid, float flipRatio)
             float d2 = tx * ty;
             float d3 = sx * ty;
 
-            uint16_t cellIndex0 = x0 + n * y0;
-            uint16_t cellIndex1 = x1 + n * y0;
-            uint16_t cellIndex2 = x1 + n * y1;
-            uint16_t cellIndex3 = x0 + n * y1;
+            int cellIndex0 = x0 + n * y0;
+            int cellIndex1 = x1 + n * y0;
+            int cellIndex2 = x1 + n * y1;
+            int cellIndex3 = x0 + n * y1;
 
             if (toGrid)
             {
@@ -408,7 +437,7 @@ void MAC_transferVelocities(MacGrid_t *grid, int toGrid, float flipRatio)
             else
             {
                 float valid0, valid1, valid2, valid3;
-                uint16_t offset = component == 0 ? n : 1;
+                int offset = component == 0 ? n : 1;
                 valid0 = grid->cells[cellIndex0].type != AIR || grid->cells[cellIndex0 - offset].type != AIR ? 1.0f : 0.0f;
                 valid1 = grid->cells[cellIndex1].type != AIR || grid->cells[cellIndex1 - offset].type != AIR ? 1.0f : 0.0f;
                 valid2 = grid->cells[cellIndex2].type != AIR || grid->cells[cellIndex2 - offset].type != AIR ? 1.0f : 0.0f;
@@ -427,6 +456,7 @@ void MAC_transferVelocities(MacGrid_t *grid, int toGrid, float flipRatio)
                     }
                     else if (component == 1)
                     {
+
                         float picV = (valid0 * d0 * grid->cells[cellIndex0].v + valid1 * d1 * grid->cells[cellIndex1].v + valid2 * d2 * grid->cells[cellIndex2].v + valid3 * d3 * grid->cells[cellIndex3].v) / d;
                         float corr = (valid0 * d0 * (grid->cells[cellIndex0].v - grid->cells[cellIndex0].prevv) + valid1 * d1 * (grid->cells[cellIndex1].v - grid->cells[cellIndex1].prevv) + valid2 * d2 * (grid->cells[cellIndex2].v - grid->cells[cellIndex2].prevv) + valid3 * d3 * (grid->cells[cellIndex3].v - grid->cells[cellIndex3].prevv)) / d;
                         float flipV = v + corr;
@@ -439,7 +469,7 @@ void MAC_transferVelocities(MacGrid_t *grid, int toGrid, float flipRatio)
             {
                 if (component == 0)
                 {
-                    for (uint16_t cellIndex = 0; cellIndex < grid->total_size; cellIndex++)
+                    for (int cellIndex = 0; cellIndex < grid->total_size; cellIndex++)
                     {
 
                         if (grid->cells[cellIndex].du > 0.0f)
@@ -450,7 +480,7 @@ void MAC_transferVelocities(MacGrid_t *grid, int toGrid, float flipRatio)
                 }
                 else if (component == 1)
                 {
-                    for (uint16_t cellIndex = 0; cellIndex < grid->total_size; cellIndex++)
+                    for (int cellIndex = 0; cellIndex < grid->total_size; cellIndex++)
                     {
                         if (grid->cells[cellIndex].dv > 0.0f)
                         {
@@ -459,11 +489,11 @@ void MAC_transferVelocities(MacGrid_t *grid, int toGrid, float flipRatio)
                     }
                 }
 
-                for (uint16_t grix_x = 0; grix_x < grid->size_x; grix_x++)
+                for (int grix_x = 0; grix_x < grid->size_x; grix_x++)
                 {
-                    for (uint16_t grix_y = 0; grix_y < grid->size_y; grix_y++)
+                    for (int grix_y = 0; grix_y < grid->size_y; grix_y++)
                     {
-                        uint16_t cellIndex = grix_x * n + grix_y;
+                        int cellIndex = grix_x * n + grix_y;
                         int is_solid = grid->cells[cellIndex].type == SOLID;
                         if (is_solid && grid->cells[(grix_x - 1) * n + grix_y].type == SOLID)
                         {
@@ -478,25 +508,35 @@ void MAC_transferVelocities(MacGrid_t *grid, int toGrid, float flipRatio)
             }
         }
     }
+    for (int cellIndex = 0; cellIndex < grid->total_size; cellIndex++)
+    {
+        if (isnan(grid->cells[cellIndex].v) || isnan(grid->cells[cellIndex].u))
+        {
+            printf("[MAC_transferVelocities] NaN detected in div at [%d] -> u: %f, v: %f\n", cellIndex, grid->cells[cellIndex].u, grid->cells[cellIndex].v);
+        }
+    }
 }
 
 void MAC_updateParticleDensity(MacGrid_t *grid)
 {
-    printf("UPDATING PARTICLE DENSITY............\n");
-    uint16_t n = grid->size_y;
+    printf("\n______MAC_updateParticleDensity\n");
+    int marker0CellIndex = getMarkerCellIndex(grid, grid->markers[0]);
+    int n = grid->size_y;
     float h = grid->cell_size;
     float h1 = grid->inv_cell_size;
     float h2 = 0.5f * h;
 
-    for (uint16_t cellIndex = 0; cellIndex < grid->total_size; cellIndex++)
+    for (int cellIndex = 0; cellIndex < grid->total_size; cellIndex++)
     {
         grid->cells[cellIndex].density = 0.0f;
+        if (isnan(grid->cells[cellIndex].v) || isnan(grid->cells[cellIndex].u))
+        {
+            printf("[MAC_updateParticleDensity] 1 NaN detected in div at [%d] -> u: %f, v: %f\n", cellIndex, grid->cells[cellIndex].u, grid->cells[cellIndex].v);
+        }
     }
 
-    for (uint32_t marker_index = 0; marker_index < grid->num_markers; marker_index++)
+    for (int marker_index = 0; marker_index < grid->num_markers; marker_index++)
     {
-        printf("marker_index: %d\n", marker_index);
-
         float x = grid->markers[marker_index].position.x;
         float y = grid->markers[marker_index].position.y;
 
@@ -512,8 +552,6 @@ void MAC_updateParticleDensity(MacGrid_t *grid)
         float sx = 1.0f - tx;
         float sy = 1.0f - ty;
 
-        printf("x0: %d, x1: %d, y0: %d, y1: %d\n", x0, x1, y0, y1);
-
         if (x0 >= 0 && x0 < grid->size_x && y0 >= 0 && y0 < grid->size_y)
             grid->cells[x0 * n + y0].density += sx * sy;
 
@@ -526,17 +564,11 @@ void MAC_updateParticleDensity(MacGrid_t *grid)
         if (x0 >= 0 && x0 < grid->size_x && y1 >= 0 && y1 < grid->size_y)
             grid->cells[x0 * n + y1].density += sx * ty;
 
-        printf("DENSITY UPDATED\n");
-        printf("grid->cells[%d].density: %f\n", x0 * n + y0, grid->cells[x0 * n + y0].density);
-        printf("grid->cells[%d].density: %f\n", x1 * n + y0, grid->cells[x1 * n + y0].density);
-        printf("grid->cells[%d].density: %f\n", x1 * n + y1, grid->cells[x1 * n + y1].density);
-        printf("grid->cells[%d].density: %f\n", x0 * n + y1, grid->cells[x0 * n + y1].density);
-
         if (grid->markers_rest_density == 0.0f)
         {
             float sum = 0.0f;
-            uint16_t num_cells = 0;
-            for (uint16_t cellIndex = 0; cellIndex < grid->total_size; cellIndex++)
+            int num_cells = 0;
+            for (int cellIndex = 0; cellIndex < grid->total_size; cellIndex++)
             {
                 if (grid->cells[cellIndex].type == FLUID)
                 {
@@ -549,31 +581,60 @@ void MAC_updateParticleDensity(MacGrid_t *grid)
                 grid->markers_rest_density = sum / num_cells;
             }
         }
-        printf("REST DENSITY UPDATED\n");
-        printf("grid->markers_rest_density: %f\n", grid->markers_rest_density);
-        
+
+        // printf("REST DENSITY UPDATED\n");
+        // printf("grid->markers_rest_density: %f\n", grid->markers_rest_density);
     }
-    printf("DONE!\n");
+    // printf("DONE!\n");
+    for (int cellIndex = 0; cellIndex < grid->total_size; cellIndex++)
+    {
+        if (isnan(grid->cells[cellIndex].v) || isnan(grid->cells[cellIndex].u))
+        {
+            printf("[MAC_transferVelocities] 2 NaN detected in div at [%d] -> u: %f, v: %f\n", cellIndex, grid->cells[cellIndex].u, grid->cells[cellIndex].v);
+        }
+    }
 }
 
 void MAC_solveIncompressibility(MacGrid_t *grid, int numIters, float dt, float overRelaxation)
 {
-    for (uint32_t cellIndex = 0; cellIndex < grid->total_size; cellIndex++)
+    int marker0CellIndex = getMarkerCellIndex(grid, grid->markers[0]);
+    printf("\n______MAC_solveIncompressibility\n");
+    printf("marker0CellIndex: %d\n", marker0CellIndex);
+    for (int cellIndex = 0; cellIndex < grid->total_size; cellIndex++)
     {
         grid->cells[cellIndex].p = 0.0f;
         grid->cells[cellIndex].prevu = grid->cells[cellIndex].u;
         grid->cells[cellIndex].prevv = grid->cells[cellIndex].v;
+
+        if (isnan(grid->cells[cellIndex].v) || isnan(grid->cells[cellIndex].u))
+        {
+            printf("[MAC_solveIncompressibility] 1 NaN detected in CELL at [%d] -> u: %f, v: %f\n", cellIndex, grid->cells[cellIndex].u, grid->cells[cellIndex].v);
+        }
     }
 
-    uint16_t n = grid->size_y;
+    for (int cellIndex = 0; cellIndex < grid->total_size; cellIndex++)
+    {
+        if (isnan(grid->cells[cellIndex].v) || isnan(grid->cells[cellIndex].u))
+        {
+            printf("[MAC_solveIncompressibility] 1 NaN detected in CELL at [%d] -> u: %f, v: %f\n", cellIndex, grid->cells[cellIndex].u, grid->cells[cellIndex].v);
+        }
+    }
+
+    int n = grid->size_y;
     float cp = grid->density * grid->cell_size / dt;
 
-    for (uint8_t iter = 0; iter < numIters; iter++)
+    for (int iter = 0; iter < numIters; iter++)
     {
-        for (uint16_t grid_x = 1; grid_x < grid->size_x - 1; grid_x++)
+        printf("ITER: %d\n", iter);
+        for (int grid_x = 1; grid_x < grid->size_x - 1; grid_x++)
         {
-            for (uint16_t grid_y = 1; grid_y < grid->size_y - 1; grid_y++)
+            for (int grid_y = 1; grid_y < grid->size_y - 1; grid_y++)
             {
+                if (isnan(grid->cells[grid_x * n + grid_y].v) || isnan(grid->cells[grid_x * n + grid_y].u))
+                {
+                    printf("[MAC_solveIncompressibility] NaN detected in div at [%d, %d] -> center->u: %f center->v: %f\n",
+                           grid_x, grid_y, grid->cells[grid_x * n + grid_y].u, grid->cells[grid_x * n + grid_y].v);
+                }
                 GridCell_t *center = &grid->cells[grid_x * n + grid_y];
                 GridCell_t *right = &grid->cells[(grid_x + 1) * n + grid_y];
                 GridCell_t *left = &grid->cells[(grid_x - 1) * n + grid_y];
@@ -585,26 +646,38 @@ void MAC_solveIncompressibility(MacGrid_t *grid, int numIters, float dt, float o
                     continue;
                 }
                 // float s = grid->cells[x][y].s;
+                if (center->s == 0.0f)
+                    continue;
+
                 float sx0 = left->s;
                 float sx1 = right->s;
                 float sy0 = bottom->s;
                 float sy1 = top->s;
                 float s = sx0 + sx1 + sy0 + sy1;
+                if (isnan(s))
+                {
+                    printf("[MAC_solveIncompressibility] NaN detected in s at [%d, %d]\n", grid_x, grid_y);
+                }
 
                 if (s == 0.0f)
                     continue;
 
-                float div = right->u - center->u + top->v - center->v;
-
-                if (grid->markers_rest_density > 0.0f) // compensate drift
+                float div = (right->u - center->u) + (top->v - center->v);
+                if (isnan(div))
                 {
-                    float k = 1.0f;
-                    float compression = center->density - grid->markers_rest_density;
-                    if (compression > 0.0f)
-                    {
-                        div = div - k * compression;
-                    }
+                    printf("[MAC_solveIncompressibility] NaN detected in div at [%d, %d] -> right->u: %f, center->u: %f, top->v: %f, center->v: %f\n",
+                           grid_x, grid_y, right->u, center->u, top->v, center->v);
                 }
+
+                // if (grid->markers_rest_density > 0.0f) // compensate drift
+                // {
+                //     float k = 1.0f;
+                //     float compression = center->density - grid->markers_rest_density;
+                //     if (compression > 0.0f)
+                //     {
+                //         div = div - k * compression;
+                //     }
+                // }
 
                 float p = -div / s;
                 p *= overRelaxation;
@@ -626,6 +699,7 @@ void MAC_update(MacGrid_t *grid, float dt)
     MAC_updateParticleDensity(grid);
     MAC_solveIncompressibility(grid, 50, dt, 1.9f);
     MAC_transferVelocities(grid, 0, 0.95f);
+    printf("---------------------------------------------------------------------\n\n");
 }
 
 Pair_t MAC_transformGridToVerticies(MacGrid_t *grid, Vertex_t *vertices, GLuint *indices)
@@ -651,11 +725,11 @@ Pair_t MAC_transformGridToVerticies(MacGrid_t *grid, Vertex_t *vertices, GLuint 
     size_t vert_index = 0;
     size_t ind_index = 0;
 
-    for (uint16_t x = 0; x < grid->size_x; ++x)
+    for (int x = 0; x < grid->size_x; ++x)
     {
-        for (uint16_t y = 0; y < grid->size_y; ++y)
+        for (int y = 0; y < grid->size_y; ++y)
         {
-            uint16_t cellIndex = x * grid->size_y + y;
+            int cellIndex = x * grid->size_y + y;
             glm::vec3 cubePos = glm::vec3(x, y, 0) * grid->cell_size;
             for (int i = 0; i < 8; i++)
             {
@@ -698,7 +772,7 @@ Pair_t MAC_transformGridToVerticies(MacGrid_t *grid, Vertex_t *vertices, GLuint 
 
 Pair_t MAC_transformMarkersToVertices(MacGrid_t *grid, Vertex_t *markerVertices, GLuint *markerIndices)
 {
-    for (uint16_t i = 0; i < grid->num_markers; i++)
+    for (int i = 0; i < grid->num_markers; i++)
     {
         markerVertices[i].position = grid->markers[i].position;
         markerVertices[i].color = grid->markers[i].color;
