@@ -35,7 +35,7 @@ void Obstacle_processInput(Obstacle_t *obstacle, GLFWwindow *window)
     }
 }
 
-void Obstacle_transformToVertices(Obstacle_t *obstacle, Vertex_t *vertices, GLuint *indices)
+Pair_t Obstacle_transformToVertices(Obstacle_t *obstacle, Vertex_t *vertices, GLuint *indices)
 {
     const int sectorCount = 36; // Ilość podziałów w poziomie (południki)
     const int stackCount = 18;  // Ilość podziałów w pionie (równoleżniki)
@@ -104,6 +104,8 @@ void Obstacle_transformToVertices(Obstacle_t *obstacle, Vertex_t *vertices, GLui
             }
         }
     }
+
+    return {.first = vertexIndex, .second = indexIndex};
 }
 
 void Obstacle_destroy(Obstacle_t *obstacle)

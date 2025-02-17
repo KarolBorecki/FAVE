@@ -10,6 +10,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "inc/types.h"
 #include "inc/camera.h"
 
 #include "inc/mac.h"
@@ -63,7 +64,7 @@ GLFWwindow *initializeWindow()
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
 
-    if (!gladLoadGL())
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
         fprintf(stderr, "Failed to initialize GLAD\n");
         glfwTerminate();
@@ -71,6 +72,11 @@ GLFWwindow *initializeWindow()
     }
 
     glEnable(GL_DEPTH_TEST);
+
+    // FOR DEBUGGING
+    // glEnable(GL_DEBUG_OUTPUT);
+    // glDebugMessageCallback(GLDebugMessageCallback, 0);
+
     return window;
 }
 
@@ -121,7 +127,7 @@ void setupObstacleBuffers(VAO_t &vao, VBO_t &vbo, EBO_t &ebo)
     EBO_unbind();
 }
 
-void render(GLFWwindow *window, Camera_t &camera, Shader_t &shaderProgram, VAO_t &vao, VBO_t &vbo, EBO_t &ebo, Vertex_t *vertices, GLuint *indices)
+void render(GLFWwindow *window, Camera_t &camera, Shader_t &shaderProgram, VAO_t &vao, VBO_t &vbo, EBO_t &ebo, Vertex_t *vertices, GLuint *indices, uint16_t verticies_size, uint16_t indicies_size)
 {
     Shader_use(&shaderProgram);
     Shader_setVector3f(&shaderProgram, "scale", 1.0f, 1.0f, 1.0f);
@@ -139,7 +145,12 @@ void render(GLFWwindow *window, Camera_t &camera, Shader_t &shaderProgram, VAO_t
     EBO_update(&ebo, indices, INDICIES_SIZE);
 
     VAO_bind(&vao);
-    glDrawElements(GL_TRIANGLES, INDICIES_SIZE, GL_UNSIGNED_INT, 0);
+    if (verticies_size > VERTICIES_SIZE || indicies_size > INDICIES_SIZE)
+    {
+        fprintf(stderr, "Too many verticies or indicies to render\n");
+        return;
+    }
+    glDrawElements(GL_TRIANGLES, indicies_size, GL_UNSIGNED_INT, 0);
 
     VAO_unbind();
     VBO_unbind();
@@ -177,30 +188,39 @@ int main(int argc, char **argv)
     if (!window)
         return -1;
 
-    Vertex_t *vertices = (Vertex *)calloc(VERTICIES_SIZE, sizeof(Vertex));
+    Vertex_t *vertices = (Vertex_t *)calloc(VERTICIES_SIZE, sizeof(Vertex_t));
     GLuint *indices = (GLuint *)calloc(INDICIES_SIZE, sizeof(GLuint));
 
-    Vertex_t *obstacleVertices = (Vertex *)calloc(VERTICIES_SIZE, sizeof(Vertex));
+    Vertex_t *obstacleVertices = (Vertex_t *)calloc(VERTICIES_SIZE, sizeof(Vertex_t));
     GLuint *obstacleIndices = (GLuint *)calloc(INDICIES_SIZE, sizeof(GLuint));
 
-    Shader_t fluidShader;
-    Shader_init(&fluidShader, "shaders/fluid.vert", "shaders/fluid.frag");
+    Vertex_t *markerVertices = (Vertex_t *)calloc(VERTICIES_SIZE, sizeof(Vertex_t));
+    GLuint *markerIndices = (GLuint *)calloc(INDICIES_SIZE, sizeof(GLuint));
 
-    Shader_t obstacleShader;
+    if (!vertices || !indices || !obstacleVertices || !obstacleIndices || !markerVertices || !markerIndices)
+    {
+        fprintf(stderr, "Failed to allocate memory for vertices and indices\n");
+        return -1;
+    }
+
+    Shader_t fluidShader, obstacleShader, markerShader;
+    Shader_init(&fluidShader, "shaders/default.vert", "shaders/default.frag");
     Shader_init(&obstacleShader, "shaders/obstacle.vert", "shaders/obstacle.frag");
+    Shader_init(&markerShader, "shaders/default.vert", "shaders/default.frag");
 
-    VAO_t fluidVao, obstacleVao;
-    VBO_t fluidVbo, obstacleVbo;
-    EBO_t fluidEbo, obstacleEbo;
+    VAO_t fluidVao, obstacleVao, markerVao;
+    VBO_t fluidVbo, obstacleVbo, markerVbo;
+    EBO_t fluidEbo, obstacleEbo, markerEbo;
 
     setupBuffers(fluidVao, fluidVbo, fluidEbo);
     setupObstacleBuffers(obstacleVao, obstacleVbo, obstacleEbo);
+    setupBuffers(markerVao, markerVbo, markerEbo);
 
     Camera_t camera;
     Camera_init(&camera, window, 45.0f, 0.1f, 100.0f);
 
     MacGrid_t mac;
-    MAC_init(&mac, 50, 50, 1.0f);
+    MAC_init(&mac, 10 , 10, 1.0f);
 
     Obstacle_t obstacle;
     Obstacle_init(&obstacle, glm::vec3(0.0f, 0.0f, 0.0f), 1.0f, 0.3f);
@@ -215,13 +235,16 @@ int main(int argc, char **argv)
         Obstacle_processInput(&obstacle, window);
 
         MAC_handleObstacle(&mac, obstacle.position, obstacle.radius);
+
         MAC_update(&mac, 0.1f);
 
-        MAC_transformGridToVerticies(&mac, vertices, indices);
-        Obstacle_transformToVertices(&obstacle, obstacleVertices, obstacleIndices);
+        Pair_t mac_grid_render_sizes = MAC_transformGridToVerticies(&mac, vertices, indices);
+        // Pair_t mac_markers_render_sizes = MAC_transformMarkersToVertices(&mac, markerVertices, markerIndices);
+        Pair_t obstacle_render_sizes = Obstacle_transformToVertices(&obstacle, obstacleVertices, obstacleIndices);
 
-        render(window, camera, fluidShader, fluidVao, fluidVbo, fluidEbo, vertices, indices);
-        render(window, camera, obstacleShader, obstacleVao, obstacleVbo, obstacleEbo, obstacleVertices, obstacleIndices);
+        render(window, camera, fluidShader, fluidVao, fluidVbo, fluidEbo, vertices, indices, mac_grid_render_sizes.first, mac_grid_render_sizes.second);
+        // render(window, camera, markerShader, markerVao, markerVbo, markerEbo, markerVertices, markerIndices, mac_markers_render_sizes.first, mac_markers_render_sizes.second);
+        render(window, camera, obstacleShader, obstacleVao, obstacleVbo, obstacleEbo, obstacleVertices, obstacleIndices, obstacle_render_sizes.first, obstacle_render_sizes.second);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -242,6 +265,13 @@ int main(int argc, char **argv)
     free(indices);
     free(obstacleVertices);
     free(obstacleIndices);
+
+    free(markerVertices);
+    free(markerIndices);
+    Shader_destroy(&markerShader);
+    VAO_destroy(&markerVao);
+    VBO_destroy(&markerVbo);
+    EBO_destroy(&markerEbo);
     glfwDestroyWindow(window);
     glfwTerminate();
     return 0;
