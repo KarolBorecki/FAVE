@@ -9,7 +9,9 @@
 #include "types.h"
 #include "utils.h"
 #include "buffers/vbo.h"
+#include "obstacle.h"
 
+// TODO remove
 #define uint16_t int
 #define uint8_t int
 
@@ -69,7 +71,7 @@ typedef struct MacGrid
 } MacGrid_t;
 
 void MAC_init(MacGrid_t *grid, uint16_t size_x, uint16_t size_y, float cell_size);
-void MAC_handleObstacle(MacGrid_t *grid, glm::vec3 obstaclePos, float obstacleRadius);
+void MAC_handleObstacle(MacGrid_t *grid, Obstacle_t *obstacle, float dt);
 void MAC_update(MacGrid_t *grid, float dt);
 Pair_t MAC_transformGridToVerticies(MacGrid_t *grid, Vertex_t *vertices, GLuint *indices);
 Pair_t MAC_transformMarkersToVertices(MacGrid_t *grid, Vertex_t *markerVertices, GLuint *markerIndices);

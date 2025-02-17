@@ -18,6 +18,7 @@
 typedef struct Obstacle
 {
     glm::vec3 position;
+    glm::vec3 velocity;
     float radius;
     float speed;
 } Obstacle_t;

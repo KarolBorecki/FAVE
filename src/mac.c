@@ -110,12 +110,12 @@ uint16_t getMarkerCellIndex(MacGrid_t *grid, Marker_t &marker)
     return clamp((int)floorf(marker.position.x * grid->inv_cell_size), 0, grid->size_x - 2) + grid->size_y * clamp((int)floorf(marker.position.y * grid->inv_cell_size), 0, grid->size_y - 2);
 }
 
-void MAC_handleObstacle(MacGrid_t *grid, glm::vec3 obstaclePos, float obstacleRadius)
+void MAC_handleObstacle(MacGrid_t *grid, Obstacle_t* obstacle, float dt)
 {
     float h = 1.0f / grid->inv_cell_size;
     float r = grid->marker_radius;
-    float or2 = obstacleRadius * obstacleRadius;
-    float minDist = obstacleRadius + r;
+    float or2 = obstacle->radius * obstacle->radius;
+    float minDist = obstacle->radius + r;
     float minDist2 = minDist * minDist;
 
     float minX = h + r;
@@ -127,26 +127,15 @@ void MAC_handleObstacle(MacGrid_t *grid, glm::vec3 obstaclePos, float obstacleRa
     {
         Marker_t &marker = grid->markers[i];
 
-        float dx = marker.position.x - obstaclePos.x;
-        float dy = marker.position.y - obstaclePos.y;
+        float dx = marker.position.x - obstacle->position.x;
+        float dy = marker.position.y - obstacle->position.y;
         float d2 = dx * dx + dy * dy;
 
-        // Kolizja z przeszkodą
         if (d2 < minDist2)
         {
-            float d = sqrtf(d2);
-            if (d > 0.0f) // Unikanie dzielenia przez zero
-            {
-                float s = (minDist - d) / d;
-                marker.position.x += dx * s;
-                marker.position.y += dy * s;
-            }
-
-            // Można dodać prędkość przeszkody, jeśli jest dynamiczna
-            marker.velocity = glm::vec3(0.0f, 0.0f, 0.0f); // Przykładowe wyzerowanie prędkości po kolizji
+            marker.velocity = obstacle->velocity;
         }
 
-        // Kolizje ze ścianami siatki
         if (marker.position.x < minX)
         {
             marker.position.x = minX;
@@ -307,69 +296,6 @@ void MAC_pushParticlesApart(MacGrid_t *grid, int numIters)
                     }
                 }
             }
-        }
-    }
-}
-
-void MAC_handleParticleCollisions(MacGrid_t *grid, float obstacleX, float obstacleY, float obstacleRadius)
-{
-    float h = grid->cell_size;
-    float r = grid->marker_radius;
-    float or2 = obstacleRadius * obstacleRadius;
-    float minDist = obstacleRadius + r;
-    float minDist2 = minDist * minDist;
-
-    float minX = h + r;
-    float maxX = (grid->size_x - 1) * h - r;
-    float minY = h + r;
-    float maxY = (grid->size_y - 1) * h - r;
-
-    for (uint16_t i = 0; i < grid->num_markers; i++)
-    {
-        Marker_t &marker = grid->markers[i];
-
-        float dx = marker.position.x - obstacleX;
-        float dy = marker.position.y - obstacleY;
-        float d2 = dx * dx + dy * dy;
-
-        // Kolizja z przeszkodą
-        if (d2 < minDist2)
-        {
-            // OLD SOLUTION - wyglada bardziej jak push particles apart idk czemu tak zrobilem na poczatku, nie chce jakiegos lerpa tutaj odwalac
-            // float d = sqrtf(d2);
-            // if (d > 0.0f) // Unikanie dzielenia przez zero
-            // {
-            //     float s = (minDist - d) / d;
-            //     marker.position.x += dx * s;
-            //     marker.position.y += dy * s;
-            // }
-
-            // // Można dodać prędkość przeszkody, jeśli jest dynamiczna
-            // marker.velocity = glm::vec3(0.0f, 0.0f, 0.0f); // Przykładowe wyzerowanie prędkości po kolizji
-
-            
-        }
-
-        // Kolizje ze ścianami siatki
-        if (marker.position.x < minX)
-        {
-            marker.position.x = minX;
-            marker.velocity.x = 0.0f;
-        }
-        if (marker.position.x > maxX)
-        {
-            marker.position.x = maxX;
-            marker.velocity.x = 0.0f;
-        }
-        if (marker.position.y < minY)
-        {
-            marker.position.y = minY;
-            marker.velocity.y = 0.0f;
-        }
-        if (marker.position.y > maxY)
-        {
-            marker.position.y = maxY;
-            marker.velocity.y = 0.0f;
         }
     }
 }
@@ -710,7 +636,6 @@ void MAC_update(MacGrid_t *grid, float dt)
 {
     MAC_integrateParticles(grid, dt, -9.81f);
     MAC_pushParticlesApart(grid, 10);
-    MAC_handleParticleCollisions(grid, 0.0f, 0.0f, 1.0f);
     // MAC_transferVelocities(grid, 1, 1.9f);
     // MAC_updateParticleDensity(grid);
     // MAC_solveIncompressibility(grid, 10, dt, 1.2f);

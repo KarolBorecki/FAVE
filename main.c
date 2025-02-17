@@ -225,6 +225,7 @@ int main(int argc, char **argv)
     Obstacle_t obstacle;
     Obstacle_init(&obstacle, glm::vec3(0.0f, 0.0f, 0.0f), 1.0f, 0.3f);
 
+    float dt = 0.1f; // TODO it should be calculated based on the time between frames or more sophisticated way
     while (!glfwWindowShouldClose(window))
     {
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
@@ -234,9 +235,9 @@ int main(int argc, char **argv)
         Camera_processInput(&camera, window);
         Obstacle_processInput(&obstacle, window);
 
-        MAC_handleObstacle(&mac, obstacle.position, obstacle.radius);
+        MAC_handleObstacle(&mac, &obstacle, dt);
 
-        MAC_update(&mac, 0.1f);
+        MAC_update(&mac, dt);
 
         Pair_t mac_grid_render_sizes = MAC_transformGridToVerticies(&mac, vertices, indices);
         // Pair_t mac_markers_render_sizes = MAC_transformMarkersToVertices(&mac, markerVertices, markerIndices);
