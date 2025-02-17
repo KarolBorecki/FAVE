@@ -110,7 +110,7 @@ uint16_t getMarkerCellIndex(MacGrid_t *grid, Marker_t &marker)
     return clamp((int)floorf(marker.position.x * grid->inv_cell_size), 0, grid->size_x - 2) + grid->size_y * clamp((int)floorf(marker.position.y * grid->inv_cell_size), 0, grid->size_y - 2);
 }
 
-void MAC_handleObstacle(MacGrid_t *grid, Obstacle_t* obstacle, float dt)
+void MAC_handleObstacle(MacGrid_t *grid, Obstacle_t *obstacle, float dt)
 {
     float h = 1.0f / grid->inv_cell_size;
     float r = grid->marker_radius;
@@ -267,8 +267,6 @@ void MAC_pushParticlesApart(MacGrid_t *grid, int numIters)
                         grid->markers[other_marker_id].position.x += dx;
                         grid->markers[other_marker_id].position.y += dy;
 
-                        
-
                         // uint16_t other_marker_index = grid->cell_marker_ids[cell_marker_index];
                         // if (other_marker_index == marker_index)
                         //     continue;
@@ -300,171 +298,161 @@ void MAC_pushParticlesApart(MacGrid_t *grid, int numIters)
     }
 }
 
-// void MAC_transferVelocities(MacGrid_t *grid, int toGrid, float flipRatio)
-// {
-//     uint16_t n = grid->size_y;
-//     float h = grid->cell_size;
-//     float h1 = grid->inv_cell_size;
-//     float h2 = 0.5f * h;
+void MAC_transferVelocities(MacGrid_t *grid, int toGrid, float flipRatio)
+{
+    uint16_t n = grid->size_y;
+    float h = grid->cell_size;
+    float h1 = grid->inv_cell_size;
+    float h2 = 0.5f * h;
 
-//     if (toGrid)
-//     {
-//         for (uint16_t grid_x = 0; grid_x < grid->size_x; grid_x++)
-//         {
-//             for (uint16_t grid_y = 0; grid_y < grid->size_y; grid_y++)
-//             {
-//                 GridCell &cell = grid->cells[grid_x][grid_y];
-//                 cell.prevu = cell.u;
-//                 cell.prevv = cell.v;
-//                 cell.du = 0.0f;
-//                 cell.dv = 0.0f;
-//                 cell.u = 0.0f;
-//                 cell.v = 0.0f;
-//                 cell.type = cell.s == 0.0f ? SOLID : AIR;
-//             }
-//         }
+    if (toGrid)
+    {
+        for (uint16_t cellIndex = 0; cellIndex < grid->total_size; cellIndex++)
+        {
+            grid->cells[cellIndex].prevu = grid->cells[cellIndex].u;
+            grid->cells[cellIndex].prevv = grid->cells[cellIndex].v;
+            grid->cells[cellIndex].du = 0.0f;
+            grid->cells[cellIndex].dv = 0.0f;
+            grid->cells[cellIndex].u = 0.0f;
+            grid->cells[cellIndex].v = 0.0f;
+            grid->cells[cellIndex].type = grid->cells[cellIndex].s == 0.0f ? SOLID : AIR;
+        }
 
-//         for (uint16_t marker_index = 0; marker_index < grid->num_markers; marker_index++)
-//         {
-//             GridCell_t &cell = getMarkerCell(grid, grid->markers[marker_index]);
-//             if (cell.type != SOLID)
-//                 cell.type = FLUID;
-//         }
-//     }
+        for (uint16_t marker_index = 0; marker_index < grid->num_markers; marker_index++)
+        {
+            uint16_t cellIndex = getMarkerCellIndex(grid, grid->markers[marker_index]);
+            if (grid->cells[cellIndex].type != SOLID)
+                grid->cells[cellIndex].type = FLUID;
+        }
+    }
 
-//     for (uint8_t component = 0; component < 2; component++)
-//     {
-//         float dx = component == 0 ? 0.0f : 1.0f;
-//         float dy = component == 0 ? h2 : 0.0f;
+    for (uint8_t component = 0; component < 2; component++)
+    {
+        float dx = component == 0 ? 0.0f : h2;
+        float dy = component == 0 ? h2 : 0.0f;
 
-//         for (uint16_t marker_index = 0; marker_index < grid->num_markers; marker_index++)
-//         {
-//             float x = clampf(grid->markers[marker_index].position.x, h, (grid->size_x - 1) * h);
-//             float y = clampf(grid->markers[marker_index].position.y, h, (grid->size_y - 1) * h);
+        for (uint16_t marker_index = 0; marker_index < grid->num_markers; marker_index++)
+        {
+            float x = clampf(grid->markers[marker_index].position.x, h, (grid->size_x - 1) * h);
+            float y = clampf(grid->markers[marker_index].position.y, h, (grid->size_y - 1) * h);
 
-//             uint16_t x0 = MIN(floorf((x - dx) * h1), grid->size_x - 2);
-//             float tx = (x - dx - x0 * h) * h1;
-//             uint16_t x1 = MIN(x0 + 1, grid->size_x - 2);
+            uint16_t x0 = MIN(floorf((x - dx) * h1), grid->size_x - 2);
+            float tx = (x - dx - x0 * h) * h1;
+            uint16_t x1 = MIN(x0 + 1, grid->size_x - 2);
 
-//             uint16_t y0 = MIN(floorf((y - dy) * h1), grid->size_y - 2);
-//             float ty = (y - dy - y0 * h) * h1;
-//             uint16_t y1 = MIN(y0 + 1, grid->size_y - 2);
+            uint16_t y0 = MIN(floorf((y - dy) * h1), grid->size_y - 2);
+            float ty = (y - dy - y0 * h) * h1;
+            uint16_t y1 = MIN(y0 + 1, grid->size_y - 2);
 
-//             float sx = 1.0f - tx;
-//             float sy = 1.0f - ty;
+            float sx = 1.0f - tx;
+            float sy = 1.0f - ty;
 
-//             float d0 = sx * sy;
-//             float d1 = tx * sy;
-//             float d2 = tx * ty;
-//             float d3 = sx * ty;
+            float d0 = sx * sy;
+            float d1 = tx * sy;
+            float d2 = tx * ty;
+            float d3 = sx * ty;
 
-//             if (toGrid)
-//             {
-//                 float pv = grid->markers[marker_index].velocity[component];
-//                 if (component == 0)
-//                 {
-//                     grid->cells[x0][y0].u += d0 * pv;
-//                     grid->cells[x1][y0].u += d1 * pv;
-//                     grid->cells[x1][y1].u += d2 * pv;
-//                     grid->cells[x0][y1].u += d3 * pv;
+            uint16_t cellIndex0 = x0 + n * y0;
+            uint16_t cellIndex1 = x1 + n * y0;
+            uint16_t cellIndex2 = x1 + n * y1;
+            uint16_t cellIndex3 = x0 + n * y1;
 
-//                     grid->cells[x0][y0].du += d0;
-//                     grid->cells[x1][y0].du += d1;
-//                     grid->cells[x1][y1].du += d2;
-//                     grid->cells[x0][y1].du += d3;
-//                 }
-//                 else
-//                 {
-//                     grid->cells[x0][y0].v += d0 * pv;
-//                     grid->cells[x1][y0].v += d1 * pv;
-//                     grid->cells[x1][y1].v += d2 * pv;
-//                     grid->cells[x0][y1].v += d3 * pv;
+            if (toGrid)
+            {
+                float pv = grid->markers[marker_index].velocity[component];
+                if (component == 0)
+                {
+                    grid->cells[cellIndex0].u += d0 * pv;
+                    grid->cells[cellIndex1].u += d1 * pv;
+                    grid->cells[cellIndex2].u += d2 * pv;
+                    grid->cells[cellIndex3].u += d3 * pv;
 
-//                     grid->cells[x0][y0].dv += d0;
-//                     grid->cells[x1][y0].dv += d1;
-//                     grid->cells[x1][y1].dv += d2;
-//                     grid->cells[x0][y1].dv += d3;
-//                 }
-//             }
-//             else
-//             {
-//                 float valid0, valid1, valid2, valid3;
-//                 if (component == 0)
-//                 {
-//                     valid0 = grid->cells[x0][y0].type != AIR || grid->cells[x0 - 1][y0].type != AIR ? 1.0f : 0.0f;
-//                     valid1 = grid->cells[x1][y0].type != AIR || grid->cells[x1 - 1][y0].type != AIR ? 1.0f : 0.0f;
-//                     valid2 = grid->cells[x1][y1].type != AIR || grid->cells[x1 - 1][y1].type != AIR ? 1.0f : 0.0f;
-//                     valid3 = grid->cells[x0][y1].type != AIR || grid->cells[x0 - 1][y1].type != AIR ? 1.0f : 0.0f;
-//                 }
-//                 else if (component == 1)
-//                 {
-//                     valid0 = grid->cells[x0][y0].type != AIR || grid->cells[x0][y0 - 1].type != AIR ? 1.0f : 0.0f;
-//                     valid1 = grid->cells[x1][y0].type != AIR || grid->cells[x1][y0 - 1].type != AIR ? 1.0f : 0.0f;
-//                     valid2 = grid->cells[x1][y1].type != AIR || grid->cells[x1][y1 - 1].type != AIR ? 1.0f : 0.0f;
-//                     valid3 = grid->cells[x0][y1].type != AIR || grid->cells[x0][y1 - 1].type != AIR ? 1.0f : 0.0f;
-//                 }
-//                 float v = grid->markers[marker_index].velocity[component];
-//                 float d = valid0 * d0 + valid1 * d1 + valid2 * d2 + valid3 * d3;
-//                 if (d > 0.0f)
-//                 {
-//                     if (component == 0)
-//                     {
-//                         float picV = (valid0 * d0 * grid->cells[x0][y0].u + valid1 * d1 * grid->cells[x1][y0].u + valid2 * d2 * grid->cells[x1][y1].u + valid3 * d3 * grid->cells[x0][y1].u) / d;
-//                         float corr = (valid0 * d0 * (grid->cells[x0][y0].u - grid->cells[x0][y0].prevu) + valid1 * d1 * (grid->cells[x1][y0].u - grid->cells[x1][y0].prevu) + valid2 * d2 * (grid->cells[x1][y1].u - grid->cells[x1][y1].prevu) + valid3 * d3 * (grid->cells[x0][y1].u - grid->cells[x0][y1].prevu)) / d;
-//                         float flipV = v + corr;
-//                         grid->markers[marker_index].velocity[component] = flipRatio * flipV + (1.0f - flipRatio) * picV;
-//                     }
-//                     else if (component == 1)
-//                     {
-//                         float picV = (valid0 * d0 * grid->cells[x0][y0].v + valid1 * d1 * grid->cells[x1][y0].v + valid2 * d2 * grid->cells[x1][y1].v + valid3 * d3 * grid->cells[x0][y1].v) / d;
-//                         float corr = (valid0 * d0 * (grid->cells[x0][y0].v - grid->cells[x0][y0].prevv) + valid1 * d1 * (grid->cells[x1][y0].v - grid->cells[x1][y0].prevv) + valid2 * d2 * (grid->cells[x1][y1].v - grid->cells[x1][y1].prevv) + valid3 * d3 * (grid->cells[x0][y1].v - grid->cells[x0][y1].prevv)) / d;
-//                         float flipV = v + corr;
-//                         grid->markers[marker_index].velocity[component] = flipRatio * flipV + (1.0f - flipRatio) * picV;
-//                     }
-//                 }
-//             }
+                    grid->cells[cellIndex0].du += d0;
+                    grid->cells[cellIndex1].du += d1;
+                    grid->cells[cellIndex2].du += d2;
+                    grid->cells[cellIndex3].du += d3;
+                }
+                else
+                {
+                    grid->cells[cellIndex0].v += d0 * pv;
+                    grid->cells[cellIndex1].v += d1 * pv;
+                    grid->cells[cellIndex2].v += d2 * pv;
+                    grid->cells[cellIndex3].v += d3 * pv;
 
-//             if (toGrid)
-//             {
-//                 if (component == 0)
-//                 {
-//                     for (uint16_t grid_x = 0; grid_x < grid->size_x; grid_x++)
-//                     {
-//                         for (uint16_t grid_y = 0; grid_y < grid->size_y; grid_y++)
-//                         {
-//                             grid->cells[grid_x][grid_y].u /= grid->cells[grid_x][grid_y].du;
-//                         }
-//                     }
-//                 }
-//                 else if (component == 1)
-//                 {
-//                     for (uint16_t grid_x = 0; grid_x < grid->size_x; grid_x++)
-//                     {
-//                         for (uint16_t grid_y = 0; grid_y < grid->size_y; grid_y++)
-//                         {
-//                             grid->cells[grid_x][grid_y].v /= grid->cells[grid_x][grid_y].dv;
-//                         }
-//                     }
-//                 }
+                    grid->cells[cellIndex0].dv += d0;
+                    grid->cells[cellIndex1].dv += d1;
+                    grid->cells[cellIndex2].dv += d2;
+                    grid->cells[cellIndex3].dv += d3;
+                }
+            }
+            else
+            {
+                float valid0, valid1, valid2, valid3;
+                uint16_t offset = component == 0 ? n : 1;
+                valid0 = grid->cells[cellIndex0].type != AIR || grid->cells[cellIndex0 - offset].type != AIR ? 1.0f : 0.0f;
+                valid1 = grid->cells[cellIndex1].type != AIR || grid->cells[cellIndex1 - offset].type != AIR ? 1.0f : 0.0f;
+                valid2 = grid->cells[cellIndex2].type != AIR || grid->cells[cellIndex2 - offset].type != AIR ? 1.0f : 0.0f;
+                valid3 = grid->cells[cellIndex3].type != AIR || grid->cells[cellIndex3 - offset].type != AIR ? 1.0f : 0.0f;
 
-//                 for (uint16_t grid_x = 0; grid_x < grid->size_x; grid_x++)
-//                 {
-//                     for (uint16_t grid_y = 0; grid_y < grid->size_y; grid_y++)
-//                     {
-//                         if (grid->cells[grid_x][grid_y].type == SOLID && grid->cells[grid_x - 1][grid_y].type == SOLID)
-//                         {
-//                             grid->cells[grid_x][grid_y].u = grid->cells[grid_x][grid_y].prevu;
-//                         }
-//                         if (grid->cells[grid_x][grid_y].type == SOLID && grid->cells[grid_x][grid_y - 1].type == SOLID)
-//                         {
-//                             grid->cells[grid_x][grid_y].v = grid->cells[grid_x][grid_y].prevv;
-//                         }
-//                     }
-//                 }
-//             }
-//         }
-//     }
-// }
+                float v = grid->markers[marker_index].velocity[component];
+                float d = valid0 * d0 + valid1 * d1 + valid2 * d2 + valid3 * d3;
+                if (d > 0.0f)
+                {
+                    if (component == 0)
+                    {
+                        float picV = (valid0 * d0 * grid->cells[cellIndex0].u + valid1 * d1 * grid->cells[cellIndex1].u + valid2 * d2 * grid->cells[cellIndex2].u + valid3 * d3 * grid->cells[cellIndex3].u) / d;
+                        float corr = (valid0 * d0 * (grid->cells[cellIndex0].u - grid->cells[cellIndex0].prevu) + valid1 * d1 * (grid->cells[cellIndex1].u - grid->cells[cellIndex1].prevu) + valid2 * d2 * (grid->cells[cellIndex2].u - grid->cells[cellIndex2].prevu) + valid3 * d3 * (grid->cells[cellIndex3].u - grid->cells[cellIndex3].prevu)) / d;
+                        float flipV = v + corr;
+                        grid->markers[marker_index].velocity[component] = flipRatio * flipV + (1.0f - flipRatio) * picV;
+                    }
+                    else if (component == 1)
+                    {
+                        float picV = (valid0 * d0 * grid->cells[cellIndex0].v + valid1 * d1 * grid->cells[cellIndex1].v + valid2 * d2 * grid->cells[cellIndex2].v + valid3 * d3 * grid->cells[cellIndex3].v) / d;
+                        float corr = (valid0 * d0 * (grid->cells[cellIndex0].v - grid->cells[cellIndex0].prevv) + valid1 * d1 * (grid->cells[cellIndex1].v - grid->cells[cellIndex1].prevv) + valid2 * d2 * (grid->cells[cellIndex2].v - grid->cells[cellIndex2].prevv) + valid3 * d3 * (grid->cells[cellIndex3].v - grid->cells[cellIndex3].prevv)) / d;
+                        float flipV = v + corr;
+                        grid->markers[marker_index].velocity[component] = flipRatio * flipV + (1.0f - flipRatio) * picV;
+                    }
+                }
+            }
+
+            if (toGrid)
+            {
+                if (component == 0)
+                {
+                    for (uint16_t cellIndex = 0; cellIndex < grid->total_size; cellIndex++)
+                    {
+
+                        grid->cells[cellIndex].u /= grid->cells[cellIndex].du;
+                    }
+                }
+                else if (component == 1)
+                {
+                    for (uint16_t cellIndex = 0; cellIndex < grid->total_size; cellIndex++)
+                    {
+                        grid->cells[cellIndex].v /= grid->cells[cellIndex].dv;
+                    }
+                }
+
+                for (uint16_t grix_x = 0; grix_x < grid->size_x; grix_x++)
+                {
+                    for (uint16_t grix_y = 0; grix_y < grid->size_y; grix_y++)
+                    {
+                        uint16_t cellIndex = grix_x * n + grix_y;
+                        int is_solid = grid->cells[cellIndex].type == SOLID;
+                        if (is_solid && grid->cells[(grix_x - 1) * n + grix_y].type == SOLID)
+                        {
+                            grid->cells[cellIndex].u = grid->cells[grix_x * n + grix_y].prevu;
+                        }
+                        if (is_solid && grid->cells[grix_x * n + (grix_y - 1)].type == SOLID)
+                        {
+                            grid->cells[cellIndex].v = grid->cells[grix_x * n + grix_y].prevv;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
 
 // void MAC_updateParticleDensity(MacGrid_t *grid)
 // {
@@ -636,7 +624,7 @@ void MAC_update(MacGrid_t *grid, float dt)
 {
     MAC_integrateParticles(grid, dt, -9.81f);
     MAC_pushParticlesApart(grid, 10);
-    // MAC_transferVelocities(grid, 1, 1.9f);
+    MAC_transferVelocities(grid, 1, 1.9f);
     // MAC_updateParticleDensity(grid);
     // MAC_solveIncompressibility(grid, 10, dt, 1.2f);
     // MAC_transferVelocities(grid, 0, 0.95f);
@@ -724,8 +712,7 @@ void MAC_destroy(MacGrid_t *grid)
 
     if (grid->first_cell_marker)
         free(grid->first_cell_marker);
-    
+
     if (grid->cell_marker_ids)
         free(grid->cell_marker_ids);
-        
 }
