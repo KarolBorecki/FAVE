@@ -454,106 +454,100 @@ void MAC_transferVelocities(MacGrid_t *grid, int toGrid, float flipRatio)
     }
 }
 
-// void MAC_updateParticleDensity(MacGrid_t *grid)
-// {
-//     float h = grid->cell_size;
-//     float h1 = 1.0f / h;
-//     float h2 = 0.5f * h;
+void MAC_updateParticleDensity(MacGrid_t *grid)
+{
+    uint16_t n = grid->size_y;
+    float h = grid->cell_size;
+    float h1 = 1.0f / h;
+    float h2 = 0.5f * h;
 
-//     for (uint32_t grid_x = 0; grid_x < grid->size_x; grid_x++)
-//     {
-//         for (uint32_t grid_y = 0; grid_y < grid->size_y; grid_y++)
-//         {
-//             GridCell &cell = grid->cells[grid_x][grid_y];
-//             cell.density = 0.0f;
-//         }
-//     }
+    for (uint16_t cellIndex = 0; cellIndex < grid->total_size; cellIndex++)
+    {
+        grid->cells[cellIndex].density = 0.0f;
+    }
 
-//     for (uint32_t marker_index = 0; marker_index < grid->num_markers; marker_index++)
-//     {
+    for (uint32_t marker_index = 0; marker_index < grid->num_markers; marker_index++)
+    {
 
-//         Marker_t &marker = grid->markers[marker_index];
-//         float x = marker.position.x;
-//         float y = marker.position.y;
+        Marker_t &marker = grid->markers[marker_index];
+        float x = marker.position.x;
+        float y = marker.position.y;
 
-//         int x0 = (int)floorf((x - h2) * h1);
-//         float tx = ((x - h2) - x0 * h) * h1;
-//         int x1 = (int)MIN(x0 + 1, grid->size_x - 2);
+        int x0 = (int)floorf((x - h2) * h1);
+        float tx = ((x - h2) - x0 * h) * h1;
+        int x1 = (int)MIN(x0 + 1, grid->size_x - 2);
 
-//         int y0 = (int)floorf((y - h2) * h1);
-//         float ty = ((y - h2) - y0 * h) * h1;
-//         int y1 = (int)MIN(y0 + 1, grid->size_y - 2);
+        int y0 = (int)floorf((y - h2) * h1);
+        float ty = ((y - h2) - y0 * h) * h1;
+        int y1 = (int)MIN(y0 + 1, grid->size_y - 2);
 
-//         float sx = 1.0f - tx;
-//         float sy = 1.0f - ty;
+        float sx = 1.0f - tx;
+        float sy = 1.0f - ty;
 
-//         if (x0 < grid->size_x && y0 < grid->size_y)
-//         {
-//             // float d00 = grid->cells[x0][y0].s;
-//             // float d01 = grid->cells[x0][y1].s;
-//             // float d10 = grid->cells[x1][y0].s;
-//             // float d11 = grid->cells[x1][y1].s;
+        if (x0 < grid->size_x && y0 < grid->size_y)
+        {
+            // float d00 = grid->cells[x0* n +y0].s;
+            // float d01 = grid->cells[x0* n +y1].s;
+            // float d10 = grid->cells[x1* n +y0].s;
+            // float d11 = grid->cells[x1* n +y1].s;
 
-//             // float d0 = sx * d00 + tx * d10;
-//             // float d1 = sx * d01 + tx * d11;
+            // float d0 = sx * d00 + tx * d10;
+            // float d1 = sx * d01 + tx * d11;
 
-//             // float d = sy * d0 + ty * d1;
+            // float d = sy * d0 + ty * d1;
 
-//             // marker.density += d;
-//             grid->cells[x0][y0].density += sx * sy;
-//         }
-//         if (x1 < grid->size_x && y0 < grid->size_y)
-//         {
-//             // float d00 = grid->cells[x1][y0].s;
-//             // float d01 = grid->cells[x1][y1].s;
+            // marker.density += d;
+            grid->cells[x0 * n + y0].density += sx * sy;
+        }
+        if (x1 < grid->size_x && y0 < grid->size_y)
+        {
+            // float d00 = grid->cells[x1* n +y0].s;
+            // float d01 = grid->cells[x1* n +y1].s;
 
-//             // float d = sx * d00 + tx * d01;
+            // float d = sx * d00 + tx * d01;
 
-//             // marker.density += d;
-//             grid->cells[x1][y0].density += tx * sy;
-//         }
-//         if (x1 < grid->size_x && y1 < grid->size_y)
-//         {
-//             // float d00 = grid->cells[x1][y1].s;
+            // marker.density += d;
+            grid->cells[x1 * n + y0].density += tx * sy;
+        }
+        if (x1 < grid->size_x && y1 < grid->size_y)
+        {
+            // float d00 = grid->cells[x1* n +y1].s;
 
-//             // float d = sx * d00 + tx * d00;
+            // float d = sx * d00 + tx * d00;
 
-//             // marker.density += d;
-//             grid->cells[x1][y1].density += tx * ty;
-//         }
-//         if (x0 < grid->size_x && y1 < grid->size_y)
-//         {
-//             // float d00 = grid->cells[x0][y1].s;
-//             // float d10 = grid->cells[x1][y1].s;
+            // marker.density += d;
+            grid->cells[x1 * n + y1].density += tx * ty;
+        }
+        if (x0 < grid->size_x && y1 < grid->size_y)
+        {
+            // float d00 = grid->cells[x0* n +y1].s;
+            // float d10 = grid->cells[x1* n +y1].s;
 
-//             // float d = sx * d00 + tx * d10;
+            // float d = sx * d00 + tx * d10;
 
-//             // marker.density += d;
-//             grid->cells[x0][y1].density += sx * ty;
-//         }
+            // marker.density += d;
+            grid->cells[x0 * n + y1].density += sx * ty;
+        }
 
-//         if (grid->rest_density == 0.0f)
-//         {
-//             float sum = 0.0f;
-//             uint16_t num_cells = 0;
-//             for (uint16_t grid_x = 0; grid_x < grid->size_x; grid_x++)
-//             {
-//                 for (uint16_t grid_y = 0; grid_y < grid->size_y; grid_y++)
-//                 {
-//                     if (grid->cells[grid_x][grid_y].type == FLUID)
-//                     {
-//                         sum += grid->cells[grid_x][grid_y].density;
-//                         num_cells++;
-//                     }
-//                 }
-//             }
-//             if (num_cells > 0)
-//             {
-//                 grid->rest_density = sum / num_cells;
-//             }
-//         }
-//     }
-// }
+        if (grid->rest_density == 0.0f)
+        {
+            float sum = 0.0f;
+            uint16_t num_cells = 0;
+            for (uint16_t cellIndex = 0; cellIndex < grid->total_size; cellIndex++)
+            {
+                if (grid->cells[cellIndex].type == FLUID)
+                {
+                    sum += grid->cells[cellIndex].density;
+                    num_cells++;
+                }
+            }
+            if (num_cells > 0)
+            {
+                grid->rest_density = sum / num_cells;
+            }
+        }
+    }
+}
 
 // void MAC_solveIncompressibility(MacGrid_t *grid, int numIters, float dt, float overRelaxation)
 // {
@@ -625,7 +619,7 @@ void MAC_update(MacGrid_t *grid, float dt)
     MAC_integrateParticles(grid, dt, -9.81f);
     MAC_pushParticlesApart(grid, 10);
     MAC_transferVelocities(grid, 1, 1.9f);
-    // MAC_updateParticleDensity(grid);
+    MAC_updateParticleDensity(grid);
     // MAC_solveIncompressibility(grid, 10, dt, 1.2f);
     // MAC_transferVelocities(grid, 0, 0.95f);
 }
