@@ -6,6 +6,7 @@
 
 #include <glm/glm.hpp>
 
+#include "definitions.h"
 #include "types.h"
 #include "utils.h"
 #include "buffers/vbo.h"
@@ -48,6 +49,7 @@ typedef struct Marker
 
 typedef struct MacGrid
 {
+    float density;
     uint16_t size_x;
     uint16_t size_y;
     uint16_t total_size;
@@ -66,11 +68,11 @@ typedef struct MacGrid
     float marker_radius;
     float marker_inv_spacing;
 
-    float density;
-    float rest_density;
+    float markers_rest_density;
+
 } MacGrid_t;
 
-void MAC_init(MacGrid_t *grid, uint16_t size_x, uint16_t size_y, float cell_size);
+void MAC_init(MacGrid_t *grid, float density, uint16_t size_x, uint16_t size_y, float cell_size);
 void MAC_handleObstacle(MacGrid_t *grid, Obstacle_t *obstacle, float dt);
 void MAC_update(MacGrid_t *grid, float dt);
 Pair_t MAC_transformGridToVerticies(MacGrid_t *grid, Vertex_t *vertices, GLuint *indices);

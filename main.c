@@ -10,6 +10,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "definitions.h"
+
 #include "inc/types.h"
 #include "inc/camera.h"
 
@@ -22,9 +24,6 @@
 #include "inc/buffers/ebo.h"
 
 #include "inc/data.h"
-
-#define VERTICIES_SIZE 200000
-#define INDICIES_SIZE 200000
 
 typedef struct CoreConfig
 {
@@ -220,12 +219,12 @@ int main(int argc, char **argv)
     Camera_init(&camera, window, 45.0f, 0.1f, 100.0f);
 
     MacGrid_t mac;
-    MAC_init(&mac, 10 , 10, 1.0f);
+    MAC_init(&mac, 1000.0f, 10 , 10, 1.0f);
 
     Obstacle_t obstacle;
-    Obstacle_init(&obstacle, glm::vec3(0.0f, 0.0f, 0.0f), 1.0f, 0.3f);
+    Obstacle_init(&obstacle, glm::vec3(10.0f, 21.0f, 0.0f), 1.0f, 0.3f);
 
-    float dt = 0.1f; // TODO it should be calculated based on the time between frames or more sophisticated way
+    float dt = 1.0f / 60.0f; // TODO it should be calculated based on the time between frames or more sophisticated way
     while (!glfwWindowShouldClose(window))
     {
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
@@ -235,7 +234,7 @@ int main(int argc, char **argv)
         Camera_processInput(&camera, window);
         Obstacle_processInput(&obstacle, window);
 
-        MAC_handleObstacle(&mac, &obstacle, dt);
+        // MAC_handleObstacle(&mac, &obstacle, dt);
 
         MAC_update(&mac, dt);
 
