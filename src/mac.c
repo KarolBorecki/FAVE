@@ -93,9 +93,16 @@ void MAC_init(MacGrid_t *grid, uint16_t size_x, uint16_t size_y, float cell_size
     }
 }
 
+uint16_t getMarkerCellIndex(MacGrid_t *grid, Marker_t &marker)
+{
+    // printf("marker.position.x: %f, marker.position.y: %f\n", marker.position.x, marker.position.y);
+    // printf("marker grid x: %d, marker grid d: %d\n", (uint16_t)clamp((int)floorf(marker.position.x * grid->inv_cell_size), 0, grid->size_x - 1), (uint16_t)clamp((int)floorf(marker.position.y * grid->inv_cell_size), 0, grid->size_y - 1));
+    return clamp((int)floorf(marker.position.x * grid->inv_cell_size), 0, grid->size_x - 2) * grid->size_y + clamp((int)floorf(marker.position.y * grid->inv_cell_size), 0, grid->size_y - 2);
+}
+
 GridCell_t &getMarkerCell(MacGrid_t *grid, Marker_t &marker)
 {
-    return grid->cells[clamp((int)floorf(marker.position.x * grid->inv_cell_size), 0, grid->size_x - 2) + grid->size_y * clamp((int)floorf(marker.position.y * grid->inv_cell_size), 0, grid->size_y - 2)];
+    return grid->cells[getMarkerCellIndex(grid, marker)];
 }
 
 GridCell_t &getCell(MacGrid_t *grid, uint16_t x, uint16_t y)
@@ -103,12 +110,7 @@ GridCell_t &getCell(MacGrid_t *grid, uint16_t x, uint16_t y)
     return grid->cells[x + grid->size_y * y];
 }
 
-uint16_t getMarkerCellIndex(MacGrid_t *grid, Marker_t &marker)
-{
-    // printf("marker.position.x: %f, marker.position.y: %f\n", marker.position.x, marker.position.y);
-    // printf("marker grid x: %d, marker grid d: %d\n", (uint16_t)clamp((int)floorf(marker.position.x * grid->inv_cell_size), 0, grid->size_x - 1), (uint16_t)clamp((int)floorf(marker.position.y * grid->inv_cell_size), 0, grid->size_y - 1));
-    return clamp((int)floorf(marker.position.x * grid->inv_cell_size), 0, grid->size_x - 2) + grid->size_y * clamp((int)floorf(marker.position.y * grid->inv_cell_size), 0, grid->size_y - 2);
-}
+
 
 void MAC_handleObstacle(MacGrid_t *grid, Obstacle_t *obstacle, float dt)
 {
