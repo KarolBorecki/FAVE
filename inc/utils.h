@@ -8,8 +8,11 @@
 
 #include "definitions.h"
 
-#define MAX(x, y) (((x) > (y)) ? (x) : (y))
-#define MIN(x, y) (((x) < (y)) ? (x) : (y))
+inline int max(int x, int y) { return (x > y) ? x : y; }
+inline int min(int x, int y) { return (x < y) ? x : y; }
+
+inline float maxf(float x, float y) { return (x > y) ? x : y; }
+inline float minf(float x, float y) { return (x < y) ? x : y; }
 
 // void getSciColor(float val, float minVal, float maxVal, float color[3]);
 char *loadResourceFileContent(const char *filename);

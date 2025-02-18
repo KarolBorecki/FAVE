@@ -1,8 +1,8 @@
 #include "mac.h"
 int getMarkerCellIndex(MacGrid_t *grid, Marker_t &marker)
 {
-    float xu = clamp(floorf(marker.position.x), 0.0f, (float)(grid->size_x - 1));
-    float yu = clamp(floorf(marker.position.y), 0.0f, (float)(grid->size_y - 1));
+    int xu = (int)clamp(floorf(marker.position.x), 0.0f, (float)(grid->size_x - 1));
+    int yu = (int)clamp(floorf(marker.position.y), 0.0f, (float)(grid->size_y - 1));
     return xu * grid->size_y + yu;
 }
 
@@ -28,7 +28,7 @@ void MAC_init(MacGrid_t *grid, float density, int size_x, int size_y, float cell
     grid->marker_inv_spacing = 1.0f / (2.2f * grid->marker_radius);
     grid->markers_rest_density = 0.0f;
 
-    grid->cells = (GridCell_t *)malloc(grid->total_size * sizeof(GridCell_t));
+    grid->cells = (GridCell_t *)calloc(grid->total_size, sizeof(GridCell_t));
     if (!grid->cells)
     {
         fprintf(stderr, "Failed to allocate memory for grid cells\n");
@@ -66,7 +66,7 @@ void MAC_init(MacGrid_t *grid, float density, int size_x, int size_y, float cell
         }
     }
 
-    grid->markers = (Marker_t *)malloc(grid->num_markers * sizeof(Marker_t));
+    grid->markers = (Marker_t *)calloc(grid->num_markers, sizeof(Marker_t));
     if (!grid->markers)
     {
         fprintf(stderr, "Failed to allocate memory for markers\n");
@@ -88,7 +88,7 @@ void MAC_init(MacGrid_t *grid, float density, int size_x, int size_y, float cell
         grid->markers[marker_index].color.w = 1.0f;
     }
 
-    grid->num_cell_markers = (int *)malloc(grid->total_size * sizeof(int));
+    grid->num_cell_markers = (int *)calloc(grid->total_size, sizeof(int));
     if (!grid->num_cell_markers)
     {
         fprintf(stderr, "Failed to allocate memory for num_cell_markers\n");
@@ -100,7 +100,7 @@ void MAC_init(MacGrid_t *grid, float density, int size_x, int size_y, float cell
         grid->num_cell_markers[i] = 0;
     }
 
-    grid->first_cell_marker = (int *)malloc((grid->total_size + 1) * sizeof(int));
+    grid->first_cell_marker = (int *)calloc((grid->total_size + 1), sizeof(int));
     if (!grid->first_cell_marker)
     {
         fprintf(stderr, "Failed to allocate memory for first_cell_marker\n");
@@ -112,7 +112,7 @@ void MAC_init(MacGrid_t *grid, float density, int size_x, int size_y, float cell
         grid->first_cell_marker[i] = 0;
     }
 
-    grid->cell_marker_ids = (int *)malloc(grid->num_markers * sizeof(int));
+    grid->cell_marker_ids = (int *)calloc(grid->num_markers, sizeof(int));
     if (!grid->cell_marker_ids)
     {
         fprintf(stderr, "Failed to allocate memory for cell_marker_ids\n");
@@ -224,11 +224,10 @@ void MAC_pushParticlesApart(MacGrid_t *grid, int numIters)
 
             float pxi = floorf(px * grid->marker_inv_spacing);
             float pyi = floorf(py * grid->marker_inv_spacing);
-            int x0 = MAX(pxi - 1, 0);
-            int y0 = MAX(pyi - 1, 0);
-            int x1 = MIN(pxi + 1, grid->size_x - 1);
-            int y1 = MIN(pyi + 1, grid->size_y - 1);
-
+            int x0 = max(pxi - 1, 0);
+            int y0 = max(pyi - 1, 0);
+            int x1 = min(pxi + 1, grid->size_x - 1);
+            int y1 = min(pyi + 1, grid->size_y - 1);
 
             for (int xi = x0; xi <= x1; xi++)
             {
@@ -308,13 +307,13 @@ void MAC_transferVelocities(MacGrid_t *grid, int toGrid, float flipRatio)
             float x = clampf(grid->markers[marker_index].position.x, h, (grid->size_x - 1) * h);
             float y = clampf(grid->markers[marker_index].position.y, h, (grid->size_y - 1) * h);
 
-            int x0 = MIN(floorf((x - dx) * h1), grid->size_x - 2);
+            int x0 = min((int)floorf((x - dx) * h1), grid->size_x - 2);
             float tx = (x - dx - x0 * h) * h1;
-            int x1 = MIN(x0 + 1, grid->size_x - 2);
+            int x1 = min(x0 + 1, grid->size_x - 2);
 
-            int y0 = MIN(floorf((y - dy) * h1), grid->size_y - 2);
+            int y0 = min((int)floorf((y - dy) * h1), grid->size_y - 2);
             float ty = (y - dy - y0 * h) * h1;
-            int y1 = MIN(y0 + 1, grid->size_y - 2);
+            int y1 = min(y0 + 1, grid->size_y - 2);
 
             float sx = 1.0f - tx;
             float sy = 1.0f - ty;
@@ -375,6 +374,7 @@ void MAC_transferVelocities(MacGrid_t *grid, int toGrid, float flipRatio)
                         float picV = (valid0 * d0 * grid->cells[cellIndex0].u + valid1 * d1 * grid->cells[cellIndex1].u + valid2 * d2 * grid->cells[cellIndex2].u + valid3 * d3 * grid->cells[cellIndex3].u) / d;
                         float corr = (valid0 * d0 * (grid->cells[cellIndex0].u - grid->cells[cellIndex0].prevu) + valid1 * d1 * (grid->cells[cellIndex1].u - grid->cells[cellIndex1].prevu) + valid2 * d2 * (grid->cells[cellIndex2].u - grid->cells[cellIndex2].prevu) + valid3 * d3 * (grid->cells[cellIndex3].u - grid->cells[cellIndex3].prevu)) / d;
                         float flipV = v + corr;
+
                         grid->markers[marker_index].velocity[component] = flipRatio * flipV + (1.0f - flipRatio) * picV;
                     }
                     else if (component == 1)
@@ -412,9 +412,9 @@ void MAC_transferVelocities(MacGrid_t *grid, int toGrid, float flipRatio)
                     }
                 }
 
-                for (int grix_x = 0; grix_x < grid->size_x; grix_x++)
+                for (int grix_x = 1; grix_x < grid->size_x-1; grix_x++)
                 {
-                    for (int grix_y = 0; grix_y < grid->size_y; grix_y++)
+                    for (int grix_y = 1; grix_y < grid->size_y-1; grix_y++)
                     {
                         int cellIndex = grix_x * n + grix_y;
                         int is_solid = grid->cells[cellIndex].type == SOLID;
@@ -451,28 +451,33 @@ void MAC_updateParticleDensity(MacGrid_t *grid)
         float x = grid->markers[marker_index].position.x;
         float y = grid->markers[marker_index].position.y;
 
-        int x0 = (int)MAX(0, MIN(grid->size_x - 1, floorf((x - h2) * h1)));
-        int x1 = (int)MAX(0, MIN(grid->size_x - 1, x0 + 1));
+        // int x0 = (int)max(0, min(grid->size_x - 1, floorf((x - h2) * h1)));
+        int x0 = (int)floorf((x - h2) * h1);
+        // int x1 = (int)max(0, min(grid->size_x - 1, x0 + 1));
+        int x1 = (int)max(grid->size_x - 2, x0 + 1);
 
-        int y0 = (int)MAX(0, MIN(grid->size_y - 1, floorf((y - h2) * h1)));
-        int y1 = (int)MAX(0, MIN(grid->size_y - 1, y0 + 1));
+        // int y0 = (int)max(0, min(grid->size_y - 1, floorf((y - h2) * h1)));
+        int y0 = (int)floorf((y - h2) * h1);
+        // int y1 = (int)max(0, min(grid->size_y - 1, y0 + 1));
+        int y1 = (int)min(grid->size_y - 2, y0 + 1);
 
         float tx = ((x - h2) - x0 * h) * h1;
         float ty = ((y - h2) - y0 * h) * h1;
 
         float sx = 1.0f - tx;
         float sy = 1.0f - ty;
+        printf("x0: %d, y0: %d, n: %d, total_size: %d\n", x0, y0, n, grid->total_size);
 
-        if (x0 >= 0 && x0 < grid->size_x && y0 >= 0 && y0 < grid->size_y)
+        if (x0 < grid->size_x && y0 < grid->size_y)
             grid->cells[x0 * n + y0].density += sx * sy;
 
-        if (x1 >= 0 && x1 < grid->size_x && y0 >= 0 && y0 < grid->size_y)
+        if (x1 < grid->size_x && y0 < grid->size_y)
             grid->cells[x1 * n + y0].density += tx * sy;
 
-        if (x1 >= 0 && x1 < grid->size_x && y1 >= 0 && y1 < grid->size_y)
+        if (x1 < grid->size_x && y1 >= 0 && y1 < grid->size_y)
             grid->cells[x1 * n + y1].density += tx * ty;
 
-        if (x0 >= 0 && x0 < grid->size_x && y1 >= 0 && y1 < grid->size_y)
+        if (x0 < grid->size_x && y1 < grid->size_y)
             grid->cells[x0 * n + y1].density += sx * ty;
 
         if (grid->markers_rest_density == 0.0f)
@@ -505,7 +510,7 @@ void MAC_solveIncompressibility(MacGrid_t *grid, int numIters, float dt, float o
     }
 
     int n = grid->size_y;
-    float cp = grid->density * grid->cell_size / dt;
+    double cp = grid->density * grid->cell_size / dt;
 
     for (int iter = 0; iter < numIters; iter++)
     {
@@ -534,19 +539,19 @@ void MAC_solveIncompressibility(MacGrid_t *grid, int numIters, float dt, float o
                 if (s == 0.0f)
                     continue;
 
-                float div = (right->u - center->u) + (top->v - center->v);
+                double div = (right->u - center->u) + (top->v - center->v);
 
-                // if (grid->markers_rest_density > 0.0f)
-                // {
-                //     float k = 1.0f;
-                //     float compression = center->density - grid->markers_rest_density;
-                //     if (compression > 0.0f)
-                //     {
-                //         div -= k * compression;
-                //     }
-                // }
+                if (grid->markers_rest_density > 0.0f)
+                {
+                    float k = 1.0f;
+                    float compression = center->density - grid->markers_rest_density;
+                    if (compression > 0.0f)
+                    {
+                        div -= k * compression;
+                    }
+                }
 
-                float p = -div / s;
+                double p = -div / s;
                 p *= overRelaxation;
                 center->p += cp * p;
 
