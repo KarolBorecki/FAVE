@@ -1,4 +1,96 @@
 #include "mac.h"
+
+#define RED_TEXT "\033[31m" // ANSI escape sequence for red
+#define RESET_TEXT "\033[0m"
+void printGrid(MacGrid_t *grid)
+{
+    printf("\nGrid visualization:\n");
+
+    for (int grid_y = grid->size_y - 1; grid_y >= 0; grid_y--)
+    {
+        // Górna linia oddzielająca
+        for (int grid_x = 0; grid_x < grid->size_x; grid_x++)
+        {
+            printf("+----------------------");
+        }
+        printf("\n");
+
+        // Pusty wiersz dla separacji
+        for (int grid_x = 0; grid_x < grid->size_x; grid_x++)
+        {
+            printf("|                      ");
+        }
+        printf("|\n");
+
+        // Wartości `u` (prędkość w osi X) oraz `p` (ciśnienie)
+        for (int grid_x = 0; grid_x < grid->size_x; grid_x++)
+        {
+            // if (isnan(grid->cells[grid_x * grid->size_y + grid_y].u) || isnan(grid->cells[grid_x * grid->size_y + grid_y].p))
+            // {
+            //     printf(RED_TEXT);
+            //     printf("| %6.1f   %6.1f      ", grid->cells[grid_x * grid->size_y + grid_y].u,
+            //            grid->cells[grid_x * grid->size_y + grid_y].p);
+            //     printf(RESET_TEXT);
+            // }
+            // else if (grid->cells[grid_x * grid->size_y + grid_y].u > -9999.0 && grid->cells[grid_x * grid->size_y + grid_y].u < 9999.0 && grid->cells[grid_x * grid->size_y + grid_y].p < 9999.0 && grid->cells[grid_x * grid->size_y + grid_y].p > -1000.0)
+            // {
+            //     printf("| %6.1f   %6.1f      ", grid->cells[grid_x * grid->size_y + grid_y].u,
+            //            grid->cells[grid_x * grid->size_y + grid_y].p);
+            // }
+            // else if (grid->cells[grid_x * grid->size_y + grid_y].u > -9999.0 && grid->cells[grid_x * grid->size_y + grid_y].u < 9999.0)
+            // {
+            //     printf("| %6.1f   TWN         ", grid->cells[grid_x * grid->size_y + grid_y].u);
+            // }
+            // else if (grid->cells[grid_x * grid->size_y + grid_y].p < 9999.0 && grid->cells[grid_x * grid->size_y + grid_y].p > -1000.0)
+            // {
+            //     printf("| TWN   %6.1f         ", grid->cells[grid_x * grid->size_y + grid_y].p);
+            // }
+            // else
+            // {
+            //     printf("| TWN   TWN            ");
+            // }
+            printf("| %6.1f   %6.1f      ", grid->cells[grid_x * grid->size_y + grid_y].u,
+                   grid->cells[grid_x * grid->size_y + grid_y].p);
+        }
+        printf("|\n");
+
+        // Pusty wiersz dla separacji
+        for (int grid_x = 0; grid_x < grid->size_x; grid_x++)
+        {
+            printf("|                      ");
+        }
+        printf("|\n");
+
+        // Wartości `v` (prędkość w osi Y)
+        for (int grid_x = 0; grid_x < grid->size_x; grid_x++)
+        {
+            // if (isnan(grid->cells[grid_x * grid->size_y + grid_y].v))
+            // {
+            //     printf(RED_TEXT);
+            //     printf("|        %6.1f        ", grid->cells[grid_x * grid->size_y + grid_y].v);
+            //     printf(RESET_TEXT);
+            // }
+            // else if (grid->cells[grid_x * grid->size_y + grid_y].v > -9999.0 && grid->cells[grid_x * grid->size_y + grid_y].v < 9999.0)
+            // {
+            //     printf("|        %6.1f        ", grid->cells[grid_x * grid->size_y + grid_y].v);
+            // }
+            // else
+            // {
+            //     printf("|       TWN            ");
+            // }
+            printf("|        %6.1f        ", grid->cells[grid_x * grid->size_y + grid_y].v);
+        }
+        printf("|\n");
+
+        // Dolna linia oddzielająca
+        for (int grid_x = 0; grid_x < grid->size_x; grid_x++)
+        {
+            printf("+----------------------");
+        }
+        printf("\n");
+    }
+}
+
 int getMarkerCellIndex(MacGrid_t *grid, Marker_t &marker)
 {
     int xu = (int)clamp(floorf(marker.position.x), 0.0f, (float)(grid->size_x - 1));
@@ -21,7 +113,7 @@ void MAC_init(MacGrid_t *grid, float density, int size_x, int size_y, float cell
     grid->size_x = size_x;
     grid->size_y = size_y;
     grid->total_size = size_x * size_y;
-    grid->num_markers = 40;
+    grid->num_markers = 128;
     grid->cell_size = cell_size;
     grid->inv_cell_size = 1.0f / cell_size;
     grid->marker_radius = 0.1f;
@@ -148,6 +240,12 @@ void MAC_handleObstacle(MacGrid_t *grid, Obstacle_t *obstacle, float dt)
         if (d2 < minDist2)
         {
             marker.velocity = (obstacle->position - obstacle->last_position) * dt;
+            if (isnan(marker.velocity.x) || isnan(marker.velocity.y))
+            {
+                // marker.velocity = glm::vec3(0.0f);
+                printf("[handle obstacle] marker[%d].velocity is nan: (%f, %f)\n", marker_index, marker.velocity.x, marker.velocity.y);
+                exit(EXIT_FAILURE);
+            }
         }
 
         if (marker.position.x < minX)
@@ -177,8 +275,15 @@ void MAC_integrateParticles(MacGrid_t *grid, float dt, float gravity)
 {
     for (int marker_index = 0; marker_index < grid->num_markers; marker_index++)
     {
+        // printf("grid->markers[%d].position.x: %f\n", marker_index, grid->markers[marker_index].position.x);
+        // printf("grid->markers[%d].position.y: %f\n", marker_index, grid->markers[marker_index].position.y);
+        // printf("grid->markers[%d].velocity.x: %f\n", marker_index, grid->markers[marker_index].velocity.x);
+        // printf("grid->markers[%d].velocity.y: %f\n", marker_index, grid->markers[marker_index].velocity.y);
         grid->markers[marker_index].position.x += grid->markers[marker_index].velocity.x * dt;
         grid->markers[marker_index].position.y += grid->markers[marker_index].velocity.y * dt;
+        // printf("grid->markers[%d].position.x: %f\n", marker_index,grid->markers[marker_index].position.x);
+        // printf("grid->markers[%d].position.y: %f\n", marker_index, grid->markers[marker_index].position.y);
+        // printf("\n");
     }
 }
 
@@ -304,8 +409,12 @@ void MAC_transferVelocities(MacGrid_t *grid, int toGrid, float flipRatio)
 
         for (int marker_index = 0; marker_index < grid->num_markers; marker_index++)
         {
-            float x = clampf(grid->markers[marker_index].position.x, h, (grid->size_x - 1) * h);
-            float y = clampf(grid->markers[marker_index].position.y, h, (grid->size_y - 1) * h);
+            // printf("\n%s marker_index: %d\n", toGrid ? "TO GRID" : "FROM GRID", marker_index);
+            // printf("grid->markers[marker_index].position.x: %f\n", grid->markers[marker_index].position.x);
+            // printf("grid->markers[marker_index].position.y: %f\n", grid->markers[marker_index].position.y);
+            float x = clampf(grid->markers[marker_index].position.x, h, (grid->size_x - 1.0f) * h);
+            float y = clampf(grid->markers[marker_index].position.y, h, (grid->size_y - 1.0f) * h);
+            // printf("x: %f, y: %f h1: %f h: %f  dx: %f  dy: %f\n", x, y, h1, h, dx, dy);
 
             int x0 = min((int)floorf((x - dx) * h1), grid->size_x - 2);
             float tx = (x - dx - x0 * h) * h1;
@@ -323,10 +432,13 @@ void MAC_transferVelocities(MacGrid_t *grid, int toGrid, float flipRatio)
             float d2 = tx * ty;
             float d3 = sx * ty;
 
+            // printf("x0: %d, y0: %d, x1: %d, y1: %d\n", x0, y0, x1, y1);
             int cellIndex0 = x0 * n + y0;
             int cellIndex1 = x1 * n + y0;
             int cellIndex2 = x1 * n + y1;
             int cellIndex3 = x0 * n + y1;
+
+            // printf("cellIndex0: %d, cellIndex1: %d, cellIndex2: %d, cellIndex3: %d\n", cellIndex0, cellIndex1, cellIndex2, cellIndex3);
 
             if (toGrid)
             {
@@ -376,6 +488,17 @@ void MAC_transferVelocities(MacGrid_t *grid, int toGrid, float flipRatio)
                         float flipV = v + corr;
 
                         grid->markers[marker_index].velocity[component] = flipRatio * flipV + (1.0f - flipRatio) * picV;
+                        if (isnan(grid->markers[marker_index].velocity.x) || isnan(grid->markers[marker_index].velocity.y))
+                        {
+                            // marker.velocity = glm::vec3(0.0f);
+                            printf("picV = %f, corr = %f, flipV = %f\n", picV, corr, flipV);
+                            printf("valid0 = %f, d0 = %f, grid->cells[cellIndex0].u = %f\n", valid0, d0, grid->cells[cellIndex0].u);
+                            printf("valid1 = %f, d1 = %f, grid->cells[cellIndex1].u = %f\n", valid1, d1, grid->cells[cellIndex1].u);
+                            printf("valid2 = %f, d2 = %f, grid->cells[cellIndex2].u = %f\n", valid2, d2, grid->cells[cellIndex2].u);
+                            printf("valid3 = %f, d3 = %f, grid->cells[cellIndex3].u = %f\n", valid3, d3, grid->cells[cellIndex3].u);
+                            printf("[transfer velocity component == 0] marker[%d].velocity is nan: (%f, %f)\n", marker_index, grid->markers[marker_index].velocity.x, grid->markers[marker_index].velocity.y);
+                            exit(EXIT_FAILURE);
+                        }
                     }
                     else if (component == 1)
                     {
@@ -384,6 +507,12 @@ void MAC_transferVelocities(MacGrid_t *grid, int toGrid, float flipRatio)
                         float corr = (valid0 * d0 * (grid->cells[cellIndex0].v - grid->cells[cellIndex0].prevv) + valid1 * d1 * (grid->cells[cellIndex1].v - grid->cells[cellIndex1].prevv) + valid2 * d2 * (grid->cells[cellIndex2].v - grid->cells[cellIndex2].prevv) + valid3 * d3 * (grid->cells[cellIndex3].v - grid->cells[cellIndex3].prevv)) / d;
                         float flipV = v + corr;
                         grid->markers[marker_index].velocity[component] = flipRatio * flipV + (1.0f - flipRatio) * picV;
+                        if (isnan(grid->markers[marker_index].velocity.x) || isnan(grid->markers[marker_index].velocity.y))
+                        {
+                            // marker.velocity = glm::vec3(0.0f);
+                            printf("[transfer velocity component == 1] marker[%d].velocity is nan: (%f, %f)\n", marker_index, grid->markers[marker_index].velocity.x, grid->markers[marker_index].velocity.y);
+                            exit(EXIT_FAILURE);
+                        }
                     }
                 }
             }
@@ -412,9 +541,9 @@ void MAC_transferVelocities(MacGrid_t *grid, int toGrid, float flipRatio)
                     }
                 }
 
-                for (int grix_x = 1; grix_x < grid->size_x-1; grix_x++)
+                for (int grix_x = 1; grix_x < grid->size_x - 1; grix_x++)
                 {
-                    for (int grix_y = 1; grix_y < grid->size_y-1; grix_y++)
+                    for (int grix_y = 1; grix_y < grid->size_y - 1; grix_y++)
                     {
                         int cellIndex = grix_x * n + grix_y;
                         int is_solid = grid->cells[cellIndex].type == SOLID;
@@ -466,7 +595,6 @@ void MAC_updateParticleDensity(MacGrid_t *grid)
 
         float sx = 1.0f - tx;
         float sy = 1.0f - ty;
-        printf("x0: %d, y0: %d, n: %d, total_size: %d\n", x0, y0, n, grid->total_size);
 
         if (x0 < grid->size_x && y0 < grid->size_y)
             grid->cells[x0 * n + y0].density += sx * sy;
@@ -502,6 +630,8 @@ void MAC_updateParticleDensity(MacGrid_t *grid)
 
 void MAC_solveIncompressibility(MacGrid_t *grid, int numIters, float dt, float overRelaxation)
 {
+    printGrid(grid);
+
     for (int cellIndex = 0; cellIndex < grid->total_size; cellIndex++)
     {
         grid->cells[cellIndex].p = 0.0f;
