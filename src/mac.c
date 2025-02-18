@@ -1,9 +1,9 @@
 #include "mac.h"
 int getMarkerCellIndex(MacGrid_t *grid, Marker_t &marker)
 {
-    // printf("marker.position.x: %f, marker.position.y: %f\n", marker.position.x, marker.position.y);
-    // printf("marker grid x: %d, marker grid d: %d\n", (int)clamp((int)floorf(marker.position.x * grid->inv_cell_size), 0, grid->size_x - 1), (int)clamp((int)floorf(marker.position.y * grid->inv_cell_size), 0, grid->size_y - 1));
-    return clamp((int)floorf(marker.position.x * grid->inv_cell_size), 0, grid->size_x - 1) * grid->size_y + clamp((int)floorf(marker.position.y * grid->inv_cell_size), 0, grid->size_y - 1);
+    float xu = clamp(floorf(marker.position.x), 0.0f, (float)(grid->size_x - 1));
+    float yu = clamp(floorf(marker.position.y), 0.0f, (float)(grid->size_y - 1));
+    return xu * grid->size_y + yu;
 }
 
 GridCell_t &getMarkerCell(MacGrid_t *grid, Marker_t &marker)
@@ -74,14 +74,9 @@ void MAC_init(MacGrid_t *grid, float density, int size_x, int size_y, float cell
     }
     for (int i = 0; i < grid->num_markers; ++i)
     {
-        grid->markers[i].position.x = fmodf(i * 1.724356f, size_x * cell_size);
-        grid->markers[i].position.y = fmodf(i * 1.863312f, size_y * cell_size);
-        if (i == 0)
-        {
-            grid->markers[i].position.x = 3.5f;
-            grid->markers[i].position.y = 3.5f;
-        }
-        grid->markers[i].position.z = 2.0f;
+        grid->markers[i].position.x = ((float)rand() / RAND_MAX) * size_x * cell_size;
+        grid->markers[i].position.y = ((float)rand() / RAND_MAX) * size_y * cell_size;
+        grid->markers[i].position.z = 0.5f;
 
         grid->markers[i].velocity.x = 0.0f;
         grid->markers[i].velocity.y = 0.0f;
@@ -165,7 +160,7 @@ void MAC_handleObstacle(MacGrid_t *grid, Obstacle_t *obstacle, float dt)
 
         if (d2 < minDist2)
         {
-            marker.velocity = (obstacle->position - obstacle->last_position);
+            marker.velocity = (obstacle->position - obstacle->last_position) * dt;
             printf("moving marker to velocity: %f, %f\n", marker.velocity.x, marker.velocity.y);
         }
 
@@ -256,6 +251,30 @@ void MAC_pushParticlesApart(MacGrid_t *grid, int numIters)
         // printf("grid->first_cell_marker[%d]: %d for marker index = %d\n", grid->first_cell_marker[cellIndex], grid->cell_marker_ids[grid->first_cell_marker[cellIndex]], marker_index);
     }
 
+    for (int grid_y = grid->size_y-1; grid_y >=0; grid_y--)
+
+    {
+        for (int grid_x = 0; grid_x < grid->size_x; grid_x++)
+        {
+            int cellIndex = grid_x * grid->size_y + grid_y;
+            printf("-%d,%d- ", grid_x, grid_y);
+            // printf("-------");
+        }
+        printf("\n");
+        for (int grid_x = 0; grid_x < grid->size_x; grid_x++)
+        {
+            int cellIndex = grid_x * grid->size_y + grid_y;
+            printf("| %d |", grid->num_cell_markers[cellIndex]);
+        }
+        printf("\n");
+        for (int grid_x = 0; grid_x < grid->size_x; grid_x++)
+        {
+            int cellIndex = grid_x * grid->size_y + grid_y;
+            printf("-------");
+        }
+        printf("\n");
+        }
+
     float minDist = grid->marker_radius * 2.0f;
     float minDist2 = minDist * minDist;
 
@@ -284,9 +303,9 @@ void MAC_pushParticlesApart(MacGrid_t *grid, int numIters)
                     int last = grid->first_cell_marker[cellIndex + 1];
                     // printf("cellIndex: %d, first: %d, last: %d\n", cellIndex, first, last);
 
-                    for (int cell_marker_index = first; cell_marker_index < last; cell_marker_index++)
+                    for (int current_analyzed_marker = first; current_analyzed_marker < last; current_analyzed_marker++)
                     {
-                        int other_marker_id = grid->cell_marker_ids[cell_marker_index];
+                        int other_marker_id = grid->cell_marker_ids[current_analyzed_marker];
                         if (other_marker_id == marker_index)
                             continue;
 
@@ -309,7 +328,7 @@ void MAC_pushParticlesApart(MacGrid_t *grid, int numIters)
                         grid->markers[other_marker_id].position.x += dx;
                         grid->markers[other_marker_id].position.y += dy;
 
-                        // int other_marker_index = grid->cell_marker_ids[cell_marker_index];
+                        // int other_marker_index = grid->cell_marker_ids[current_analyzed_marker];
                         // if (other_marker_index == marker_index)
                         //     continue;
 
