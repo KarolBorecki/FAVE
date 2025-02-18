@@ -224,7 +224,7 @@ int main(int argc, char **argv)
     Obstacle_t obstacle;
     Obstacle_init(&obstacle, glm::vec3(10.0f, 21.0f, 0.0f), 1.0f, 0.1f);
 
-    float dt = 1.0f / 60.0f; // TODO it should be calculated based on the time between frames or more sophisticated way
+    float dt = 1.0f / 120.0f; // TODO it should be calculated based on the time between frames or more sophisticated way
     uint8_t render_frames = -1;
     while (!glfwWindowShouldClose(window) && (render_frames == -1 || render_frames-- > 0))
     {
