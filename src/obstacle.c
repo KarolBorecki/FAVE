@@ -3,7 +3,7 @@
 void Obstacle_init(Obstacle_t *obstacle, glm::vec3 position, float radius, float speed)
 {
     obstacle->position = position;
-    obstacle->velocity = glm::vec3(0.0f, 0.0f, 0.0f);
+    obstacle->last_position = position;
     obstacle->radius = radius;
     obstacle->speed = speed;
 }
@@ -20,36 +20,25 @@ void Obstacle_processInput(Obstacle_t *obstacle, GLFWwindow *window)
     //     obstacle->position += glm::vec3(0.0f, 0.0f, 1.0f * obstacle->speed);
     //     obstacle->velocity += glm::vec3(0.0f, 0.0f, 1.0f * obstacle->speed);
     // }
+    obstacle->last_position = obstacle->position;
     if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS)
     {
         obstacle->position += glm::vec3(-1.0f * obstacle->speed, 0.0f, 0.0f);
-        obstacle->velocity += glm::vec3(-1.0f * obstacle->speed, 0.0f, 0.0f);
     }
     if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS)
     {
         obstacle->position += glm::vec3(1.0f * obstacle->speed, 0.0f, 0.0f);
-        obstacle->velocity += glm::vec3(1.0f * obstacle->speed, 0.0f, 0.0f);
     }
     if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS)
     {
         obstacle->position += glm::vec3(0.0f, 1.0f * obstacle->speed, 0.0f);
-        obstacle->velocity += glm::vec3(0.0f, 1.0f * obstacle->speed, 0.0f);
     }
     if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS)
     {
         obstacle->position += glm::vec3(0.0f, -1.0f * obstacle->speed, 0.0f);
-        obstacle->velocity += glm::vec3(0.0f, -1.0f * obstacle->speed, 0.0f);
     }
 
-    if (glfwGetKey(window, GLFW_KEY_U) != GLFW_PRESS && 
-        glfwGetKey(window, GLFW_KEY_O) != GLFW_PRESS && 
-        glfwGetKey(window, GLFW_KEY_I) != GLFW_PRESS && 
-        glfwGetKey(window, GLFW_KEY_K) != GLFW_PRESS && 
-        glfwGetKey(window, GLFW_KEY_J) != GLFW_PRESS && 
-        glfwGetKey(window, GLFW_KEY_L) != GLFW_PRESS)
-    {
-        obstacle->velocity = glm::vec3(0.0f, 0.0f, 0.0f);
-    }
+
 }
 
 Pair_t Obstacle_transformToVertices(Obstacle_t *obstacle, Vertex_t *vertices, GLuint *indices)
