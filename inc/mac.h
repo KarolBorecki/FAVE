@@ -36,7 +36,7 @@ typedef struct GridCell
     float dv, du, dw;
     float prevv, prevu, prevw;
     float s;
-    float density;
+    float density; // particleDensity
     CellType type;
 } GridCell_t;
 
@@ -52,23 +52,23 @@ typedef struct MacGrid
     float density;
     uint16_t size_x;
     uint16_t size_y;
-    uint16_t total_size;
+    uint16_t total_size; // pNumCells
 
-    uint16_t num_markers;
+    uint16_t num_markers; // maxParticles
 
     GridCell_t *cells;
     Marker_t *markers;
-    uint16_t *num_cell_markers;
-    uint16_t *first_cell_marker;
-    uint16_t *cell_marker_ids;
+    uint16_t *num_cell_markers;  // numCellParticles
+    uint16_t *first_cell_marker; // firstCellParticle
+    uint16_t *cell_marker_ids;   // cellParticleIds
 
-    float cell_size;
-    float inv_cell_size;
+    float cell_size;     // h
+    float inv_cell_size; // fInvSpacing
 
-    float marker_radius;
-    float marker_inv_spacing;
+    float marker_radius;      // particleRadius
+    float marker_inv_spacing; // pInvSpacing
 
-    float markers_rest_density;
+    float markers_rest_density; // particleRestDensity
 
 } MacGrid_t;
 

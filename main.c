@@ -219,10 +219,10 @@ int main(int argc, char **argv)
     Camera_init(&camera, window, 45.0f, 0.1f, 100.0f);
 
     MacGrid_t mac;
-    MAC_init(&mac, 1000.0f, 10 , 10, 1.0f);
+    MAC_init(&mac, 1000.0f, 32 , 32, 1.0f);
 
     Obstacle_t obstacle;
-    Obstacle_init(&obstacle, glm::vec3(10.0f, 21.0f, 0.0f), 1.0f, 0.1f);
+    Obstacle_init(&obstacle, glm::vec3(10.0f, 32.0f, 0.0f), 1.0f, 0.1f);
 
     float dt = 1.0f / 120.0f; // TODO it should be calculated based on the time between frames or more sophisticated way
     uint8_t render_frames = -1;
