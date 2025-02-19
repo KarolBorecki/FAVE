@@ -244,7 +244,7 @@ int main(int argc, char **argv)
             MAC_handleObstacle(&mac, &obstacle, dt);
             MAC_transferVelocities(&mac, 1, 0.9f);
             MAC_updateParticleDensity(&mac);
-            MAC_solveIncompressibility(&mac, 50, dt, 1.90f);
+            MAC_solveIncompressibility(&mac, 100, dt, 1.90f);
             MAC_transferVelocities(&mac, 0, 0.9f);
         }
         if (update_mac > 0)
