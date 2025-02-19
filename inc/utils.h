@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <math.h>
 
 #include "definitions.h"
 
@@ -13,6 +14,8 @@ inline int min(int x, int y) { return (x < y) ? x : y; }
 
 inline float maxf(float x, float y) { return (x > y) ? x : y; }
 inline float minf(float x, float y) { return (x < y) ? x : y; }
+
+void getSciColor(float val, float minVal, float maxVal, float color[3]);
 
 // void getSciColor(float val, float minVal, float maxVal, float color[3]);
 char *loadResourceFileContent(const char *filename);

@@ -115,11 +115,6 @@ int getMarkerCellIndexForMarkerInvCellSize(MacGrid_t *grid, Marker_t &marker)
     return xu * grid->size_y + yu;
 }
 
-GridCell_t &getMarkerCell(MacGrid_t *grid, Marker_t &marker)
-{
-    return grid->cells[getMarkerCellIndex(grid, marker)];
-}
-
 GridCell_t &getCell(MacGrid_t *grid, int x, int y)
 {
     return grid->cells[x * grid->size_y + y];
@@ -735,15 +730,15 @@ void MAC_solveIncompressibility(MacGrid_t *grid, int numIters, float dt, float o
 
 Pair_t MAC_transformGridToVerticies(MacGrid_t *grid, Vertex_t *vertices, GLuint *indices)
 {
-    glm::vec3 cubeVertices[8] = {// TODO let pivot be in the cube corner
-                                 glm::vec3(-0.5f, -0.5f, -0.5f),
-                                 glm::vec3(0.5f, -0.5f, -0.5f),
-                                 glm::vec3(0.5f, 0.5f, -0.5f),
-                                 glm::vec3(-0.5f, 0.5f, -0.5f),
-                                 glm::vec3(-0.5f, -0.5f, 0.5f),
-                                 glm::vec3(0.5f, -0.5f, 0.5f),
-                                 glm::vec3(0.5f, 0.5f, 0.5f),
-                                 glm::vec3(-0.5f, 0.5f, 0.5f)};
+    glm::vec3 cubeVertices[8] = {
+        glm::vec3(-0.5f, -0.5f, -0.5f),
+        glm::vec3(0.5f, -0.5f, -0.5f),
+        glm::vec3(0.5f, 0.5f, -0.5f),
+        glm::vec3(-0.5f, 0.5f, -0.5f),
+        glm::vec3(-0.5f, -0.5f, 0.5f),
+        glm::vec3(0.5f, -0.5f, 0.5f),
+        glm::vec3(0.5f, 0.5f, 0.5f),
+        glm::vec3(-0.5f, 0.5f, 0.5f)};
 
     GLuint cubeIndices[36] = {
         0, 1, 2, 2, 3, 0,
@@ -756,27 +751,51 @@ Pair_t MAC_transformGridToVerticies(MacGrid_t *grid, Vertex_t *vertices, GLuint 
     size_t vert_index = 0;
     size_t ind_index = 0;
 
+    // Znalezienie minimalnego i maksymalnego ciśnienia dla normalizacji
+    float minPressure = FLT_MAX;
+    float maxPressure = FLT_MIN;
+
+    for (int i = 0; i < grid->total_size; i++)
+    {
+        if (grid->cells[i].type == FLUID)
+        {
+            float p = grid->cells[i].p;
+            if (p < minPressure)
+                minPressure = p;
+            if (p > maxPressure)
+                maxPressure = p;
+        }
+    }
+
     for (int x = 0; x < grid->size_x; ++x)
     {
         for (int y = 0; y < grid->size_y; ++y)
         {
             int cellIndex = x * grid->size_y + y;
             glm::vec3 cubePos = glm::vec3(x, y, 0) * grid->cell_size;
+
+            glm::vec3 color;
+            if (grid->cells[cellIndex].type == FLUID)
+            {
+                float c[3] = {0.0f, 0.0f, 1.0f};
+                getSciColor(grid->cells[cellIndex].p, minPressure, maxPressure, c);
+                color.x = c[0];
+                color.y = c[1];
+                color.z = c[2];
+            }
+            else if (grid->cells[cellIndex].type == SOLID)
+            {
+                color = glm::vec3(1.0f, 1.0f, 1.0f);
+            }
+            else if (grid->cells[cellIndex].type == AIR)
+            {
+                color = glm::vec3(0.53f, 0.81f, 0.94f);
+            }
+
             for (int i = 0; i < 8; i++)
             {
                 vertices[vert_index].position = cubePos + cubeVertices[i] * grid->cell_size;
-                if (grid->cells[cellIndex].type == FLUID)
-                {
-                    vertices[vert_index].color = glm::vec3(0.15f, 0.4f, 0.99f);
-                }
-                else if (grid->cells[cellIndex].type == SOLID)
-                {
-                    vertices[vert_index].color = glm::vec3(1.0f, 1.0f, 1.0f);
-                }
-                else if (grid->cells[cellIndex].type == AIR)
-                {
-                    vertices[vert_index].color = glm::vec3(0.53f, 0.81f, 0.94f);
-                }
+                vertices[vert_index].color = color;
                 vertices[vert_index].normal = glm::normalize(cubeVertices[i]);
                 vert_index++;
             }
