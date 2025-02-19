@@ -216,16 +216,18 @@ int main(int argc, char **argv)
     setupBuffers(markerVao, markerVbo, markerEbo);
 
     Camera_t camera;
-    Camera_init(&camera, window, 45.0f, 0.1f, 100.0f);
+    Camera_init(&camera, window, glm::vec3(50.0f, 50.0f, 150.0f), 45.0f, 0.1f, 180.0f);
 
     MacGrid_t mac;
-    MAC_init(&mac, 1000.0f, 32 , 32, 1.0f);
+    MAC_init(&mac, 1000.0f, 100 , 100, 1.0f);
 
     Obstacle_t obstacle;
-    Obstacle_init(&obstacle, glm::vec3(10.0f, 32.0f, 0.0f), 1.0f, 0.1f);
+    Obstacle_init(&obstacle, glm::vec3(10.0f, 120.0f, 0.0f), 3.0f, 1.0f);
 
-    float dt = 1.0f / 120.0f; // TODO it should be calculated based on the time between frames or more sophisticated way
-    uint8_t render_frames = -1;
+    float dt = 1.0f / 60.0f; // TODO it should be calculated based on the time between frames or more sophisticated way
+    float gravity = -9.81f;
+    int render_frames = -1;
+    int update_mac = 1;
     while (!glfwWindowShouldClose(window) && (render_frames == -1 || render_frames-- > 0))
     {
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
@@ -235,9 +237,20 @@ int main(int argc, char **argv)
         Camera_processInput(&camera, window);
         Obstacle_processInput(&obstacle, window);
 
-        MAC_handleObstacle(&mac, &obstacle, dt);
-
-        MAC_update(&mac, dt);
+        if (update_mac == -1)
+        {
+            MAC_integrateParticles(&mac, dt, gravity);
+            MAC_pushParticlesApart(&mac, 20, dt);
+            MAC_handleObstacle(&mac, &obstacle, dt);
+            MAC_transferVelocities(&mac, 1, 0.9f);
+            MAC_updateParticleDensity(&mac);
+            MAC_solveIncompressibility(&mac, 70, dt, 1.9f);
+            MAC_transferVelocities(&mac, 0, 0.9f);
+        }
+        if (update_mac > 0)
+        {
+            update_mac--;
+        }
 
         Pair_t mac_grid_render_sizes = MAC_transformGridToVerticies(&mac, vertices, indices);
         Pair_t mac_markers_render_sizes = MAC_transformMarkersToVertices(&mac, markerVertices, markerIndices);

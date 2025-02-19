@@ -1,18 +1,18 @@
 #include "camera.h"
 
-void Camera_init(Camera_t *camera, GLFWwindow *window, float fov, float near, float far)
+void Camera_init(Camera_t *camera, GLFWwindow *window, glm::vec3 postion, float fov, float near, float far)
 {
     int window_width, window_height;
     glfwGetWindowSize(window, &window_width, &window_height);
 
-    camera->position = glm::vec3(15.71f, 8.86f, 38.01f);
+    camera->position = postion;
     camera->direction = glm::vec3(0.0f, 0.0f, -1.0f);
     camera->up = glm::vec3(0.0f, 1.0f, 0.0f);
 
     camera->fov = fov;
     camera->near_plane = near;
     camera->far_plane = far;
-    camera->speed = 0.05f;
+    camera->speed = 1.0f;
     camera->sensitivity = 100.0f;
 
     camera->first_input_click = 0;
