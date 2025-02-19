@@ -31,10 +31,10 @@ typedef struct GridPos
 
 typedef struct GridCell
 {
-    float p;
-    float v, u, w; // v - up/down vec, u - left/right vec, w - forward/backward vec
-    float dv, du, dw;
-    float prevv, prevu, prevw;
+    double p;
+    double v, u, w; // v - up/down vec, u - left/right vec, w - forward/backward vec
+    double dv, du, dw;
+    double prevv, prevu, prevw;
     float s;
     float density; // particleDensity
     CellType type;

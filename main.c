@@ -227,7 +227,7 @@ int main(int argc, char **argv)
     float dt = 1.0f / 60.0f; // TODO it should be calculated based on the time between frames or more sophisticated way
     float gravity = -9.81f;
     int render_frames = -1;
-    int update_mac = 1;
+    int update_mac = -1;
     while (!glfwWindowShouldClose(window) && (render_frames == -1 || render_frames-- > 0))
     {
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
@@ -240,11 +240,11 @@ int main(int argc, char **argv)
         if (update_mac == -1)
         {
             MAC_integrateParticles(&mac, dt, gravity);
-            MAC_pushParticlesApart(&mac, 20, dt);
+            MAC_pushParticlesApart(&mac, 3, dt);
             MAC_handleObstacle(&mac, &obstacle, dt);
             MAC_transferVelocities(&mac, 1, 0.9f);
             MAC_updateParticleDensity(&mac);
-            MAC_solveIncompressibility(&mac, 70, dt, 1.9f);
+            MAC_solveIncompressibility(&mac, 300, dt, 1.34f);
             MAC_transferVelocities(&mac, 0, 0.9f);
         }
         if (update_mac > 0)

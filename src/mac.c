@@ -133,7 +133,7 @@ void MAC_init(MacGrid_t *grid, float density, int size_x, int size_y, float cell
     grid->num_markers = (int)floorf(grid->total_size / 2);
     grid->cell_size = cell_size;
     grid->inv_cell_size = 1.0f / cell_size;
-    grid->marker_radius = grid->cell_size / 5.0f;
+    grid->marker_radius = grid->cell_size / 3.0f;
     grid->marker_inv_spacing = 1.0f / (2.2f * grid->marker_radius);
     // grid->marker_inv_spacing = 1.0f / (1.0f * grid->marker_radius);
     grid->markers_rest_density = 0.0f;
@@ -182,29 +182,28 @@ void MAC_init(MacGrid_t *grid, float density, int size_x, int size_y, float cell
         fprintf(stderr, "Failed to allocate memory for markers\n");
         exit(EXIT_FAILURE);
     }
-    for (int marker_index = 0; marker_index < grid->num_markers; ++marker_index)
-    {
-        grid->markers[marker_index].position.x = ((float)rand() / RAND_MAX) * size_x * cell_size;
-        grid->markers[marker_index].position.y = ((float)rand() / RAND_MAX) * size_y * cell_size;
-        grid->markers[marker_index].position.z = grid->cell_size + 0.1f;
+    // for (int marker_index = 0; marker_index < grid->num_markers; ++marker_index)
+    // {
+    //     grid->markers[marker_index].position.x = ((float)rand() / RAND_MAX) * size_x * cell_size;
+    //     grid->markers[marker_index].position.y = ((float)rand() / RAND_MAX) * size_y * cell_size;
+    //     grid->markers[marker_index].position.z = grid->cell_size + 0.1f;
 
-        grid->markers[marker_index].velocity.x = 0.0f;
-        grid->markers[marker_index].velocity.y = 0.0f;
-        grid->markers[marker_index].velocity.z = 0.0f;
+    //     grid->markers[marker_index].velocity.x = 0.0f;
+    //     grid->markers[marker_index].velocity.y = 0.0f;
+    //     grid->markers[marker_index].velocity.z = 0.0f;
 
-        grid->markers[marker_index].color.x = 1.0f;
-        grid->markers[marker_index].color.y = 0.0f;
-        grid->markers[marker_index].color.z = 0.0f;
-        grid->markers[marker_index].color.w = 1.0f;
-    }
+    //     grid->markers[marker_index].color.x = 1.0f;
+    //     grid->markers[marker_index].color.y = 0.0f;
+    //     grid->markers[marker_index].color.z = 0.0f;
+    //     grid->markers[marker_index].color.w = 1.0f;
+    // }
 
     int marker_index = 0;
-
     for (int y = 0; y < size_y; ++y)
     {
         for (int x = 0; x < size_x; ++x)
         {
-            for (int i = 0; i < 2; ++i) // Dwa markery na komórkę
+            for (int i = 0; i < 1; ++i) // Dwa markery na komórkę
             {
                 if (marker_index >= grid->num_markers)
                     break;
@@ -348,7 +347,7 @@ void MAC_pushParticlesApart(MacGrid_t *grid, int numIters, float dt)
         grid->cell_marker_ids[grid->first_cell_marker[cellIndex]] = marker_index;
     }
 
-    float minDist = grid->marker_radius * 2.0f; // TODO
+    float minDist = grid->marker_radius * 2.0f;
     float minDist2 = minDist * minDist;
 
     for (int iter = 0; iter < numIters; iter++)
@@ -387,17 +386,18 @@ void MAC_pushParticlesApart(MacGrid_t *grid, int numIters, float dt)
                         float dy = qy - py;
                         float d2 = dx * dx + dy * dy;
 
-                        if (d2 >= minDist2 || d2 == 0.0f)
+                        if (d2 > minDist2 || d2 == 0.0f)
                             continue;
 
                         float d = sqrtf(d2);
                         float s = 0.5f * (minDist - d) / d;
-                        dx *= s;
-                        dy *= s;
-                        grid->markers[marker_index].position.x -= dx * dt;
-                        grid->markers[marker_index].position.y -= dy * dt;
-                        grid->markers[other_marker_id].position.x += dx * dt;
-                        grid->markers[other_marker_id].position.y += dy * dt;
+                        // float s = minf(0.5f * (minDist - d) / d, 0.1f);
+                        dx *= s * 0.1f;
+                        dy *= s * 0.1f;
+                        grid->markers[marker_index].position.x -= dx;
+                        grid->markers[marker_index].position.y -= dy;
+                        grid->markers[other_marker_id].position.x += dx;
+                        grid->markers[other_marker_id].position.y += dy;
                     }
                 }
             }
@@ -428,7 +428,7 @@ void MAC_transferVelocities(MacGrid_t *grid, int toGrid, float flipRatio)
         for (int marker_index = 0; marker_index < grid->num_markers; marker_index++)
         {
             int cellIndex = getMarkerCellIndex(grid, grid->markers[marker_index]);
-            if (grid->cells[cellIndex].type == AIR)
+            if (grid->cells[cellIndex].type != SOLID)
                 grid->cells[cellIndex].type = FLUID;
         }
     }
@@ -591,11 +591,11 @@ void MAC_transferVelocities(MacGrid_t *grid, int toGrid, float flipRatio)
                     int is_solid = grid->cells[cellIndex].type == SOLID;
                     if (is_solid && grid->cells[(grix_x - 1) * n + grix_y].type == SOLID)
                     {
-                        grid->cells[cellIndex].u = grid->cells[grix_x * n + grix_y].prevu;
+                        grid->cells[cellIndex].u = grid->cells[cellIndex].prevu;
                     }
                     if (is_solid && grid->cells[grix_x * n + (grix_y - 1)].type == SOLID)
                     {
-                        grid->cells[cellIndex].v = grid->cells[grix_x * n + grix_y].prevv;
+                        grid->cells[cellIndex].v = grid->cells[cellIndex].prevv;
                     }
                 }
             }
@@ -791,8 +791,8 @@ Pair_t MAC_transformGridToVerticies(MacGrid_t *grid, Vertex_t *vertices, GLuint 
     return {.first = vert_index, .second = ind_index};
 }
 
-#define SPHERE_LAT_SLICES 2
-#define SPHERE_LON_SLICES 2
+#define SPHERE_LAT_SLICES 5
+#define SPHERE_LON_SLICES 5
 
 Pair_t MAC_transformMarkersToVertices(MacGrid_t *grid, Vertex_t *markerVertices, GLuint *markerIndices)
 {
