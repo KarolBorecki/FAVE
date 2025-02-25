@@ -12,6 +12,11 @@
 #include "buffers/vbo.h"
 #include "obstacle.h"
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 // TODO remove
 #define uint16_t int
 #define uint8_t int
@@ -82,5 +87,9 @@ void MAC_solveIncompressibility(MacGrid_t *grid, int numIters, float dt, float o
 Pair_t MAC_transformGridToVerticies(MacGrid_t *grid, Vertex_t *vertices, GLuint *indices);
 Pair_t MAC_transformMarkersToVertices(MacGrid_t *grid, Vertex_t *markerVertices, GLuint *markerIndices);
 void MAC_destroy(MacGrid_t *grid);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // FAVE_MAC_H

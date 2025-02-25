@@ -1,10 +1,15 @@
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 #ifndef FAVE_EBO_H
 #define FAVE_EBO_H
 
 #include <glad/glad.h>
 #include <stdlib.h>
 
-typedef struct EBO
+	typedef struct EBO
 {
 	GLuint ID;
 } EBO_t;
@@ -16,3 +21,7 @@ void EBO_unbind();
 void EBO_destroy(EBO_t *ebo);
 
 #endif // FAVE_EBO_H
+
+#ifdef __cplusplus
+}
+#endif

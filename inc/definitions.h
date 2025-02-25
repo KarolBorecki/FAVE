@@ -1,3 +1,4 @@
+
 #ifndef FAVE_DEFINITIONS_H
 #define FAVE_DEFINITIONS_H
 
@@ -5,6 +6,7 @@
 #define INDICIES_SIZE 1000000
 
 #define MAC_RESOURCE_PATH "/Users/karolborecki/repo/FAVE/resources/"
-#define RESOURCE_PATH "./resources/"
+// #define RESOURCE_PATH "./resources/"
+#define RESOURCE_PATH "/Users/karolborecki/repo/FAVE/resources/"
 
 #endif // FAVE_DEFINITIONS_H

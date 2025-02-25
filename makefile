@@ -1,7 +1,7 @@
 TARGET = FAVE
 
 CC = g++
-CFLAGS = -g -Wall -Iinc -Iinc/external #TODO remove -g
+CFLAGS = -g -Wall -std=c++23 -Iinc -Iinc/external #TODO remove -g
 
 LIBS = -ldl -lglfw -lGL 
 
@@ -9,7 +9,7 @@ SRC_DIR = src
 OBJ_DIR = build
 INC_DIR = inc
 
-SRCS := $(wildcard $(SRC_DIR)/**/*.c) $(wildcard $(SRC_DIR)/*.c) $(SRC_DIR)/external/glad.c $(SRC_DIR)/external/stb/stb.cpp ./main.c
+SRCS := $(wildcard $(SRC_DIR)/**/*.c) $(wildcard $(SRC_DIR)/*.c) $(SRC_DIR)/external/glad.c ./main.c
 OBJS := $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/%.o,$(SRCS))
 
 all: $(TARGET)

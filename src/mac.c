@@ -207,11 +207,16 @@ void MAC_init(MacGrid_t *grid, float density, int size_x, int size_y, float cell
                 grid->markers[marker_index].position.y = (y + ((float)rand() / RAND_MAX)) * cell_size;
                 grid->markers[marker_index].position.z = cell_size + 0.1f; // Dolna warstwa
 
-                grid->markers[marker_index].velocity = {0.0f, 0.0f, 0.0f};
+                grid->markers[marker_index].velocity.x = 0.0f;
+                grid->markers[marker_index].velocity.y = 0.0f;
+                grid->markers[marker_index].velocity.z = 0.0f;
 
-                grid->markers[marker_index].color = {1.0f, 0.0f, 0.0f, 1.0f};
+                grid->markers[marker_index].color.x = 1.0f;
+                grid->markers[marker_index].color.y = 0.0f;
+                grid->markers[marker_index].color.z = 0.0f;
+                grid->markers[marker_index].color.w = 1.0f;
 
-                ++marker_index;
+                    ++ marker_index;
             }
         }
     }
@@ -751,7 +756,6 @@ Pair_t MAC_transformGridToVerticies(MacGrid_t *grid, Vertex_t *vertices, GLuint 
     size_t vert_index = 0;
     size_t ind_index = 0;
 
-    // Znalezienie minimalnego i maksymalnego ciśnienia dla normalizacji
     float minPressure = FLT_MAX;
     float maxPressure = FLT_MIN;
 
@@ -807,7 +811,7 @@ Pair_t MAC_transformGridToVerticies(MacGrid_t *grid, Vertex_t *vertices, GLuint 
             }
         }
     }
-    return {.first = vert_index, .second = ind_index};
+    return {.first = (int)vert_index, .second = (int)ind_index};
 }
 
 #define SPHERE_LAT_SLICES 5
@@ -836,12 +840,14 @@ Pair_t MAC_transformMarkersToVertices(MacGrid_t *grid, Vertex_t *markerVertices,
                 float sinPhi = sinf(phi);
                 float cosPhi = cosf(phi);
 
-                glm::vec3 vertexPos = {
-                    markerPos.x + radius * sinTheta * cosPhi,
-                    markerPos.y + radius * cosTheta,
-                    markerPos.z + radius * sinTheta * sinPhi};
+                glm::vec3 vertexPos;
 
-                markerVertices[vertexOffset].position = vertexPos;
+                vertexPos.x = markerPos.x + radius * sinTheta * cosPhi;
+                vertexPos.y = markerPos.y + radius * cosTheta;
+                vertexPos.z = markerPos.z + radius * sinTheta * sinPhi;
+
+                markerVertices[vertexOffset]
+                    .position = vertexPos;
                 markerVertices[vertexOffset].color = markerColor;
                 vertexOffset++;
             }

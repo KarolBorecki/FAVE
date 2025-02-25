@@ -29,11 +29,11 @@ void Obstacle_processInput(Obstacle_t *obstacle, GLFWwindow *window)
     {
         obstacle->position += glm::vec3(1.0f * obstacle->speed, 0.0f, 0.0f);
     }
-    if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS)
+    if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS)
     {
         obstacle->position += glm::vec3(0.0f, 1.0f * obstacle->speed, 0.0f);
     }
-    if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS)
+    if (glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS)
     {
         obstacle->position += glm::vec3(0.0f, -1.0f * obstacle->speed, 0.0f);
     }

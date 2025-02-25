@@ -222,7 +222,7 @@ int main(int argc, char **argv)
     MAC_init(&mac, 1000.0f, 100 , 100, 1.0f);
 
     Obstacle_t obstacle;
-    Obstacle_init(&obstacle, glm::vec3(10.0f, 120.0f, 0.0f), 3.0f, 1.0f);
+    Obstacle_init(&obstacle, glm::vec3(10.0f, 120.0f, 0.0f), 6.0f, 1.0f);
 
     float dt = 1.0f / 60.0f; // TODO it should be calculated based on the time between frames or more sophisticated way
     float gravity = -9.81f;
@@ -253,11 +253,11 @@ int main(int argc, char **argv)
         }
 
         Pair_t mac_grid_render_sizes = MAC_transformGridToVerticies(&mac, vertices, indices);
-        Pair_t mac_markers_render_sizes = MAC_transformMarkersToVertices(&mac, markerVertices, markerIndices);
+        // Pair_t mac_markers_render_sizes = MAC_transformMarkersToVertices(&mac, markerVertices, markerIndices);
         Pair_t obstacle_render_sizes = Obstacle_transformToVertices(&obstacle, obstacleVertices, obstacleIndices);
 
         render(window, camera, fluidShader, fluidVao, fluidVbo, fluidEbo, vertices, indices, mac_grid_render_sizes.first, mac_grid_render_sizes.second);
-        render(window, camera, markerShader, markerVao, markerVbo, markerEbo, markerVertices, markerIndices, mac_markers_render_sizes.first, mac_markers_render_sizes.second);
+        // render(window, camera, markerShader, markerVao, markerVbo, markerEbo, markerVertices, markerIndices, mac_markers_render_sizes.first, mac_markers_render_sizes.second);
         render(window, camera, obstacleShader, obstacleVao, obstacleVbo, obstacleEbo, obstacleVertices, obstacleIndices, obstacle_render_sizes.first, obstacle_render_sizes.second);
 
         glfwSwapBuffers(window);

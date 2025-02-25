@@ -9,21 +9,30 @@
 
 #include "definitions.h"
 
-inline int max(int x, int y) { return (x > y) ? x : y; }
-inline int min(int x, int y) { return (x < y) ? x : y; }
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 
-inline float maxf(float x, float y) { return (x > y) ? x : y; }
-inline float minf(float x, float y) { return (x < y) ? x : y; }
+    inline int max(int x, int y) { return (x > y) ? x : y; }
+    inline int min(int x, int y) { return (x < y) ? x : y; }
 
-void getSciColor(float val, float minVal, float maxVal, float color[3]);
+    inline float maxf(float x, float y) { return (x > y) ? x : y; }
+    inline float minf(float x, float y) { return (x < y) ? x : y; }
 
-// void getSciColor(float val, float minVal, float maxVal, float color[3]);
-char *loadResourceFileContent(const char *filename);
+    void getSciColor(float val, float minVal, float maxVal, float color[3]);
 
-double clampd(double d, double min, double max);
-float clampf(float d, float min, float max);
-int clamp(int d, int min, int max);
+    // void getSciColor(float val, float minVal, float maxVal, float color[3]);
+    char *loadResourceFileContent(const char *filename);
 
-float random_float(float min, float max);
+    double clampd(double d, double min, double max);
+    float clampf(float d, float min, float max);
+    int clamp(int d, int min, int max);
+
+    float random_float(float min, float max);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // FAVE_UTILS_H

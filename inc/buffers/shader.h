@@ -1,3 +1,8 @@
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 #ifndef FAVE_SHADER_H
 #define FAVE_SHADER_H
 
@@ -20,3 +25,7 @@ void Shader_setMatrix4f(Shader_t *shader, const char *name, const float *matrix)
 void Shader_destroy(Shader_t *shader);
 
 #endif // FAVE_SHADER_H
+
+#ifdef __cplusplus
+}
+#endif

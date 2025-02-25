@@ -13,6 +13,11 @@
 #include "types.h"
 #include "buffers/vbo.h"
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 #define PI 3.14159265359f
 
 typedef struct Obstacle
@@ -27,4 +32,9 @@ void Obstacle_init(Obstacle_t *obstacle, glm::vec3 position, float radius, float
 void Obstacle_processInput(Obstacle_t *obstacle, GLFWwindow *window);
 Pair_t Obstacle_transformToVertices(Obstacle_t *obstacle, Vertex_t *vertices, GLuint *indices);
 void Obstacle_destroy(Obstacle_t *obstacle);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif // FAVE_OBSTACLE_H

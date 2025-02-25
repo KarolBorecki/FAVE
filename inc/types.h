@@ -1,10 +1,20 @@
 #ifndef FAVE_TYPES_H
 #define FAVE_TYPES_H
 
-typedef struct Pair
+#ifdef __cplusplus
+extern "C"
 {
-    int first;
-    int second;
-} Pair_t;
+#endif
+
+    typedef struct Pair
+    {
+        int first;
+        int second;
+    } Pair_t;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // FAVE_TYPES_H
+
