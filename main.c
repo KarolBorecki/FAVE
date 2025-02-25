@@ -158,28 +158,86 @@ void render(GLFWwindow *window, Camera_t &camera, Shader_t &shaderProgram, VAO_t
 
 int main(int argc, char **argv)
 {
+    printf("./FAVE width=2024 height=1240 flip_ratio=0.8 over_relaxation=1.63 pressure_solver_steps=150 particles_push_apart_steps=3 show_markes=1 show_sci=0 gravity=0 density=1000.0 cell_size=3.0 marker_size=0.1 marker_num=100\n\n");
     config.window_width = 800;
     config.window_height = 600;
 
-    if (argc >= 3)
-    {
-        char *endptr_w, *endptr_h;
-        uint32_t w = (uint32_t)strtoul(argv[1], &endptr_w, 10);
-        uint32_t h = (uint32_t)strtoul(argv[2], &endptr_h, 10);
+    float flip_ratio = 0.9f;
+    float over_relaxation = 1.90f;
+    int pressure_solver_steps = 100;
+    int particles_push_apart_steps = 3;
+    int show_markes = 1;
+    int show_sci = 0;
+    float gravity = -9.81f;
+    float density = 1000.0f;
+    float cell_size = 1.0f;
+    float size_x = 50.0f;
+    float size_y = 50.0f;
+    int marker_num = 1000;
+    float marker_size = 0.1f;
 
-        if (*endptr_w == '\0' && *endptr_h == '\0' && w > 0 && h > 0)
-        {
-            config.window_width = w;
-            config.window_height = h;
-        }
-        else
-        {
-            fprintf(stderr, "Invalid window size arguments. Using default 800x600.\n");
-        }
-    }
-    else
+    for (int i = 1; i < argc; i++)
     {
-        printf("Usage: %s <width> <height>\nUsing default: 800x600\n", argv[0]);
+        if (strncmp(argv[i], "width=", 6) == 0)
+        {
+            config.window_width = atoi(argv[i] + 6);
+        }
+        else if (strncmp(argv[i], "height=", 7) == 0)
+        {
+            config.window_height = atoi(argv[i] + 7);
+        }
+        else if (strncmp(argv[i], "flip_ratio=", 11) == 0)
+        {
+            flip_ratio = atof(argv[i] + 11);
+        }
+        else if (strncmp(argv[i], "over_relaxation=", 16) == 0)
+        {
+            over_relaxation = atof(argv[i] + 16);
+        }
+        else if (strncmp(argv[i], "pressure_solver_steps=", 22) == 0)
+        {
+            pressure_solver_steps = atoi(argv[i] + 22);
+        }
+        else if (strncmp(argv[i], "particles_push_apart_steps=", 27) == 0)
+        {
+            particles_push_apart_steps = atoi(argv[i] + 27);
+        }
+        else if (strncmp(argv[i], "show_markes=", 12) == 0)
+        {
+            show_markes = atoi(argv[i] + 12);
+        }
+        else if (strncmp(argv[i], "show_sci=", 9) == 0)
+        {
+            show_sci = atoi(argv[i] + 9);
+        }
+        else if (strncmp(argv[i], "gravity=", 8) == 0)
+        {
+            gravity = atof(argv[i] + 8);
+        }
+        else if (strncmp(argv[i], "density=", 8) == 0)
+        {
+            density = atof(argv[i] + 8);
+        }
+        else if (strncmp(argv[i], "cell_size=", 10) == 0)
+        {
+            cell_size = atof(argv[i] + 10);
+        }
+        else if (strncmp(argv[i], "size_x=", 7) == 0)
+        {
+            size_x = atoi(argv[i] + 7);
+        }
+        else if (strncmp(argv[i], "size_y=", 7) == 0)
+        {
+            size_y = atoi(argv[i] + 7);
+        }
+        else if (strncmp(argv[i], "marker_num=", 11) == 0)
+        {
+            marker_num = atoi(argv[i] + 11);
+        }
+        else if (strncmp(argv[i], "marker_size=", 12) == 0)
+        {
+            marker_size = atof(argv[i] + 12);
+        }
     }
 
     GLFWwindow *window = initializeWindow();
@@ -216,19 +274,16 @@ int main(int argc, char **argv)
     setupBuffers(markerVao, markerVbo, markerEbo);
 
     Camera_t camera;
-    Camera_init(&camera, window, glm::vec3(50.0f, 50.0f, 150.0f), 45.0f, 0.1f, 180.0f);
+    Camera_init(&camera, window, glm::vec3(50.0f, 50.0f, 150.0f), 45.0f, 0.1f, 1000.0f);
 
     MacGrid_t mac;
-    MAC_init(&mac, 1000.0f, 100 , 100, 1.0f);
+    MAC_init(&mac, density, size_x, size_y, cell_size, marker_num, marker_size);
 
     Obstacle_t obstacle;
     Obstacle_init(&obstacle, glm::vec3(10.0f, 120.0f, 0.0f), 6.0f, 1.0f);
 
     float dt = 1.0f / 60.0f; // TODO it should be calculated based on the time between frames or more sophisticated way
-    float gravity = -9.81f;
-    int render_frames = -1;
-    int update_mac = -1;
-    while (!glfwWindowShouldClose(window) && (render_frames == -1 || render_frames-- > 0))
+    while (!glfwWindowShouldClose(window))
     {
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -237,27 +292,24 @@ int main(int argc, char **argv)
         Camera_processInput(&camera, window);
         Obstacle_processInput(&obstacle, window);
 
-        if (update_mac == -1)
-        {
-            MAC_integrateParticles(&mac, dt, gravity);
-            MAC_pushParticlesApart(&mac, 3, dt);
-            MAC_handleObstacle(&mac, &obstacle, dt);
-            MAC_transferVelocities(&mac, 1, 0.9f);
-            MAC_updateParticleDensity(&mac);
-            MAC_solveIncompressibility(&mac, 100, dt, 1.90f);
-            MAC_transferVelocities(&mac, 0, 0.9f);
-        }
-        if (update_mac > 0)
-        {
-            update_mac--;
-        }
+        MAC_integrateParticles(&mac, dt, gravity);
+        MAC_pushParticlesApart(&mac, particles_push_apart_steps, dt);
+        MAC_handleObstacle(&mac, &obstacle, dt);
+        MAC_transferVelocities(&mac, 1, flip_ratio);
+        MAC_updateParticleDensity(&mac);
+        MAC_solveIncompressibility(&mac, pressure_solver_steps, dt, over_relaxation);
+        MAC_transferVelocities(&mac, 0, flip_ratio);
 
-        Pair_t mac_grid_render_sizes = MAC_transformGridToVerticies(&mac, vertices, indices);
-        // Pair_t mac_markers_render_sizes = MAC_transformMarkersToVertices(&mac, markerVertices, markerIndices);
-        Pair_t obstacle_render_sizes = Obstacle_transformToVertices(&obstacle, obstacleVertices, obstacleIndices);
-
+        Pair_t mac_grid_render_sizes = MAC_transformGridToVerticies(&mac, vertices, indices, show_sci);
         render(window, camera, fluidShader, fluidVao, fluidVbo, fluidEbo, vertices, indices, mac_grid_render_sizes.first, mac_grid_render_sizes.second);
-        // render(window, camera, markerShader, markerVao, markerVbo, markerEbo, markerVertices, markerIndices, mac_markers_render_sizes.first, mac_markers_render_sizes.second);
+        
+        if (show_markes)
+        {
+            Pair_t mac_markers_render_sizes = MAC_transformMarkersToVertices(&mac, markerVertices, markerIndices);
+            render(window, camera, markerShader, markerVao, markerVbo, markerEbo, markerVertices, markerIndices, mac_markers_render_sizes.first, mac_markers_render_sizes.second);
+        }
+
+        Pair_t obstacle_render_sizes = Obstacle_transformToVertices(&obstacle, obstacleVertices, obstacleIndices);
         render(window, camera, obstacleShader, obstacleVao, obstacleVbo, obstacleEbo, obstacleVertices, obstacleIndices, obstacle_render_sizes.first, obstacle_render_sizes.second);
 
         glfwSwapBuffers(window);

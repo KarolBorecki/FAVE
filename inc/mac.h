@@ -77,14 +77,14 @@ typedef struct MacGrid
 
 } MacGrid_t;
 
-void MAC_init(MacGrid_t *grid, float density, int size_x, int size_y, float cell_size);
+void MAC_init(MacGrid_t *grid, float density, int size_x, int size_y, float cell_size, int marker_count, float marker_size);
 void MAC_handleObstacle(MacGrid_t *grid, Obstacle_t *obstacle, float dt);
 void MAC_integrateParticles(MacGrid_t *grid, float dt, float gravity);
 void MAC_pushParticlesApart(MacGrid_t *grid, int numIters, float dt);
 void MAC_transferVelocities(MacGrid_t *grid, int toGrid, float flipRatio);
 void MAC_updateParticleDensity(MacGrid_t *grid);
 void MAC_solveIncompressibility(MacGrid_t *grid, int numIters, float dt, float overRelaxation);
-Pair_t MAC_transformGridToVerticies(MacGrid_t *grid, Vertex_t *vertices, GLuint *indices);
+Pair_t MAC_transformGridToVerticies(MacGrid_t *grid, Vertex_t *vertices, GLuint *indices, int show_sci);
 Pair_t MAC_transformMarkersToVertices(MacGrid_t *grid, Vertex_t *markerVertices, GLuint *markerIndices);
 void MAC_destroy(MacGrid_t *grid);
 
