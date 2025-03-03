@@ -159,22 +159,22 @@ void render(GLFWwindow *window, Camera_t &camera, Shader_t &shaderProgram, VAO_t
 int main(int argc, char **argv)
 {
     printf("./FAVE width=2024 height=1240 flip_ratio=0.8 over_relaxation=1.63 pressure_solver_steps=150 particles_push_apart_steps=3 show_markes=1 show_sci=0 gravity=0 density=1000.0 cell_size=3.0 marker_size=0.1 marker_num=100\n\n");
-    config.window_width = 800;
-    config.window_height = 600;
+    config.window_width = 1400;
+    config.window_height = 1200;
 
     float flip_ratio = 0.9f;
     float over_relaxation = 1.90f;
-    int pressure_solver_steps = 100;
+    int pressure_solver_steps = 50;
     int particles_push_apart_steps = 3;
     int show_markes = 1;
     int show_sci = 0;
     float gravity = -9.81f;
     float density = 1000.0f;
-    float cell_size = 1.0f;
-    float size_x = 50.0f;
-    float size_y = 50.0f;
-    int marker_num = 1000;
-    float marker_size = 0.1f;
+    float cell_size = 0.029845025829028492f;
+    float size_x = 129.0f;
+    float size_y = 152.0f;
+    int marker_num = 11840;
+    float marker_size = 0.009f;
 
     for (int i = 1; i < argc; i++)
     {
@@ -274,21 +274,23 @@ int main(int argc, char **argv)
     setupBuffers(markerVao, markerVbo, markerEbo);
 
     Camera_t camera;
-    Camera_init(&camera, window, glm::vec3(50.0f, 50.0f, 150.0f), 45.0f, 0.1f, 1000.0f);
+    Camera_init(&camera, window, glm::vec3(5.0f, 5.0f, 16.0f), 45.0f, 0.1f, 1000.0f);
 
     MacGrid_t mac;
     MAC_init(&mac, density, size_x, size_y, cell_size, marker_num, marker_size);
 
     Obstacle_t obstacle;
-    Obstacle_init(&obstacle, glm::vec3(10.0f, 120.0f, 0.0f), 6.0f, 1.0f);
+    Obstacle_init(&obstacle, glm::vec3(2.0f, 10.0f, 0.0f), 1.0f, 1.0f);
 
-    float dt = 1.0f / 60.0f; // TODO it should be calculated based on the time between frames or more sophisticated way
+    //float dt = 1.0f / 60.0f; // TODO it should be calculated based on the time between frames or more sophisticated way
+    float dt = 0.16666666f;
     while (!glfwWindowShouldClose(window))
     {
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         processInput(window);
+
         Camera_processInput(&camera, window);
         Obstacle_processInput(&obstacle, window);
 
@@ -302,7 +304,7 @@ int main(int argc, char **argv)
 
         Pair_t mac_grid_render_sizes = MAC_transformGridToVerticies(&mac, vertices, indices, show_sci);
         render(window, camera, fluidShader, fluidVao, fluidVbo, fluidEbo, vertices, indices, mac_grid_render_sizes.first, mac_grid_render_sizes.second);
-        
+
         if (show_markes)
         {
             Pair_t mac_markers_render_sizes = MAC_transformMarkersToVertices(&mac, markerVertices, markerIndices);

@@ -129,7 +129,7 @@ void MAC_init(MacGrid_t *grid, float density, int size_x, int size_y, float cell
     grid->cell_size = cell_size;
     grid->inv_cell_size = 1.0f / cell_size;
     grid->marker_radius = marker_radius;
-    grid->marker_inv_spacing = 1.0f / grid->marker_radius;
+    grid->marker_inv_spacing = 1.0f / (2.2f * grid->marker_radius);
 
     grid->cells = (GridCell_t *)calloc(grid->total_size, sizeof(GridCell_t));
     if (!grid->cells)
@@ -206,10 +206,10 @@ void MAC_handleObstacle(MacGrid_t *grid, Obstacle_t *obstacle, float dt)
     float minDist = obstacle->radius + r;
     float minDist2 = minDist * minDist;
 
-    float minX = grid->cell_size;
-    float maxX = (grid->size_x - 1) * grid->cell_size;
-    float minY = grid->cell_size;
-    float maxY = (grid->size_y - 1) * grid->cell_size;
+    float minX = grid->cell_size + r;
+    float maxX = (grid->size_x - 1) * grid->cell_size - r;
+    float minY = grid->cell_size + r;
+    float maxY = (grid->size_y - 1) * grid->cell_size - r;
 
     for (int marker_index = 0; marker_index < grid->num_markers; marker_index++)
     {
@@ -222,7 +222,7 @@ void MAC_handleObstacle(MacGrid_t *grid, Obstacle_t *obstacle, float dt)
         if (d2 < minDist2)
         {
             marker.velocity += (obstacle->position - obstacle->last_position) * obstacle->speed * 5.0f;
-            printf("obstacle (%.2f, %.2f) hit marker %d and resulted in its velocity = (%.2f, %.2f)\n", obstacle->position.x, obstacle->position.y, marker_index, marker.velocity.x, marker.velocity.y);
+            // printf("obstacle (%.2f, %.2f) hit marker %d and resulted in its velocity = (%.2f, %.2f)\n", obstacle->position.x, obstacle->position.y, marker_index, marker.velocity.x, marker.velocity.y);
         }
 
         if (marker.position.x < minX)
@@ -245,6 +245,7 @@ void MAC_handleObstacle(MacGrid_t *grid, Obstacle_t *obstacle, float dt)
             marker.position.y = maxY;
             marker.velocity.y = 0.0f;
         }
+        
     }
 }
 
@@ -446,19 +447,33 @@ void MAC_transferVelocities(MacGrid_t *grid, int toGrid, float flipRatio)
                 {
                     if (component == 0)
                     {
-                        float picV = (valid0 * d0 * grid->cells[cellIndex0].u + valid1 * d1 * grid->cells[cellIndex1].u + valid2 * d2 * grid->cells[cellIndex2].u + valid3 * d3 * grid->cells[cellIndex3].u) / d;
-                        float corr = (valid0 * d0 * (grid->cells[cellIndex0].u - grid->cells[cellIndex0].prevu) + valid1 * d1 * (grid->cells[cellIndex1].u - grid->cells[cellIndex1].prevu) + valid2 * d2 * (grid->cells[cellIndex2].u - grid->cells[cellIndex2].prevu) + valid3 * d3 * (grid->cells[cellIndex3].u - grid->cells[cellIndex3].prevu)) / d;
+                        float picV = (valid0 * d0 * grid->cells[cellIndex0].u 
+                            + valid1 * d1 * grid->cells[cellIndex1].u 
+                            + valid2 * d2 * grid->cells[cellIndex2].u 
+                            + valid3 * d3 * grid->cells[cellIndex3].u) / d;
+                        float corr = (valid0 * d0 * (grid->cells[cellIndex0].u - grid->cells[cellIndex0].prevu) 
+                        + valid1 * d1 * (grid->cells[cellIndex1].u - grid->cells[cellIndex1].prevu) 
+                        + valid2 * d2 * (grid->cells[cellIndex2].u - grid->cells[cellIndex2].prevu) 
+                        + valid3 * d3 * (grid->cells[cellIndex3].u - grid->cells[cellIndex3].prevu)) / d;
                         float flipV = v + corr;
 
                         grid->markers[marker_index].velocity[component] = flipRatio * flipV + (1.0f - flipRatio) * picV;
+                        // printf("[%d] marker U velocity = %.2f\n", marker_index, grid->markers[marker_index].velocity[component]);
                     }
                     else if (component == 1)
                     {
 
-                        float picV = (valid0 * d0 * grid->cells[cellIndex0].v + valid1 * d1 * grid->cells[cellIndex1].v + valid2 * d2 * grid->cells[cellIndex2].v + valid3 * d3 * grid->cells[cellIndex3].v) / d;
-                        float corr = (valid0 * d0 * (grid->cells[cellIndex0].v - grid->cells[cellIndex0].prevv) + valid1 * d1 * (grid->cells[cellIndex1].v - grid->cells[cellIndex1].prevv) + valid2 * d2 * (grid->cells[cellIndex2].v - grid->cells[cellIndex2].prevv) + valid3 * d3 * (grid->cells[cellIndex3].v - grid->cells[cellIndex3].prevv)) / d;
+                        float picV = (valid0 * d0 * grid->cells[cellIndex0].v 
+                            + valid1 * d1 * grid->cells[cellIndex1].v 
+                            + valid2 * d2 * grid->cells[cellIndex2].v 
+                            + valid3 * d3 * grid->cells[cellIndex3].v) / d;
+                        float corr = (valid0 * d0 * (grid->cells[cellIndex0].v - grid->cells[cellIndex0].prevv) 
+                        + valid1 * d1 * (grid->cells[cellIndex1].v - grid->cells[cellIndex1].prevv) 
+                        + valid2 * d2 * (grid->cells[cellIndex2].v - grid->cells[cellIndex2].prevv) 
+                        + valid3 * d3 * (grid->cells[cellIndex3].v - grid->cells[cellIndex3].prevv)) / d;
                         float flipV = v + corr;
                         grid->markers[marker_index].velocity[component] = flipRatio * flipV + (1.0f - flipRatio) * picV;
+                        // printf("[%d] marker V velocity = %.2f\n", marker_index, grid->markers[marker_index].velocity[component]);
                     }
                 }
             }
@@ -586,6 +601,7 @@ void MAC_solveIncompressibility(MacGrid_t *grid, int numIters, float dt, float o
 
     int n = grid->size_y;
     double cp = grid->density * grid->cell_size / dt;
+    // printf("cp: %.2f\n", cp);
 
     for (int iter = 0; iter < numIters; iter++)
     {
@@ -629,7 +645,7 @@ void MAC_solveIncompressibility(MacGrid_t *grid, int numIters, float dt, float o
                 double p = -div / s;
                 p *= overRelaxation;
                 center->p += cp * p;
-
+                // printf("sx0: %.2f, sx1: %.2f, sy0: %.2f, sy1: %.2f, s: %.2f, \ndiv: %.2f, p: %.2f \ncp: %.2f density: %.2f dt: %.2f\n", sx0, sx1, sy0, sy1, s, div, p, cp, center->density, dt);
                 center->u -= sx0 * p;
                 right->u += sx1 * p;
                 center->v -= sy0 * p;
@@ -637,7 +653,7 @@ void MAC_solveIncompressibility(MacGrid_t *grid, int numIters, float dt, float o
             }
         }
     }
-    printGrid(grid);
+    // printGrid(grid);
 }
 
 Pair_t MAC_transformGridToVerticies(MacGrid_t *grid, Vertex_t *vertices, GLuint *indices, int show_sci)
@@ -665,7 +681,7 @@ Pair_t MAC_transformGridToVerticies(MacGrid_t *grid, Vertex_t *vertices, GLuint 
 
     float minPressure = FLT_MAX;
     float maxPressure = FLT_MIN;
-
+    float sumPressure = 0.0f;
     for (int i = 0; i < grid->total_size; i++)
     {
         if (grid->cells[i].type == FLUID)
@@ -675,8 +691,11 @@ Pair_t MAC_transformGridToVerticies(MacGrid_t *grid, Vertex_t *vertices, GLuint 
                 minPressure = p;
             if (p > maxPressure)
                 maxPressure = p;
+            sumPressure += p;
         }
     }
+
+    // printf("averagePressure: %f minPressure: %f, maxPressure: %f\n", (sumPressure/grid->total_size), minPressure, maxPressure);
 
     for (int x = 0; x < grid->size_x; ++x)
     {
@@ -736,7 +755,7 @@ Pair_t MAC_transformMarkersToVertices(MacGrid_t *grid, Vertex_t *markerVertices,
     {
         glm::vec3 markerPos = grid->markers[m].position;
         glm::vec3 markerColor = grid->markers[m].color;
-        float radius = grid->marker_radius;
+        float radius = grid->marker_radius*10;
 
         for (int i = 0; i <= SPHERE_LAT_SLICES; i++)
         {
