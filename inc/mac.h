@@ -55,29 +55,45 @@ typedef struct Marker
 typedef struct MacGrid
 {
     float density;
-    uint16_t size_x;
-    uint16_t size_y;
-    uint16_t total_size; // pNumCells
+    int f_num_x;
+    int f_num_y;
+    float h;
+    float f_inv_spacing;
+    int f_num_cells;
 
-    uint16_t num_markers; // maxParticles
+    float *u;            // of size f_num_cells
+    float *v;            // of size f_num_cells
+    float *du;           // of size f_num_cells
+    float *dv;           // of size f_num_cells
+    float *prev_u;       // of size f_num_cells
+    float *prev_v;       // of size f_num_cells
+    float *p;            // of size f_num_cells
+    float *s;            // of size f_num_cells
+    CellType *cell_type; // of size f_num_cells
+    float* cell_color; // of size f_num_cells * 3
 
-    GridCell_t *cells;
-    Marker_t *markers;
-    uint16_t *num_cell_markers;  // numCellParticles
-    uint16_t *first_cell_marker; // firstCellParticle
-    uint16_t *cell_marker_ids;   // cellParticleIds
+    int max_particles;
+    float* particle_pos; // of size max_particles * 2
+    float* particle_vel; // of size max_particles * 2
+    float* particle_density; // of size f_num_cells
+    float particle_rest_density;
 
-    float cell_size;     // h
-    float inv_cell_size; // fInvSpacing
+    float particle_radius;
+    float p_inv_spacing;
+    int p_num_x;
+    int p_num_y;
+    int p_num_cells; // p_num_x * p_num_y
 
-    float marker_radius;      // particleRadius
-    float marker_inv_spacing; // pInvSpacing
 
-    float markers_rest_density; // particleRestDensity
+    int *num_cell_particles;  // of size p_num_cells
+    int *first_cell_particle; // of size p_num_cells + 1
+    int *cell_particle_ids;   // of size max_particles
+
+    int num_particles;
 
 } MacGrid_t;
 
-void MAC_init(MacGrid_t *grid, float density, int size_x, int size_y, float cell_size, int marker_count, float marker_size);
+void MAC_init(MacGrid_t *grid, float density, float size_x, float size_y, float cell_size, float marker_count, int marker_size);
 void MAC_handleObstacle(MacGrid_t *grid, Obstacle_t *obstacle, float dt);
 void MAC_integrateParticles(MacGrid_t *grid, float dt, float gravity);
 void MAC_pushParticlesApart(MacGrid_t *grid, int numIters, float dt);

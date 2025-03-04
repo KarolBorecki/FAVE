@@ -12,7 +12,7 @@ void Camera_init(Camera_t *camera, GLFWwindow *window, glm::vec3 postion, float 
     camera->fov = fov;
     camera->near_plane = near;
     camera->far_plane = far;
-    camera->speed = 1.0f;
+    camera->speed = 0.02f;
     camera->sensitivity = 100.0f;
 
     camera->first_input_click = 0;
@@ -94,13 +94,13 @@ void Camera_processInput(Camera_t *camera, GLFWwindow *window)
     {
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
         camera->first_input_click = 1;
-        update_mat = 1;
     }
 
-    if (update_mat)
+    if (update_mat == 1)
     {
         camera->view_mat = glm::lookAt(camera->position, camera->position + camera->direction, camera->up);
         camera->cam_mat = camera->projection_mat * camera->view_mat;
+        printf("Camera position: (%.2f, %.2f, %.2f)\n", camera->position.x, camera->position.y, camera->position.z);
     }
 }
 

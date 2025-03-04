@@ -165,80 +165,89 @@ int main(int argc, char **argv)
     float flip_ratio = 0.9f;
     float over_relaxation = 1.90f;
     int pressure_solver_steps = 50;
-    int particles_push_apart_steps = 3;
+    int particles_push_apart_steps = 2;
     int show_markes = 1;
     int show_sci = 0;
     float gravity = -9.81f;
     float density = 1000.0f;
-    float cell_size = 0.029845025829028492f;
-    float size_x = 129.0f;
-    float size_y = 152.0f;
-    int marker_num = 11840;
-    float marker_size = 0.009f;
+    float spacing = 0.03f;
+    float width = 2.017808219178082f;
+    float height = 3.0f;
+    // float particle_radius = 0.009f;
+    float particle_radius = 0.009f;
+    int max_particles = 1924;
 
-    for (int i = 1; i < argc; i++)
-    {
-        if (strncmp(argv[i], "width=", 6) == 0)
-        {
-            config.window_width = atoi(argv[i] + 6);
-        }
-        else if (strncmp(argv[i], "height=", 7) == 0)
-        {
-            config.window_height = atoi(argv[i] + 7);
-        }
-        else if (strncmp(argv[i], "flip_ratio=", 11) == 0)
-        {
-            flip_ratio = atof(argv[i] + 11);
-        }
-        else if (strncmp(argv[i], "over_relaxation=", 16) == 0)
-        {
-            over_relaxation = atof(argv[i] + 16);
-        }
-        else if (strncmp(argv[i], "pressure_solver_steps=", 22) == 0)
-        {
-            pressure_solver_steps = atoi(argv[i] + 22);
-        }
-        else if (strncmp(argv[i], "particles_push_apart_steps=", 27) == 0)
-        {
-            particles_push_apart_steps = atoi(argv[i] + 27);
-        }
-        else if (strncmp(argv[i], "show_markes=", 12) == 0)
-        {
-            show_markes = atoi(argv[i] + 12);
-        }
-        else if (strncmp(argv[i], "show_sci=", 9) == 0)
-        {
-            show_sci = atoi(argv[i] + 9);
-        }
-        else if (strncmp(argv[i], "gravity=", 8) == 0)
-        {
-            gravity = atof(argv[i] + 8);
-        }
-        else if (strncmp(argv[i], "density=", 8) == 0)
-        {
-            density = atof(argv[i] + 8);
-        }
-        else if (strncmp(argv[i], "cell_size=", 10) == 0)
-        {
-            cell_size = atof(argv[i] + 10);
-        }
-        else if (strncmp(argv[i], "size_x=", 7) == 0)
-        {
-            size_x = atoi(argv[i] + 7);
-        }
-        else if (strncmp(argv[i], "size_y=", 7) == 0)
-        {
-            size_y = atoi(argv[i] + 7);
-        }
-        else if (strncmp(argv[i], "marker_num=", 11) == 0)
-        {
-            marker_num = atoi(argv[i] + 11);
-        }
-        else if (strncmp(argv[i], "marker_size=", 12) == 0)
-        {
-            marker_size = atof(argv[i] + 12);
-        }
-    }
+    // float gravity = -9.81f;
+    // float density = 1000.0f;
+    // float cell_size = 0.3f;
+    // float size_x = 20.017808219178082f;
+    // float size_y = 30.0f;
+    // int marker_num = 9176;
+    // float marker_size = 0.9f;
+
+    // for (int i = 1; i < argc; i++)
+    // {
+    //     if (strncmp(argv[i], "width=", 6) == 0)
+    //     {
+    //         config.window_width = atoi(argv[i] + 6);
+    //     }
+    //     else if (strncmp(argv[i], "height=", 7) == 0)
+    //     {
+    //         config.window_height = atoi(argv[i] + 7);
+    //     }
+    //     else if (strncmp(argv[i], "flip_ratio=", 11) == 0)
+    //     {
+    //         flip_ratio = atof(argv[i] + 11);
+    //     }
+    //     else if (strncmp(argv[i], "over_relaxation=", 16) == 0)
+    //     {
+    //         over_relaxation = atof(argv[i] + 16);
+    //     }
+    //     else if (strncmp(argv[i], "pressure_solver_steps=", 22) == 0)
+    //     {
+    //         pressure_solver_steps = atoi(argv[i] + 22);
+    //     }
+    //     else if (strncmp(argv[i], "particles_push_apart_steps=", 27) == 0)
+    //     {
+    //         particles_push_apart_steps = atoi(argv[i] + 27);
+    //     }
+    //     else if (strncmp(argv[i], "show_markes=", 12) == 0)
+    //     {
+    //         show_markes = atoi(argv[i] + 12);
+    //     }
+    //     else if (strncmp(argv[i], "show_sci=", 9) == 0)
+    //     {
+    //         show_sci = atoi(argv[i] + 9);
+    //     }
+    //     else if (strncmp(argv[i], "gravity=", 8) == 0)
+    //     {
+    //         gravity = atof(argv[i] + 8);
+    //     }
+    //     else if (strncmp(argv[i], "density=", 8) == 0)
+    //     {
+    //         density = atof(argv[i] + 8);
+    //     }
+    //     else if (strncmp(argv[i], "cell_size=", 10) == 0)
+    //     {
+    //         cell_size = atof(argv[i] + 10);
+    //     }
+    //     else if (strncmp(argv[i], "size_x=", 7) == 0)
+    //     {
+    //         size_x = atoi(argv[i] + 7);
+    //     }
+    //     else if (strncmp(argv[i], "size_y=", 7) == 0)
+    //     {
+    //         size_y = atoi(argv[i] + 7);
+    //     }
+    //     else if (strncmp(argv[i], "marker_num=", 11) == 0)
+    //     {
+    //         marker_num = atoi(argv[i] + 11);
+    //     }
+    //     else if (strncmp(argv[i], "marker_size=", 12) == 0)
+    //     {
+    //         marker_size = atof(argv[i] + 12);
+    //     }
+    // }
 
     GLFWwindow *window = initializeWindow();
 
@@ -274,16 +283,16 @@ int main(int argc, char **argv)
     setupBuffers(markerVao, markerVbo, markerEbo);
 
     Camera_t camera;
-    Camera_init(&camera, window, glm::vec3(5.0f, 5.0f, 16.0f), 45.0f, 0.1f, 1000.0f);
+    Camera_init(&camera, window, glm::vec3(1.0f, 1.5f, 4.0f), 45.0f, 0.1f, 1000.0f);
 
     MacGrid_t mac;
-    MAC_init(&mac, density, size_x, size_y, cell_size, marker_num, marker_size);
+    MAC_init(&mac, density, width, height, spacing, particle_radius, max_particles);
 
     Obstacle_t obstacle;
     Obstacle_init(&obstacle, glm::vec3(2.0f, 10.0f, 0.0f), 1.0f, 1.0f);
 
     //float dt = 1.0f / 60.0f; // TODO it should be calculated based on the time between frames or more sophisticated way
-    float dt = 0.16666666f;
+    float dt = 0.1666666666f;
     while (!glfwWindowShouldClose(window))
     {
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
@@ -307,6 +316,7 @@ int main(int argc, char **argv)
 
         if (show_markes)
         {
+            printf("showing markers\n");
             Pair_t mac_markers_render_sizes = MAC_transformMarkersToVertices(&mac, markerVertices, markerIndices);
             render(window, camera, markerShader, markerVao, markerVbo, markerEbo, markerVertices, markerIndices, mac_markers_render_sizes.first, mac_markers_render_sizes.second);
         }
