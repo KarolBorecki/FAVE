@@ -162,10 +162,10 @@ int main(int argc, char **argv)
     config.window_width = 1400;
     config.window_height = 1200;
 
-    float flip_ratio = 0.9f;
+    float flip_ratio = 0.8f;
     float over_relaxation = 1.90f;
-    int pressure_solver_steps = 50;
-    int particles_push_apart_steps = 2;
+    int pressure_solver_steps = 100;
+    int particles_push_apart_steps = 5;
     int show_markes = 1;
     int show_sci = 0;
     float gravity = -9.81f;
@@ -173,8 +173,7 @@ int main(int argc, char **argv)
     float spacing = 0.03f;
     float width = 2.017808219178082f;
     float height = 3.0f;
-    // float particle_radius = 0.009f;
-    float particle_radius = 0.009f;
+    float particle_radius = 0.004f;
     int max_particles = 1924;
 
     // float gravity = -9.81f;

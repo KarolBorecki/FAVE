@@ -104,7 +104,8 @@ void printGrid(MacGrid_t *grid)
 
 void MAC_init(MacGrid_t *grid, float density, float width, float height, float spacing, float particle_radius, int max_particles)
 {
-    // printf("Initializing MAC grid with density = %.2f, width = %f, height = %f, spacing = %.2f, particle_radius = %d, max_particles = %.2f\n", density, width, height, spacing, particle_radius, max_particles);
+    printf("Initializing MAC grid...\n");
+
     grid->density = density;
     grid->f_num_x = (int)(floorf(width / spacing) + 1.0f);
     grid->f_num_y = (int)(floorf(height / spacing) + 1.0f);
@@ -112,22 +113,42 @@ void MAC_init(MacGrid_t *grid, float density, float width, float height, float s
     grid->f_inv_spacing = 1.0f / grid->h;
     grid->f_num_cells = grid->f_num_x * grid->f_num_y;
 
+// Alokacja pamięci + sprawdzanie błędów
+#define ALLOC_CHECK(ptr, name)                                     \
+    if (!(ptr))                                                    \
+    {                                                              \
+        printf("ERROR: Failed to allocate memory for " name "\n"); \
+        exit(EXIT_FAILURE);                                        \
+    }
+
     grid->u = (float *)calloc(grid->f_num_cells, sizeof(float));
+    ALLOC_CHECK(grid->u, "u");
     grid->v = (float *)calloc(grid->f_num_cells, sizeof(float));
+    ALLOC_CHECK(grid->v, "v");
     grid->du = (float *)calloc(grid->f_num_cells, sizeof(float));
+    ALLOC_CHECK(grid->du, "du");
     grid->dv = (float *)calloc(grid->f_num_cells, sizeof(float));
+    ALLOC_CHECK(grid->dv, "dv");
     grid->prev_u = (float *)calloc(grid->f_num_cells, sizeof(float));
+    ALLOC_CHECK(grid->prev_u, "prev_u");
     grid->prev_v = (float *)calloc(grid->f_num_cells, sizeof(float));
+    ALLOC_CHECK(grid->prev_v, "prev_v");
     grid->p = (float *)calloc(grid->f_num_cells, sizeof(float));
+    ALLOC_CHECK(grid->p, "p");
     grid->s = (float *)calloc(grid->f_num_cells, sizeof(float));
+    ALLOC_CHECK(grid->s, "s");
     grid->cell_type = (CellType *)calloc(grid->f_num_cells, sizeof(CellType));
+    ALLOC_CHECK(grid->cell_type, "cell_type");
     grid->cell_color = (float *)calloc(grid->f_num_cells * 3, sizeof(float));
+    ALLOC_CHECK(grid->cell_color, "cell_color");
 
     grid->max_particles = max_particles;
     grid->particle_pos = (float *)calloc(grid->max_particles * 2, sizeof(float));
+    ALLOC_CHECK(grid->particle_pos, "particle_pos");
     grid->particle_vel = (float *)calloc(grid->max_particles * 2, sizeof(float));
+    ALLOC_CHECK(grid->particle_vel, "particle_vel");
     grid->particle_density = (float *)calloc(grid->f_num_cells, sizeof(float));
-    grid->particle_rest_density = 0.0f;
+    ALLOC_CHECK(grid->particle_density, "particle_density");
 
     grid->particle_radius = particle_radius;
     grid->p_inv_spacing = 1.0f / (2.2f * grid->particle_radius);
@@ -136,16 +157,22 @@ void MAC_init(MacGrid_t *grid, float density, float width, float height, float s
     grid->p_num_cells = grid->p_num_x * grid->p_num_y;
 
     grid->num_cell_particles = (int *)calloc(grid->p_num_cells, sizeof(int));
+    ALLOC_CHECK(grid->num_cell_particles, "num_cell_particles");
     grid->first_cell_particle = (int *)calloc(grid->p_num_cells + 1, sizeof(int));
+    ALLOC_CHECK(grid->first_cell_particle, "first_cell_particle");
     grid->cell_particle_ids = (int *)calloc(grid->max_particles, sizeof(int));
+    ALLOC_CHECK(grid->cell_particle_ids, "cell_particle_ids");
 
-    grid->num_particles = 1924;
+    grid->num_particles = fmin(grid->max_particles, grid->p_num_x * grid->p_num_y);
 
     int p = 0;
-    for (int i = 0; i < grid->p_num_x; i++)
+    for (int j = 0; j < grid->p_num_y; j++)
     {
-        for (int j = 0; j < grid->p_num_y; j++)
+        for (int i = 0; i < grid->p_num_x; i++)
         {
+            if (p >= 2 * grid->num_particles)
+                break;
+
             grid->particle_pos[p++] = grid->h + grid->particle_radius + grid->particle_radius * 2 * i + (j % 2 == 0 ? 0.0f : grid->particle_radius);
             grid->particle_pos[p++] = grid->h + grid->particle_radius + grid->particle_radius * 2 * j;
         }
@@ -164,10 +191,24 @@ void MAC_init(MacGrid_t *grid, float density, float width, float height, float s
         }
     }
 
-    printf("MAC grid initialized with: \n");
-    printf("f_num_x = %d, f_num_y = %d, h = %.2f, f_inv_spacing = %.2f, f_num_cells = %d\n", grid->f_num_x, grid->f_num_y, grid->h, grid->f_inv_spacing, grid->f_num_cells);
+    float sum_density = 0.0f;
+    int num_fluid_cells = 0;
+    for (int i = 0; i < grid->f_num_cells; i++)
+    {
+        if (grid->s[i] == 1.0f)
+        {
+            sum_density += grid->particle_density[i];
+            num_fluid_cells++;
+        }
+    }
+    grid->particle_rest_density = num_fluid_cells > 0 ? sum_density / num_fluid_cells : 0.0f;
+
+    printf("MAC grid initialized successfully!\n");
+    printf("f_num_x = %d, f_num_y = %d, h = %.2f, f_inv_spacing = %.2f, f_num_cells = %d\n",
+           grid->f_num_x, grid->f_num_y, grid->h, grid->f_inv_spacing, grid->f_num_cells);
     printf("p_num_x = %d, p_num_y = %d, p_num_cells = %d\n", grid->p_num_x, grid->p_num_y, grid->p_num_cells);
-    printf("max_particles = %d, particle_radius = %.2f, p_inv_spacing = %.2f\n", grid->max_particles, grid->particle_radius, grid->p_inv_spacing);
+    printf("max_particles = %d, particle_radius = %.2f, p_inv_spacing = %.2f\n",
+           grid->max_particles, grid->particle_radius, grid->p_inv_spacing);
     printf("particle_rest_density = %.2f\n", grid->particle_rest_density);
     printf("density = %.2f\n", grid->density);
 }
