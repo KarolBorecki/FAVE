@@ -156,6 +156,18 @@ void render(GLFWwindow *window, Camera_t &camera, Shader_t &shaderProgram, VAO_t
     EBO_unbind();
 }
 
+void parseArgument(const char *arg, const char *key, void *value, const char *type)
+{
+    size_t key_len = strlen(key);
+    if (strncmp(arg, key, key_len) == 0 && arg[key_len] == '=')
+    {
+        if (strcmp(type, "float") == 0)
+            *((float *)value) = strtof(arg + key_len + 1, NULL);
+        else if (strcmp(type, "int") == 0)
+            *((int *)value) = atoi(arg + key_len + 1);
+    }
+}
+
 int main(int argc, char **argv)
 {
     printf("./FAVE width=2024 height=1240 flip_ratio=0.8 over_relaxation=1.63 pressure_solver_steps=150 particles_push_apart_steps=3 show_markes=1 show_sci=0 gravity=0 density=1000.0 cell_size=3.0 marker_size=0.1 marker_num=100\n\n");
@@ -164,89 +176,49 @@ int main(int argc, char **argv)
 
     float flip_ratio = 0.8f;
     float over_relaxation = 1.90f;
-    int pressure_solver_steps = 100;
-    int particles_push_apart_steps = 5;
-    int show_markes = 1;
+    int pressure_solver_steps = 50;
+    int particles_push_apart_steps = 3;
+    int show_markers = 1;
     int show_sci = 0;
     float gravity = -9.81f;
     float density = 1000.0f;
     float spacing = 0.03f;
-    float width = 2.017808219178082f;
-    float height = 3.0f;
+    float width = 0.5f;
+    float height = 0.5f;
     float particle_radius = 0.004f;
-    int max_particles = 1924;
+    int max_particles = 60;
 
-    // float gravity = -9.81f;
-    // float density = 1000.0f;
-    // float cell_size = 0.3f;
-    // float size_x = 20.017808219178082f;
-    // float size_y = 30.0f;
-    // int marker_num = 9176;
-    // float marker_size = 0.9f;
+    for (int i = 1; i < argc; i++)
+    {
+        parseArgument(argv[i], "flip_ratio", &flip_ratio, "float");
+        parseArgument(argv[i], "over_relaxation", &over_relaxation, "float");
+        parseArgument(argv[i], "pressure_solver_steps", &pressure_solver_steps, "int");
+        parseArgument(argv[i], "particles_push_apart_steps", &particles_push_apart_steps, "int");
+        parseArgument(argv[i], "show_markers", &show_markers, "int");
+        parseArgument(argv[i], "show_sci", &show_sci, "int");
+        parseArgument(argv[i], "gravity", &gravity, "float");
+        parseArgument(argv[i], "density", &density, "float");
+        parseArgument(argv[i], "spacing", &spacing, "float");
+        parseArgument(argv[i], "width", &width, "float");
+        parseArgument(argv[i], "height", &height, "float");
+        parseArgument(argv[i], "particle_radius", &particle_radius, "float");
+        parseArgument(argv[i], "max_particles", &max_particles, "int");
+    }
 
-    // for (int i = 1; i < argc; i++)
-    // {
-    //     if (strncmp(argv[i], "width=", 6) == 0)
-    //     {
-    //         config.window_width = atoi(argv[i] + 6);
-    //     }
-    //     else if (strncmp(argv[i], "height=", 7) == 0)
-    //     {
-    //         config.window_height = atoi(argv[i] + 7);
-    //     }
-    //     else if (strncmp(argv[i], "flip_ratio=", 11) == 0)
-    //     {
-    //         flip_ratio = atof(argv[i] + 11);
-    //     }
-    //     else if (strncmp(argv[i], "over_relaxation=", 16) == 0)
-    //     {
-    //         over_relaxation = atof(argv[i] + 16);
-    //     }
-    //     else if (strncmp(argv[i], "pressure_solver_steps=", 22) == 0)
-    //     {
-    //         pressure_solver_steps = atoi(argv[i] + 22);
-    //     }
-    //     else if (strncmp(argv[i], "particles_push_apart_steps=", 27) == 0)
-    //     {
-    //         particles_push_apart_steps = atoi(argv[i] + 27);
-    //     }
-    //     else if (strncmp(argv[i], "show_markes=", 12) == 0)
-    //     {
-    //         show_markes = atoi(argv[i] + 12);
-    //     }
-    //     else if (strncmp(argv[i], "show_sci=", 9) == 0)
-    //     {
-    //         show_sci = atoi(argv[i] + 9);
-    //     }
-    //     else if (strncmp(argv[i], "gravity=", 8) == 0)
-    //     {
-    //         gravity = atof(argv[i] + 8);
-    //     }
-    //     else if (strncmp(argv[i], "density=", 8) == 0)
-    //     {
-    //         density = atof(argv[i] + 8);
-    //     }
-    //     else if (strncmp(argv[i], "cell_size=", 10) == 0)
-    //     {
-    //         cell_size = atof(argv[i] + 10);
-    //     }
-    //     else if (strncmp(argv[i], "size_x=", 7) == 0)
-    //     {
-    //         size_x = atoi(argv[i] + 7);
-    //     }
-    //     else if (strncmp(argv[i], "size_y=", 7) == 0)
-    //     {
-    //         size_y = atoi(argv[i] + 7);
-    //     }
-    //     else if (strncmp(argv[i], "marker_num=", 11) == 0)
-    //     {
-    //         marker_num = atoi(argv[i] + 11);
-    //     }
-    //     else if (strncmp(argv[i], "marker_size=", 12) == 0)
-    //     {
-    //         marker_size = atof(argv[i] + 12);
-    //     }
-    // }
+    printf("Simulation Parameters:\n");
+    printf("flip_ratio = %.2f\n", flip_ratio);
+    printf("over_relaxation = %.2f\n", over_relaxation);
+    printf("pressure_solver_steps = %d\n", pressure_solver_steps);
+    printf("particles_push_apart_steps = %d\n", particles_push_apart_steps);
+    printf("show_markers = %d\n", show_markers);
+    printf("show_sci = %d\n", show_sci);
+    printf("gravity = %.2f\n", gravity);
+    printf("density = %.2f\n", density);
+    printf("spacing = %.2f\n", spacing);
+    printf("width = %.2f\n", width);
+    printf("height = %.2f\n", height);
+    printf("particle_radius = %.3f\n", particle_radius);
+    printf("max_particles = %d\n", max_particles);
 
     GLFWwindow *window = initializeWindow();
 
@@ -288,9 +260,9 @@ int main(int argc, char **argv)
     MAC_init(&mac, density, width, height, spacing, particle_radius, max_particles);
 
     Obstacle_t obstacle;
-    Obstacle_init(&obstacle, glm::vec3(2.0f, 10.0f, 0.0f), 1.0f, 1.0f);
+    Obstacle_init(&obstacle, glm::vec3(1.0f, 1.0f, 0.0f), 0.1f, 0.1f);
 
-    float dt = 1.0f / 120.0f; // TODO it should be calculated based on the time between frames or more sophisticated way
+    float dt = 1.0f / 60.0f; // TODO it should be calculated based on the time between frames or more sophisticated way
     while (!glfwWindowShouldClose(window))
     {
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
@@ -312,9 +284,8 @@ int main(int argc, char **argv)
         Pair_t mac_grid_render_sizes = MAC_transformGridToVerticies(&mac, vertices, indices, show_sci);
         render(window, camera, fluidShader, fluidVao, fluidVbo, fluidEbo, vertices, indices, mac_grid_render_sizes.first, mac_grid_render_sizes.second);
 
-        if (show_markes)
+        if (show_markers)
         {
-            printf("showing markers\n");
             Pair_t mac_markers_render_sizes = MAC_transformMarkersToVertices(&mac, markerVertices, markerIndices);
             render(window, camera, markerShader, markerVao, markerVbo, markerEbo, markerVertices, markerIndices, mac_markers_render_sizes.first, mac_markers_render_sizes.second);
         }

@@ -4,14 +4,14 @@
 #define RED_TEXT "\033[31m"
 #define RESET_TEXT "\033[0m"
 
-// void printMarkers(MacGrid_t *grid)
-// {
-//     printf("\nMarkers visualization:\n");
-//     for (int marker_index = 0; marker_index < grid->num_markers; marker_index++)
-//     {
-//         printf("marker[%d]  p(%.1f; %.1f; %.1f)   v(%.3f; %.3f; %.3f\n", marker_index, grid->markers[marker_index].position.x, grid->markers[marker_index].position.y, grid->markers[marker_index].position.z, grid->markers[marker_index].velocity.x, grid->markers[marker_index].velocity.y, grid->markers[marker_index].velocity.z);
-//     }
-// }
+void printMarkers(MacGrid_t *grid)
+{
+    printf("\nMarkers visualization:\n");
+    for (int marker_index = 0; marker_index < grid->max_particles; marker_index++)
+    {
+        printf("[%d] velocity: (%.2f %.2f) position: (%.2f %.2f)\n", marker_index, grid->particle_pos[2*marker_index], grid->particle_pos[2*marker_index+1], grid->particle_vel[2*marker_index], grid->particle_vel[2*marker_index+1]);
+    }
+}
 void printGrid(MacGrid_t *grid)
 {
     printf("Grid visualization:\n");
@@ -99,7 +99,7 @@ void printGrid(MacGrid_t *grid)
         }
         printf("\n");
     }
-    // printMarkers(grid);
+    printMarkers(grid);
 }
 
 void MAC_init(MacGrid_t *grid, float density, float width, float height, float spacing, float particle_radius, int max_particles)
@@ -166,6 +166,24 @@ void MAC_init(MacGrid_t *grid, float density, float width, float height, float s
     grid->num_particles = fmin(grid->max_particles, grid->p_num_x * grid->p_num_y);
 
     int p = 0;
+    // float relWaterHeight = 0.8f;
+    // float relWaterWidth = 0.6f;
+    // float h = height / 100.0f;
+    // float r = grid->particle_radius;
+    // float dx = 2.0f * r;
+    // float dy = sqrtf(3.0f) / 2.0f * dx;
+    // float numX = floorf((relWaterWidth * width - 2.0 * h - 2.0 * r) / dx);
+    // float numY = floorf((relWaterHeight * height - 2.0 * h - 2.0 * r) / dy);
+    // for (int j = 0; j < numX; j++)
+    // {
+    //     for (int i = 0; i < numY; i++)
+    //     {
+
+    //         grid->particle_pos[p++] = h + r + dx * i + (j % 2 == 0 ? 0.0f : r);
+    //         grid->particle_pos[p++] = h + r + dy * j;
+    //     }
+    // }
+
     for (int j = 0; j < grid->p_num_y; j++)
     {
         for (int i = 0; i < grid->p_num_x; i++)
@@ -183,7 +201,7 @@ void MAC_init(MacGrid_t *grid, float density, float width, float height, float s
         for (int j = 0; j < grid->f_num_y; j++)
         {
             float s = 1.0f;
-            if (i == 0 || i == grid->f_num_x - 1 || j == 0 || j == grid->f_num_y - 1)
+            if (i == 0 || i == grid->f_num_x - 1 || j == 0)
             {
                 s = 0.0f;
             }
@@ -274,8 +292,7 @@ void MAC_pushParticlesApart(MacGrid_t *grid, int numIters, float dt)
             float py = grid->particle_pos[2 * i + 1];
 
             int pxi = (int)floorf(px * grid->p_inv_spacing);
-            int yi_tmp = (int)floorf(py * grid->p_inv_spacing);
-            int pyi = (int)max(0, yi_tmp); // Ochrona przed ujemnym yi
+            int pyi = (int)floorf(py * grid->p_inv_spacing);
 
             int x0 = max(pxi - 1, 0);
             int y0 = max(pyi - 1, 0);
@@ -288,29 +305,8 @@ void MAC_pushParticlesApart(MacGrid_t *grid, int numIters, float dt)
                 {
                     int cell_nr = xi * grid->p_num_y + yi;
 
-                    // if (cell_nr >= grid->p_num_cells)
-                    // {
-                    //     printf("ERROR: cell_nr out of range: %d (p_num_cells: %d)\n", cell_nr, grid->p_num_cells);
-                    //     printf("ERROR: xi = %d, yi = %d\n", xi, yi);
-                    //     printf("ERROR: x0 = %d, y0 = %d, x1 = %d, y1 = %d\n", x0, y0, x1, y1);
-                    //     printf("ERROR: pxi = %d, pyi = %d\n", pxi, pyi);
-                    //     printf("ERROR: px = %.2f, py = %.2f\n", px, py);
-                    //     printf("ERROR: particle_pos[%d] = %.2f, particle_pos[%d] = %.2f\n", 2 * i, grid->particle_pos[2 * i], 2 * i + 1, grid->particle_pos[2 * i + 1]);
-                    //     printf("ERROR: p_num_y = %d\n", grid->p_num_y);
-                    //     exit(1);
-                    // }
-
                     int first = grid->first_cell_particle[cell_nr];
                     int last = grid->first_cell_particle[cell_nr + 1];
-
-                    // if (first >= grid->num_particles+1 || last >= grid->num_particles+1)
-                    // {
-                    //     printf("ERROR: first_cell_particle[%d] = %d (exceeds num_particles: %d)\n",
-                    //            cell_nr, first, grid->num_particles);
-                    //     printf("ERROR: first_cell_particle[%d + 1] = %d (exceeds num_particles: %d)\n",
-                    //            cell_nr, last, grid->num_particles);
-                    //     exit(1);
-                    // }
 
                     for (int j = first; j < last; j++)
                     {
@@ -318,11 +314,6 @@ void MAC_pushParticlesApart(MacGrid_t *grid, int numIters, float dt)
 
                         if (id == i)
                             continue;
-                        // if (id >= grid->num_particles)
-                        // {
-                        //     printf("ERROR: Invalid particle id: %d (num_particles: %d)\n", id, grid->num_particles);
-                        //     exit(1);
-                        // }
 
                         float qx = grid->particle_pos[2 * id];
                         float qy = grid->particle_pos[2 * id + 1];
@@ -376,8 +367,8 @@ void MAC_handleObstacle(MacGrid_t *grid, Obstacle_t *obstacle, float dt)
         if (d2 < minDist2)
         {
             glm::vec3 obstacle_vel = glm::vec3(obstacle->position - obstacle->last_position) * obstacle->speed * 5.0f;
-            grid->particle_vel[2 * i] += obstacle_vel.x;
-            grid->particle_vel[2 * i + 1] += obstacle_vel.y;
+            grid->particle_vel[2 * i] = obstacle_vel.x;
+            grid->particle_vel[2 * i + 1] = obstacle_vel.y;
             // printf("obstacle (%.2f, %.2f) hit marker %d and resulted in its velocity = (%.2f, %.2f)\n", obstacle->position.x, obstacle->position.y, marker_index, marker.velocity.x, marker.velocity.y);
         }
 
@@ -427,13 +418,12 @@ void MAC_updateParticleDensity(MacGrid_t *grid)
         y = clampf(y, h, (grid->f_num_y - 1) * h);
 
         int x0 = (int)floorf((x - h2) * h1);
+        float tx = ((x - h2) - x0 * h) * h1;
         int x1 = (int)min(grid->f_num_x - 2, x0 + 1);
 
         int y0 = (int)floorf((y - h2) * h1);
-        int y1 = (int)min(grid->f_num_y - 2, y0 + 1);
-
-        float tx = ((x - h2) - x0 * h) * h1;
         float ty = ((y - h2) - y0 * h) * h1;
+        int y1 = (int)min(grid->f_num_y - 2, y0 + 1);
 
         float sx = 1.0f - tx;
         float sy = 1.0f - ty;
@@ -676,7 +666,7 @@ void MAC_solveIncompressibility(MacGrid_t *grid, int num_iters, float dt, float 
             }
         }
     }
-    // printGrid(grid);
+    printGrid(grid);
 }
 
 Pair_t MAC_transformGridToVerticies(MacGrid_t *grid, Vertex_t *vertices, GLuint *indices, int show_sci)
@@ -781,7 +771,7 @@ Pair_t MAC_transformMarkersToVertices(MacGrid_t *grid, Vertex_t *markerVertices,
         glm::vec3 markerPos = glm::vec3(grid->particle_pos[2 * m], grid->particle_pos[2 * m + 1], grid->h);
         glm::vec3 markerColor = glm::vec3(1.0f, 0.0f, 0.0f);
         float radius = grid->particle_radius;
-        printf("markerPos: (%.2f, %.2f, %.2f) with color: (%.2f, %.2f, %.2f)\n", markerPos.x, markerPos.y, markerPos.z, markerColor.x, markerColor.y, markerColor.z);
+        // printf("markerPos: (%.2f, %.2f, %.2f) with color: (%.2f, %.2f, %.2f)\n", markerPos.x, markerPos.y, markerPos.z, markerColor.x, markerColor.y, markerColor.z);
 
         for (int i = 0; i <= SPHERE_LAT_SLICES; i++)
         {
