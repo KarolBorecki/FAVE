@@ -141,26 +141,6 @@ void MAC_init(MacGrid_t *grid, float density, float width, float height, float s
 
     grid->num_particles = 1924;
 
-    // for (int i = 0; i < grid->f_num_cells; i++)
-    // {
-    //     if (i % grid->f_num_y == 0 || i > (grid->f_num_cells - grid->f_num_y) || i < grid->f_num_y)
-    //     {
-    //         grid->s[i] = 0.0f; // Solid boundary
-    //     }
-    //     else
-    //     {
-    //         grid->s[i] = 1.0f; // Fluid interior
-    //     }
-    // }
-
-    // for (int i = 0; i < grid->max_particles; i++)
-    // {
-    //     grid->particle_pos[2 * i] = ((float)rand() / RAND_MAX) * ((grid->f_num_x + 1) * grid->h);
-    //     grid->particle_pos[2 * i + 1] = ((float)rand() / RAND_MAX) * ((grid->f_num_y + 1) * grid->h);
-    //     grid->particle_vel[2 * i] = 0.0f;
-    //     grid->particle_vel[2 * i + 1] = 0.0f;
-    // }
-
     int p = 0;
     for (int i = 0; i < grid->p_num_x; i++)
     {

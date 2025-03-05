@@ -291,8 +291,7 @@ int main(int argc, char **argv)
     Obstacle_t obstacle;
     Obstacle_init(&obstacle, glm::vec3(2.0f, 10.0f, 0.0f), 1.0f, 1.0f);
 
-    //float dt = 1.0f / 60.0f; // TODO it should be calculated based on the time between frames or more sophisticated way
-    float dt = 0.1666666666f;
+    float dt = 1.0f / 120.0f; // TODO it should be calculated based on the time between frames or more sophisticated way
     while (!glfwWindowShouldClose(window))
     {
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
