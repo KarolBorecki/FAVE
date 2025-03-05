@@ -33,7 +33,7 @@ extern "C"
         glm::mat4 cam_mat;
     } Camera_t;
 
-    void Camera_init(Camera_t *camera, GLFWwindow *window, glm::vec3 postion, float fov, float near_plane, float far_plane);
+    void Camera_init(Camera_t *camera, GLFWwindow *window, glm::vec3 postion, float speed, float fov, float near_plane, float far_plane);
     // Note: This function opropable needs dt
     void Camera_processInput(Camera_t *camera, GLFWwindow *window);
     void Camera_destroy(Camera_t *camera);

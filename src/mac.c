@@ -152,7 +152,7 @@ void MAC_integrateParticles(MacGrid_t *grid, float dt, float gravity)
     // printf("Integrating particles with dt = %.2f, gravity = %.2f\n", dt, gravity);
     for (int i = 0; i < grid->num_particles; i++)
     {
-        grid->particle_vel[2 * i] += gravity * dt;
+        grid->particle_vel[2 * i + 1] += gravity * dt;
         grid->particle_pos[2 * i] += grid->particle_vel[2 * i] * dt;
         grid->particle_pos[2 * i + 1] += grid->particle_vel[2 * i + 1] * dt;
     }

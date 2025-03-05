@@ -174,7 +174,7 @@ int main(int argc, char **argv)
     config.window_height = 1200;
 
     float flip_ratio = 0.05f;
-    float over_relaxation = 1.40f;
+    float over_relaxation = 1.90f;
     int pressure_solver_steps = 100;
     int particles_push_apart_steps = 3;
     int show_markers = 1;
@@ -184,7 +184,7 @@ int main(int argc, char **argv)
     float spacing = 1.0f;
     float width = 100.0f;
     float height = 100.0f;
-    float particle_radius = 0.1f;
+    float particle_radius = 0.15f;
     int max_particles = 2000;
 
     for (int i = 1; i < argc; i++)
@@ -253,13 +253,15 @@ int main(int argc, char **argv)
     setupBuffers(markerVao, markerVbo, markerEbo);
 
     Camera_t camera;
-    Camera_init(&camera, window, glm::vec3(width / 2.0f, height / 2.0f, (width + 10.0f) * spacing), 45.0f, 0.1f, 1000.0f);
+    // camera, window, postion, speed, fov, near, far
+    Camera_init(&camera, window, glm::vec3(width / 2.0f, height / 2.0f, (width + 20.0f) * spacing), 5.0f, 45.0f, 0.1f, 1000.0f);
 
     MacGrid_t mac;
     MAC_init(&mac, density, width, height, spacing, particle_radius, max_particles);
 
     Obstacle_t obstacle;
-    Obstacle_init(&obstacle, glm::vec3(1.0f, 1.0f, 0.0f), 0.1f, 0.1f);
+    // obstacle, postion, radius, speed
+    Obstacle_init(&obstacle, glm::vec3(1.0f, 10.0f, 0.0f), 5.1f, 5.1f);
 
     float dt = 1.0f / 60.0f; // TODO it should be calculated based on the time between frames or more sophisticated way
     int frames = -1;
@@ -276,7 +278,7 @@ int main(int argc, char **argv)
         if (frames > 0 || frames <= -1)
         {
             MAC_integrateParticles(&mac, dt, gravity);
-            MAC_pushParticlesApart(&mac, particles_push_apart_steps, dt);
+            // MAC_pushParticlesApart(&mac, particles_push_apart_steps, dt);
             MAC_handleObstacle(&mac, &obstacle, dt);
             MAC_transferVelocities(&mac, 1, flip_ratio);
             MAC_updateParticleDensity(&mac);
