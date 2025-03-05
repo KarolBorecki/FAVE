@@ -15,7 +15,7 @@
 #include "inc/types.h"
 #include "inc/camera.h"
 
-#include "inc/mac.h"
+#include "inc/flip.h"
 #include "inc/obstacle.h"
 
 #include "inc/buffers/shader.h"
@@ -182,10 +182,10 @@ int main(int argc, char **argv)
     float gravity = -9.81f;
     float density = 1000.0f;
     float spacing = 0.8f;
-    float width = 100.0f;
-    float height = 100.0f;
+    float width = 30.0f;
+    float height = 30.0f;
     float particle_radius = 0.009f;
-    int max_particles = 2000;
+    int max_particles = 500;
 
     for (int i = 1; i < argc; i++)
     {
@@ -256,8 +256,8 @@ int main(int argc, char **argv)
     // camera, window, postion, speed, fov, near, far
     Camera_init(&camera, window, glm::vec3(width / 2.0f, height / 2.0f, (width + 20.0f) * spacing), 5.0f, 45.0f, 0.1f, 1000.0f);
 
-    MacGrid_t mac;
-    MAC_init(&mac, density, width, height, spacing, particle_radius, max_particles);
+    FlipGrid_t flip;
+    FLIP_init(&flip, density, width, height, spacing, particle_radius, max_particles);
 
     Obstacle_t obstacle;
     // obstacle, postion, radius, speed
@@ -277,23 +277,23 @@ int main(int argc, char **argv)
 
         if (frames > 0 || frames <= -1)
         {
-            MAC_integrateParticles(&mac, dt, gravity);
-            // MAC_pushParticlesApart(&mac, particles_push_apart_steps, dt);
-            MAC_handleObstacle(&mac, &obstacle, dt);
-            MAC_transferVelocities(&mac, 1, flip_ratio);
-            MAC_updateParticleDensity(&mac);
-            MAC_solveIncompressibility(&mac, pressure_solver_steps, dt, over_relaxation);
-            MAC_transferVelocities(&mac, 0, flip_ratio);
+            FLIP_integrateParticles(&flip, dt, gravity);
+            FLIP_pushParticlesApart(&flip, particles_push_apart_steps, dt);
+            FLIP_handleObstacle(&flip, &obstacle, dt);
+            FLIP_transferVelocities(&flip, 1, flip_ratio);
+            FLIP_updateParticleDensity(&flip);
+            FLIP_solveIncompressibility(&flip, pressure_solver_steps, dt, over_relaxation);
+            FLIP_transferVelocities(&flip, 0, flip_ratio);
             frames--;
         }
         
-        Pair_t mac_grid_render_sizes = MAC_transformGridToVerticies(&mac, vertices, indices, show_sci);
-        render(window, camera, fluidShader, fluidVao, fluidVbo, fluidEbo, vertices, indices, mac_grid_render_sizes.first, mac_grid_render_sizes.second);
+        Pair_t flip_grid_render_sizes = FLIP_transformGridToVerticies(&flip, vertices, indices, show_sci);
+        render(window, camera, fluidShader, fluidVao, fluidVbo, fluidEbo, vertices, indices, flip_grid_render_sizes.first, flip_grid_render_sizes.second);
 
         if (show_markers)
         {
-            Pair_t mac_markers_render_sizes = MAC_transformMarkersToVertices(&mac, markerVertices, markerIndices);
-            render(window, camera, markerShader, markerVao, markerVbo, markerEbo, markerVertices, markerIndices, mac_markers_render_sizes.first, mac_markers_render_sizes.second);
+            Pair_t flip_markers_render_sizes = FLIP_transformMarkersToVertices(&flip, markerVertices, markerIndices);
+            render(window, camera, markerShader, markerVao, markerVbo, markerEbo, markerVertices, markerIndices, flip_markers_render_sizes.first, flip_markers_render_sizes.second);
         }
     
     Pair_t obstacle_render_sizes = Obstacle_transformToVertices(&obstacle, obstacleVertices, obstacleIndices);
@@ -304,7 +304,7 @@ int main(int argc, char **argv)
 }
 
 Obstacle_destroy(&obstacle);
-MAC_destroy(&mac);
+FLIP_destroy(&flip);
 VAO_destroy(&fluidVao);
 VBO_destroy(&fluidVbo);
 EBO_destroy(&fluidEbo);
