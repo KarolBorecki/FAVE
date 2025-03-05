@@ -472,7 +472,7 @@ void MAC_transferVelocities(MacGrid_t *grid, int toGrid, float flipRatio)
             }
             else
             {
-                int offset = component == 0 ? n : 1;
+                int offset = component == 0 ? 1 : n; // TODO czemu zmiana nic nie daje? xd
                 float valid0 = grid->cell_type[nr0] != AIR || grid->cell_type[nr0 - offset] != AIR ? 1.0f : 0.0f;
                 float valid1 = grid->cell_type[nr1] != AIR || grid->cell_type[nr1 - offset] != AIR ? 1.0f : 0.0f;
                 float valid2 = grid->cell_type[nr2] != AIR || grid->cell_type[nr2 - offset] != AIR ? 1.0f : 0.0f;
@@ -482,8 +482,14 @@ void MAC_transferVelocities(MacGrid_t *grid, int toGrid, float flipRatio)
                 float d_v = valid0 * d0 + valid1 * d1 + valid2 * d2 + valid3 * d3;
                 if (d_v > 0.0f)
                 {
-                    float picV = (valid0 * d0 * f[nr0] + valid1 * d1 * f[nr1] + valid2 * d2 * f[nr2] + valid3 * d3 * f[nr3]) / d_v;
-                    float corr = (valid0 * d0 * (f[nr0] - prev_f[nr0]) + valid1 * d1 * (f[nr1] - prev_f[nr1]) + valid2 * d2 * (f[nr2] - prev_f[nr2]) + valid3 * d3 * (f[nr3] - prev_f[nr3])) / d_v;
+                    float picV = (valid0 * d0 * f[nr0] 
+                        + valid1 * d1 * f[nr1] 
+                        + valid2 * d2 * f[nr2] 
+                        + valid3 * d3 * f[nr3]) / d_v;
+                    float corr = (valid0 * d0 * (f[nr0] - prev_f[nr0]) 
+                    + valid1 * d1 * (f[nr1] - prev_f[nr1]) 
+                    + valid2 * d2 * (f[nr2] - prev_f[nr2]) 
+                    + valid3 * d3 * (f[nr3] - prev_f[nr3])) / d_v;
                     float flipV = v + corr;
 
                     grid->particle_vel[2 * i + component] = flipRatio * flipV + (1.0f - flipRatio) * picV;
