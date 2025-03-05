@@ -184,7 +184,7 @@ int main(int argc, char **argv)
     float spacing = 1.0f;
     float width = 100.0f;
     float height = 100.0f;
-    float particle_radius = 0.15f;
+    float particle_radius = 0.4f;
     int max_particles = 2000;
 
     for (int i = 1; i < argc; i++)
@@ -261,7 +261,7 @@ int main(int argc, char **argv)
 
     Obstacle_t obstacle;
     // obstacle, postion, radius, speed
-    Obstacle_init(&obstacle, glm::vec3(1.0f, 10.0f, 0.0f), 5.1f, 5.1f);
+    Obstacle_init(&obstacle, glm::vec3(1.0f, 40.0f, 0.0f), 5.1f, 3.1f);
 
     float dt = 1.0f / 60.0f; // TODO it should be calculated based on the time between frames or more sophisticated way
     int frames = -1;

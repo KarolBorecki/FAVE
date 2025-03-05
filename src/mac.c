@@ -115,17 +115,17 @@ void MAC_init(MacGrid_t *grid, float density, float width, float height, float s
     int i = 1, j = 1;
     for (int w = 0; w < grid->num_particles * 2; w += 2)
     {
-        if (i >= grid->f_num_y - 1)
+        if (i >= grid->f_num_x - 1)
         {
             i = 1;
             j++;
         }
-        if (j >= grid->f_num_x - 1)
+        if (j >= grid->f_num_y - 1)
         {
             break;
         }
-        grid->particle_pos[w] = grid->h * j;
-        grid->particle_pos[w + 1] = grid->h * i;
+        grid->particle_pos[w] = grid->h * i;
+        grid->particle_pos[w + 1] = grid->h * j;
         i++;
     }
 
