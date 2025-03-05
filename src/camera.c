@@ -100,7 +100,7 @@ void Camera_processInput(Camera_t *camera, GLFWwindow *window)
     {
         camera->view_mat = glm::lookAt(camera->position, camera->position + camera->direction, camera->up);
         camera->cam_mat = camera->projection_mat * camera->view_mat;
-        printf("Camera position: (%.2f, %.2f, %.2f)\n", camera->position.x, camera->position.y, camera->position.z);
+        // printf("Camera position: (%.2f, %.2f, %.2f)\n", camera->position.x, camera->position.y, camera->position.z);
     }
 }
 
