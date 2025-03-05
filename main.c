@@ -182,10 +182,10 @@ int main(int argc, char **argv)
     float gravity = -9.81f;
     float density = 1000.0f;
     float spacing = 1.0f;
-    float width = 10.0f;
-    float height = 10.0f;
+    float width = 100.0f;
+    float height = 100.0f;
     float particle_radius = 0.1f;
-    int max_particles = 100;
+    int max_particles = 2000;
 
     for (int i = 1; i < argc; i++)
     {
@@ -253,7 +253,7 @@ int main(int argc, char **argv)
     setupBuffers(markerVao, markerVbo, markerEbo);
 
     Camera_t camera;
-    Camera_init(&camera, window, glm::vec3(width / 2.0f, height / 2.0f, (width + 4.0f) * spacing), 45.0f, 0.1f, 1000.0f);
+    Camera_init(&camera, window, glm::vec3(width / 2.0f, height / 2.0f, (width + 10.0f) * spacing), 45.0f, 0.1f, 1000.0f);
 
     MacGrid_t mac;
     MAC_init(&mac, density, width, height, spacing, particle_radius, max_particles);

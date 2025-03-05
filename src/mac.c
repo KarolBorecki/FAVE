@@ -449,10 +449,10 @@ void MAC_transferVelocities(MacGrid_t *grid, int toGrid, float flipRatio)
             float d2 = tx * ty;
             float d3 = sx * ty;
 
-            int nr0 = x0 * n + y0;
-            int nr1 = x1 * n + y0;
-            int nr2 = x1 * n + y1;
-            int nr3 = x0 * n + y1;
+            int nr0 = y0 * n + x0;
+            int nr1 = y0 * n + x1;
+            int nr2 = y1 * n + x1;
+            int nr3 = y1 * n + x0;
 
             if (toGrid)
             {
