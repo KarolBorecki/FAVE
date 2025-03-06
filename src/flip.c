@@ -3,6 +3,8 @@
 #define RED_TEXT "\033[31m"
 #define RESET_TEXT "\033[0m"
 
+int print_grid = 0;
+
 void printMarkers(FlipGrid_t *grid)
 {
     printf("\nMarkers visualization:\n");
@@ -15,9 +17,44 @@ void printMarkers(FlipGrid_t *grid)
     }
 }
 
-void printGrid(FlipGrid_t *grid)
+void printGridValues(FlipGrid_t *grid, int* values)
 {
     printf("Grid visualization:\n");
+
+    for (int j = grid->f_num_y - 1; j >= 0; j--)
+    {
+        for (int i = 0; i < grid->f_num_x; i++)
+        {
+            printf("+----------------------");
+        }
+        printf("+\n");
+
+        for (int i = 0; i < grid->f_num_x; i++)
+        {
+            printf("|          %d           ", values[j * grid->f_num_x + i]);
+        }
+        printf("|\n");
+
+        for (int i = 0; i < grid->f_num_x; i++)
+        {
+            printf("|                      ");
+        }
+        printf("|\n");
+    }
+
+    for (int i = 0; i < grid->f_num_x; i++)
+    {
+        printf("+----------------------");
+    }
+    printf("+\n");
+
+    printMarkers(grid);
+}
+
+void printGrid(FlipGrid_t *grid)
+{
+    if (print_grid){
+        printf("Grid visualization:\n");
 
     for (int j = grid->f_num_y - 1; j >= 0; j--)
     {
@@ -48,6 +85,7 @@ void printGrid(FlipGrid_t *grid)
     printf("+\n");
 
     printMarkers(grid);
+}
 }
 // Alokacja pamięci + sprawdzanie błędów
 #define ALLOC_CHECK(ptr, name)                                     \
@@ -148,18 +186,19 @@ void FLIP_init(FlipGrid_t *grid, float density, float width, float height, float
 
 void FLIP_integrateParticles(FlipGrid_t *grid, float dt, float gravity)
 {
-    // printf("Integrating particles with dt = %.2f, gravity = %.2f\n", dt, gravity);
+    printf("Integrating particles with dt = %.2f, gravity = %.2f\n", dt, gravity);
     for (int i = 0; i < grid->num_particles; i++)
     {
         grid->particle_vel[2 * i + 1] += gravity * dt;
         grid->particle_pos[2 * i] += grid->particle_vel[2 * i] * dt;
         grid->particle_pos[2 * i + 1] += grid->particle_vel[2 * i + 1] * dt;
     }
+    printGrid(grid);
 }
 
 void FLIP_pushParticlesApart(FlipGrid_t *grid, int numIters, float dt)
 {
-    // printf("Pushing particles apart with numIters = %d, dt = %.2f\n", numIters, dt);
+    printf("Pushing particles apart with numIters = %d, dt = %.2f\n", numIters, dt);
     for (int i = 0; i < grid->p_num_cells; i++)
     {
         grid->num_cell_particles[i] = 0;
@@ -174,9 +213,12 @@ void FLIP_pushParticlesApart(FlipGrid_t *grid, int numIters, float dt)
         int yi = clamp((int)floorf(y * grid->p_inv_spacing), 0, grid->p_num_y - 1);
         int cell_nr = yi * grid->p_num_x + xi;
         grid->num_cell_particles[cell_nr]++;
+        printf("(%.2f; %.2f)particle[%d][%d] %d is in cell %d for grid of size %d x %d (%d x %d)\n", x, y, xi, yi, i, cell_nr, grid->f_num_x, grid->f_num_y, grid->p_num_x, grid->p_num_y);
     }
 
-    int first = 0;
+    printGridValues(grid, grid->num_cell_particles);
+
+        int first = 0;
     for (int i = 0; i < grid->p_num_cells; i++)
     {
         first += grid->num_cell_particles[i];
@@ -254,11 +296,12 @@ void FLIP_pushParticlesApart(FlipGrid_t *grid, int numIters, float dt)
             }
         }
     }
+    printGrid(grid);
 }
 
 void FLIP_handleObstacle(FlipGrid_t *grid, Obstacle_t *obstacle, float dt)
 {
-    // printf("Handling obstacle with dt = %.2f\n", dt);
+    printf("Handling obstacle with dt = %.2f\n", dt);
     float h = 1.0f / grid->f_inv_spacing;
     float r = grid->particle_radius;
     float or2 = obstacle->radius * obstacle->radius;
@@ -308,11 +351,12 @@ void FLIP_handleObstacle(FlipGrid_t *grid, Obstacle_t *obstacle, float dt)
             grid->particle_vel[2 * i + 1] = 0.0f;
         }
     }
+    printGrid(grid);
 }
 
 void FLIP_updateParticleDensity(FlipGrid_t *grid)
 {
-    // printf("Updating particle density\n");
+    printf("Updating particle density\n");
     int n = grid->f_num_x;
     float h = grid->h;
     float h1 = grid->f_inv_spacing;
@@ -371,13 +415,15 @@ void FLIP_updateParticleDensity(FlipGrid_t *grid)
             {
                 grid->particle_rest_density = sum / num_fluid_cells;
             }
+            printf("particle_rest_density = %.2f\n", grid->particle_rest_density);
         }
     }
+    printGrid(grid);
 }
 
 void FLIP_transferVelocities(FlipGrid_t *grid, int toGrid, float FLIPRatio)
 {
-    // printf("Transferring velocities with toGrid = %d, FLIPRatio = %.2f\n", toGrid, FLIPRatio);
+    printf("Transferring velocities with toGrid = %d, FLIPRatio = %.2f\n", toGrid, FLIPRatio);
     int n = grid->f_num_x;
     float h = grid->h;
     float h1 = grid->f_inv_spacing;
@@ -517,11 +563,12 @@ void FLIP_transferVelocities(FlipGrid_t *grid, int toGrid, float FLIPRatio)
             }
         }
     }
+    printGrid(grid);
 }
 
 void FLIP_solveIncompressibility(FlipGrid_t *grid, int num_iters, float dt, float over_relaxation)
 {
-    // printf("Solving incompressibility with num_iters = %d, dt = %.2f, over_relaxation = %.2f\n", num_iters, dt, over_relaxation);
+    printf("Solving incompressibility with num_iters = %d, dt = %.2f, over_relaxation = %.2f\n", num_iters, dt, over_relaxation);
     for (int i = 0; i < grid->f_num_cells; i++)
     {
         grid->p[i] = 0.0f;
@@ -573,15 +620,16 @@ void FLIP_solveIncompressibility(FlipGrid_t *grid, int num_iters, float dt, floa
                 double p = -div / s;
                 p *= over_relaxation;
                 grid->p[center] += cp * p;
-                // printf("sx0: %.2f, sx1: %.2f, sy0: %.2f, sy1: %.2f, s: %.2f, \ndiv: %.2f, p: %.2f \ncp: %.2f density: %.2f dt: %.2f\n", sx0, sx1, sy0, sy1, s, div, p, cp, center->density, dt);
+                // printf("sx0: %.2f, sx1: %.2f, sy0: %.2f, sy1: %.2f, s: %.2f, \ndiv: %.10f, p: %.10f \ncp: %.2f density: %.2f dt: %.2f\n", sx0, sx1, sy0, sy1, s, div, p, cp, grid->particle_density[center], dt);
                 grid->u[center] -= sx0 * p;
                 grid->u[right] += sx1 * p;
                 grid->v[center] -= sy0 * p;
                 grid->v[top] += sy1 * p;
+                // printf("p[center]: %.2f, u[center]: %.2f, u[right]: %.2f, v[center]: %.2f, v[top]: %.2f\n", grid->p[center], grid->u[center], grid->u[right], grid->v[center], grid->v[top]);
             }
         }
     }
-    // printGrid(grid);
+    printGrid(grid);
 }
 
 Pair_t FLIP_transformGridToVerticies(FlipGrid_t *grid, Vertex_t *vertices, GLuint *indices, int show_sci)

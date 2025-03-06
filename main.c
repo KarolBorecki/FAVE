@@ -180,8 +180,8 @@ int main(int argc, char **argv)
     int show_markers = 1;
     int show_sci = 0;
     float gravity = -9.81f;
-    float density = 1000.0f;
-    float spacing = 0.1f;
+    float density = 1.0f;
+    float spacing = 0.3f;
     float width = 3.0f;
     float height = 3.0f;
     float particle_radius = 0.01f;
@@ -254,7 +254,7 @@ int main(int argc, char **argv)
 
     Camera_t camera;
     // camera, window, postion, speed, fov, near, far
-    Camera_init(&camera, window, glm::vec3(width / 2.0f, height / 2.0f, (width + 50.0f) * spacing), 1.0f, 45.0f, 0.1f, 1000.0f);
+    Camera_init(&camera, window, glm::vec3(width / 2.0f, height / 2.0f, (width + 30.0f) * spacing), 1.0f, 45.0f, 0.1f, 1000.0f);
 
     FlipGrid_t mac;
     FLIP_init(&mac, density, width, height, spacing, particle_radius, max_particles);
@@ -278,7 +278,7 @@ int main(int argc, char **argv)
         if (frames > 0 || frames <= -1)
         {
             FLIP_integrateParticles(&mac, dt, gravity);
-            // FLIP_pushParticlesApart(&mac, particles_push_apart_steps, dt);
+            FLIP_pushParticlesApart(&mac, particles_push_apart_steps, dt);
             FLIP_handleObstacle(&mac, &obstacle, dt);
             FLIP_transferVelocities(&mac, 1, flip_ratio);
             FLIP_updateParticleDensity(&mac);
