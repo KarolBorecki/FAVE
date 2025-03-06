@@ -4,9 +4,11 @@
 #define RESET_TEXT "\033[0m"
 
 int print_grid = 0;
-
+int print_values= 0;
+int print_header = 0;
 void printMarkers(FlipGrid_t *grid)
 {
+   
     printf("\nMarkers visualization:\n");
     for (int i = 0; i < grid->num_particles; i++)
     {
@@ -17,15 +19,17 @@ void printMarkers(FlipGrid_t *grid)
     }
 }
 
-void printGridValues(FlipGrid_t *grid, int* values)
+void printGridValues(FlipGrid_t *grid, int *values, const char *title)
 {
-    printf("Grid visualization:\n");
+    if (!print_values)
+        return;
+    printf("Grid visualization %s:\n", title);
 
     for (int j = grid->f_num_y - 1; j >= 0; j--)
     {
         for (int i = 0; i < grid->f_num_x; i++)
         {
-            printf("+----------------------");
+            printf("+ %d, %d-----------------", i, j);
         }
         printf("+\n");
 
@@ -51,29 +55,30 @@ void printGridValues(FlipGrid_t *grid, int* values)
     printMarkers(grid);
 }
 
-void printGrid(FlipGrid_t *grid)
+void printGridValues(FlipGrid_t *grid, CellType *values, const char *title)
 {
-    if (print_grid){
-        printf("Grid visualization:\n");
+    if (!print_values)
+        return;
+    printf("Grid visualization %s:\n", title);
 
     for (int j = grid->f_num_y - 1; j >= 0; j--)
     {
         for (int i = 0; i < grid->f_num_x; i++)
         {
-            printf("+----------------------");
+            printf("+ %d, %d-----------------", i, j);
         }
         printf("+\n");
 
         for (int i = 0; i < grid->f_num_x; i++)
         {
-            printf("| %6.1f   %6.1f      ", grid->u[j * grid->f_num_x + i],
-                   grid->p[j * grid->f_num_x + i]);
+            printf("|          %s           ", values[j * grid->f_num_x + i] == FLUID ? "F" : values[j * grid->f_num_x + i] == SOLID ? "S"
+                                                                                                                                     : "A");
         }
         printf("|\n");
 
         for (int i = 0; i < grid->f_num_x; i++)
         {
-            printf("|        %6.1f        ", grid->v[j * grid->f_num_x + i]);
+            printf("|                      ");
         }
         printf("|\n");
     }
@@ -86,6 +91,43 @@ void printGrid(FlipGrid_t *grid)
 
     printMarkers(grid);
 }
+
+void printGrid(FlipGrid_t *grid)
+{
+    if (print_grid)
+    {
+        printf("Grid visualization:\n");
+
+        for (int j = grid->f_num_y - 1; j >= 0; j--)
+        {
+            for (int i = 0; i < grid->f_num_x; i++)
+            {
+                printf("+ %d, %d-----------------", i, j);
+            }
+            printf("+\n");
+
+            for (int i = 0; i < grid->f_num_x; i++)
+            {
+                printf("| %6.1f   %6.1f      ", grid->u[j * grid->f_num_x + i],
+                       grid->p[j * grid->f_num_x + i]);
+            }
+            printf("|\n");
+
+            for (int i = 0; i < grid->f_num_x; i++)
+            {
+                printf("|        %6.1f        ", grid->v[j * grid->f_num_x + i]);
+            }
+            printf("|\n");
+        }
+
+        for (int i = 0; i < grid->f_num_x; i++)
+        {
+            printf("+----------------------");
+        }
+        printf("+\n");
+
+        printMarkers(grid);
+    }
 }
 // Alokacja pamięci + sprawdzanie błędów
 #define ALLOC_CHECK(ptr, name)                                     \
@@ -161,8 +203,8 @@ void FLIP_init(FlipGrid_t *grid, float density, float width, float height, float
         {
             break;
         }
-        grid->particle_pos[w] = grid->h * i;
-        grid->particle_pos[w + 1] = grid->h * j;
+        grid->particle_pos[w] = grid->h/4 + grid->h * i;
+        grid->particle_pos[w + 1] = grid->h/4 + grid->h * j;
         i++;
     }
 
@@ -186,7 +228,8 @@ void FLIP_init(FlipGrid_t *grid, float density, float width, float height, float
 
 void FLIP_integrateParticles(FlipGrid_t *grid, float dt, float gravity)
 {
-    printf("Integrating particles with dt = %.2f, gravity = %.2f\n", dt, gravity);
+    if (print_header)
+        printf("Integrating particles with dt = %.2f, gravity = %.2f\n", dt, gravity);
     for (int i = 0; i < grid->num_particles; i++)
     {
         grid->particle_vel[2 * i + 1] += gravity * dt;
@@ -198,7 +241,8 @@ void FLIP_integrateParticles(FlipGrid_t *grid, float dt, float gravity)
 
 void FLIP_pushParticlesApart(FlipGrid_t *grid, int numIters, float dt)
 {
-    printf("Pushing particles apart with numIters = %d, dt = %.2f\n", numIters, dt);
+    if (print_header)
+        printf("Pushing particles apart with numIters = %d, dt = %.2f\n", numIters, dt);
     for (int i = 0; i < grid->p_num_cells; i++)
     {
         grid->num_cell_particles[i] = 0;
@@ -213,12 +257,12 @@ void FLIP_pushParticlesApart(FlipGrid_t *grid, int numIters, float dt)
         int yi = clamp((int)floorf(y * grid->p_inv_spacing), 0, grid->p_num_y - 1);
         int cell_nr = yi * grid->p_num_x + xi;
         grid->num_cell_particles[cell_nr]++;
-        printf("(%.2f; %.2f)particle[%d][%d] %d is in cell %d for grid of size %d x %d (%d x %d)\n", x, y, xi, yi, i, cell_nr, grid->f_num_x, grid->f_num_y, grid->p_num_x, grid->p_num_y);
+        // printf("(%.2f; %.2f)particle[%d][%d] %d is in cell %d for grid of size %d x %d (%d x %d)\n", x, y, xi, yi, i, cell_nr, grid->f_num_x, grid->f_num_y, grid->p_num_x, grid->p_num_y);
     }
 
-    printGridValues(grid, grid->num_cell_particles);
+    printGridValues(grid, grid->num_cell_particles, "NUM CELL PARTICLES FROM PUSH PARTICLES APART");
 
-        int first = 0;
+    int first = 0;
     for (int i = 0; i < grid->p_num_cells; i++)
     {
         first += grid->num_cell_particles[i];
@@ -301,7 +345,8 @@ void FLIP_pushParticlesApart(FlipGrid_t *grid, int numIters, float dt)
 
 void FLIP_handleObstacle(FlipGrid_t *grid, Obstacle_t *obstacle, float dt)
 {
-    printf("Handling obstacle with dt = %.2f\n", dt);
+    if (print_header)
+        printf("Handling obstacle with dt = %.2f\n", dt);
     float h = 1.0f / grid->f_inv_spacing;
     float r = grid->particle_radius;
     float or2 = obstacle->radius * obstacle->radius;
@@ -356,7 +401,8 @@ void FLIP_handleObstacle(FlipGrid_t *grid, Obstacle_t *obstacle, float dt)
 
 void FLIP_updateParticleDensity(FlipGrid_t *grid)
 {
-    printf("Updating particle density\n");
+    if (print_header)
+        printf("Updating particle density\n");
     int n = grid->f_num_x;
     float h = grid->h;
     float h1 = grid->f_inv_spacing;
@@ -423,7 +469,8 @@ void FLIP_updateParticleDensity(FlipGrid_t *grid)
 
 void FLIP_transferVelocities(FlipGrid_t *grid, int toGrid, float FLIPRatio)
 {
-    printf("Transferring velocities with toGrid = %d, FLIPRatio = %.2f\n", toGrid, FLIPRatio);
+    if (print_header)
+        printf("Transferring velocities with toGrid = %d, FLIPRatio = %.2f\n", toGrid, FLIPRatio);
     int n = grid->f_num_x;
     float h = grid->h;
     float h1 = grid->f_inv_spacing;
@@ -457,12 +504,15 @@ void FLIP_transferVelocities(FlipGrid_t *grid, int toGrid, float FLIPRatio)
             int xi = clamp((int)floorf(x * h1), 0, grid->f_num_x - 1);
             int yi = clamp((int)floorf(y * h1), 0, grid->f_num_y - 1);
             int cell_nr = yi * n + xi;
+            // printf("[TRANSFER](%.2f; %.2f)particle[%d][%d] %d is in cell %d for grid of size %d x %d (%d x %d)\n", x, y, xi, yi, i, cell_nr, grid->f_num_x, grid->f_num_y, grid->p_num_x, grid->p_num_y);
             if (grid->cell_type[cell_nr] == AIR)
             {
+                // printf("cell %d is AIR - MAKING IT FLUID\n", cell_nr);
                 grid->cell_type[cell_nr] = FLUID;
             }
         }
     }
+    printGridValues(grid, grid->cell_type, "CELL TYPES FROM TRANSFER VELOCITIES");
 
     for (int component = 0; component < 2; component++) // 0 === u/x, 1 === v/y
     {
@@ -568,7 +618,8 @@ void FLIP_transferVelocities(FlipGrid_t *grid, int toGrid, float FLIPRatio)
 
 void FLIP_solveIncompressibility(FlipGrid_t *grid, int num_iters, float dt, float over_relaxation)
 {
-    printf("Solving incompressibility with num_iters = %d, dt = %.2f, over_relaxation = %.2f\n", num_iters, dt, over_relaxation);
+    if (print_header)
+        printf("Solving incompressibility with num_iters = %d, dt = %.2f, over_relaxation = %.2f\n", num_iters, dt, over_relaxation);
     for (int i = 0; i < grid->f_num_cells; i++)
     {
         grid->p[i] = 0.0f;
@@ -634,15 +685,16 @@ void FLIP_solveIncompressibility(FlipGrid_t *grid, int num_iters, float dt, floa
 
 Pair_t FLIP_transformGridToVerticies(FlipGrid_t *grid, Vertex_t *vertices, GLuint *indices, int show_sci)
 {
+    printGridValues(grid, grid->cell_type, "CELL TYPES FROM VISUALIZATION");
     glm::vec3 cubeVertices[8] = {
-        glm::vec3(-0.5f, -0.5f, -0.5f),
-        glm::vec3(0.5f, -0.5f, -0.5f),
-        glm::vec3(0.5f, 0.5f, -0.5f),
-        glm::vec3(-0.5f, 0.5f, -0.5f),
-        glm::vec3(-0.5f, -0.5f, 0.5f),
-        glm::vec3(0.5f, -0.5f, 0.5f),
-        glm::vec3(0.5f, 0.5f, 0.5f),
-        glm::vec3(-0.5f, 0.5f, 0.5f)};
+        glm::vec3(0.0f, 0.0f, 0.0f),
+        glm::vec3(1.0f, 0.0f, 0.0f),
+        glm::vec3(1.0f, 1.0f, 0.0f),
+        glm::vec3(0.0f, 1.0f, 0.0f),
+        glm::vec3(0.0f, 0.0f, 1.0f),
+        glm::vec3(1.0f, 0.0f, 1.0f),
+        glm::vec3(1.0f, 1.0f, 1.0f),
+        glm::vec3(0.0f, 1.0f, 1.0f)};
 
     GLuint cubeIndices[36] = {
         0, 1, 2, 2, 3, 0,
@@ -672,14 +724,14 @@ Pair_t FLIP_transformGridToVerticies(FlipGrid_t *grid, Vertex_t *vertices, GLuin
     }
 
     // printf("averagePressure: %f minPressure: %f, maxPressure: %f\n", (sumPressure/grid->total_size), minPressure, maxPressure);
-
-    for (int x = 0; x < grid->f_num_x; ++x)
+    for (int y = 0; y < grid->f_num_y; y++)
     {
-        for (int y = 0; y < grid->f_num_y; ++y)
+        for (int x = 0; x < grid->f_num_x; x++)
         {
+
             int cell_nr = y * grid->f_num_x + x;
             glm::vec3 cubePos = glm::vec3(x, y, 0) * grid->h;
-            // printf("cellIndex: %d, cellType: %d cellX: %d, cellY: %d, cubePos: (%.2f, %.2f, %.2f)\n", cellIndex, grid->cell_type[cellIndex], x, y, cubePos.x, cubePos.y, cubePos.z);
+            // printf("cellIndex: %d, cellType: %d cellX: %d, cellY: %d, cubePos: (%.2f, %.2f, %.2f)\n", cell_nr, grid->cell_type[cell_nr], x, y, cubePos.x, cubePos.y, cubePos.z);
             float c[3] = {0.0f, 0.0f, 1.0f};
             if (grid->cell_type[cell_nr] == FLUID)
             {
@@ -717,13 +769,14 @@ Pair_t FLIP_transformGridToVerticies(FlipGrid_t *grid, Vertex_t *vertices, GLuin
                 indices[ind_index++] = offset + cubeIndices[i];
             }
         }
+        // printf("\n");
     }
     return {.first = (int)vert_index, .second = (int)ind_index};
 }
 
 #define SPHERE_LAT_SLICES 5
 #define SPHERE_LON_SLICES 5
-int frames_Dad = -1;
+int frames_Dad = 1;
 Pair_t FLIP_transformMarkersToVertices(FlipGrid_t *grid, Vertex_t *markerVertices, GLuint *markerIndices)
 {
     int vertexOffset = 0;
