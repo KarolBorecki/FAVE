@@ -3,7 +3,7 @@
 #define RED_TEXT "\033[31m"
 #define RESET_TEXT "\033[0m"
 
-void printMarkers(MacGrid_t *grid)
+void printMarkers(FlipGrid_t *grid)
 {
     printf("\nMarkers visualization:\n");
     for (int i = 0; i < grid->num_particles; i++)
@@ -15,7 +15,7 @@ void printMarkers(MacGrid_t *grid)
     }
 }
 
-void printGrid(MacGrid_t *grid)
+void printGrid(FlipGrid_t *grid)
 {
     printf("Grid visualization:\n");
 
@@ -56,9 +56,9 @@ void printGrid(MacGrid_t *grid)
         printf("ERROR: Failed to allocate memory for " name "\n"); \
         exit(EXIT_FAILURE);                                        \
     }
-void MAC_init(MacGrid_t *grid, float density, float width, float height, float spacing, float particle_radius, int max_particles)
+void FLIP_init(FlipGrid_t *grid, float density, float width, float height, float spacing, float particle_radius, int max_particles)
 {
-    printf("Initializing MAC grid...\n");
+    printf("Initializing FLIP grid...\n");
 
     grid->density = density;
     grid->f_num_x = (int)(floorf(width / spacing) + 1.0f);
@@ -136,7 +136,7 @@ void MAC_init(MacGrid_t *grid, float density, float width, float height, float s
         }
     }
 
-    printf("MAC grid initialized successfully!\n");
+    printf("FLIP grid initialized successfully!\n");
     printf("f_num_x = %d, f_num_y = %d, h = %.2f, f_inv_spacing = %.2f, f_num_cells = %d\n",
            grid->f_num_x, grid->f_num_y, grid->h, grid->f_inv_spacing, grid->f_num_cells);
     printf("p_num_x = %d, p_num_y = %d, p_num_cells = %d\n", grid->p_num_x, grid->p_num_y, grid->p_num_cells);
@@ -146,7 +146,7 @@ void MAC_init(MacGrid_t *grid, float density, float width, float height, float s
     printf("density = %.2f\n", grid->density);
 }
 
-void MAC_integrateParticles(MacGrid_t *grid, float dt, float gravity)
+void FLIP_integrateParticles(FlipGrid_t *grid, float dt, float gravity)
 {
     // printf("Integrating particles with dt = %.2f, gravity = %.2f\n", dt, gravity);
     for (int i = 0; i < grid->num_particles; i++)
@@ -157,7 +157,7 @@ void MAC_integrateParticles(MacGrid_t *grid, float dt, float gravity)
     }
 }
 
-void MAC_pushParticlesApart(MacGrid_t *grid, int numIters, float dt)
+void FLIP_pushParticlesApart(FlipGrid_t *grid, int numIters, float dt)
 {
     // printf("Pushing particles apart with numIters = %d, dt = %.2f\n", numIters, dt);
     for (int i = 0; i < grid->p_num_cells; i++)
@@ -256,7 +256,7 @@ void MAC_pushParticlesApart(MacGrid_t *grid, int numIters, float dt)
     }
 }
 
-void MAC_handleObstacle(MacGrid_t *grid, Obstacle_t *obstacle, float dt)
+void FLIP_handleObstacle(FlipGrid_t *grid, Obstacle_t *obstacle, float dt)
 {
     // printf("Handling obstacle with dt = %.2f\n", dt);
     float h = 1.0f / grid->f_inv_spacing;
@@ -310,7 +310,7 @@ void MAC_handleObstacle(MacGrid_t *grid, Obstacle_t *obstacle, float dt)
     }
 }
 
-void MAC_updateParticleDensity(MacGrid_t *grid)
+void FLIP_updateParticleDensity(FlipGrid_t *grid)
 {
     // printf("Updating particle density\n");
     int n = grid->f_num_x;
@@ -375,9 +375,9 @@ void MAC_updateParticleDensity(MacGrid_t *grid)
     }
 }
 
-void MAC_transferVelocities(MacGrid_t *grid, int toGrid, float flipRatio)
+void FLIP_transferVelocities(FlipGrid_t *grid, int toGrid, float FLIPRatio)
 {
-    // printf("Transferring velocities with toGrid = %d, flipRatio = %.2f\n", toGrid, flipRatio);
+    // printf("Transferring velocities with toGrid = %d, FLIPRatio = %.2f\n", toGrid, FLIPRatio);
     int n = grid->f_num_x;
     float h = grid->h;
     float h1 = grid->f_inv_spacing;
@@ -483,9 +483,9 @@ void MAC_transferVelocities(MacGrid_t *grid, int toGrid, float flipRatio)
                 {
                     float picV = (valid0 * d0 * f[nr0] + valid1 * d1 * f[nr1] + valid2 * d2 * f[nr2] + valid3 * d3 * f[nr3]) / d_v;
                     float corr = (valid0 * d0 * (f[nr0] - prev_f[nr0]) + valid1 * d1 * (f[nr1] - prev_f[nr1]) + valid2 * d2 * (f[nr2] - prev_f[nr2]) + valid3 * d3 * (f[nr3] - prev_f[nr3])) / d_v;
-                    float flipV = v + corr;
+                    float FLIPV = v + corr;
 
-                    grid->particle_vel[2 * i + component] = flipRatio * flipV + (1.0f - flipRatio) * picV;
+                    grid->particle_vel[2 * i + component] = FLIPRatio * FLIPV + (1.0f - FLIPRatio) * picV;
                 }
             }
         }
@@ -519,7 +519,7 @@ void MAC_transferVelocities(MacGrid_t *grid, int toGrid, float flipRatio)
     }
 }
 
-void MAC_solveIncompressibility(MacGrid_t *grid, int num_iters, float dt, float over_relaxation)
+void FLIP_solveIncompressibility(FlipGrid_t *grid, int num_iters, float dt, float over_relaxation)
 {
     // printf("Solving incompressibility with num_iters = %d, dt = %.2f, over_relaxation = %.2f\n", num_iters, dt, over_relaxation);
     for (int i = 0; i < grid->f_num_cells; i++)
@@ -584,7 +584,7 @@ void MAC_solveIncompressibility(MacGrid_t *grid, int num_iters, float dt, float 
     // printGrid(grid);
 }
 
-Pair_t MAC_transformGridToVerticies(MacGrid_t *grid, Vertex_t *vertices, GLuint *indices, int show_sci)
+Pair_t FLIP_transformGridToVerticies(FlipGrid_t *grid, Vertex_t *vertices, GLuint *indices, int show_sci)
 {
     glm::vec3 cubeVertices[8] = {
         glm::vec3(-0.5f, -0.5f, -0.5f),
@@ -676,7 +676,7 @@ Pair_t MAC_transformGridToVerticies(MacGrid_t *grid, Vertex_t *vertices, GLuint 
 #define SPHERE_LAT_SLICES 5
 #define SPHERE_LON_SLICES 5
 int frames_Dad = -1;
-Pair_t MAC_transformMarkersToVertices(MacGrid_t *grid, Vertex_t *markerVertices, GLuint *markerIndices)
+Pair_t FLIP_transformMarkersToVertices(FlipGrid_t *grid, Vertex_t *markerVertices, GLuint *markerIndices)
 {
     int vertexOffset = 0;
     int indexOffset = 0;
@@ -737,7 +737,7 @@ Pair_t MAC_transformMarkersToVertices(MacGrid_t *grid, Vertex_t *markerVertices,
     return (Pair_t){.first = vertexOffset, .second = indexOffset};
 }
 
-void MAC_destroy(MacGrid_t *grid)
+void FLIP_destroy(FlipGrid_t *grid)
 {
     // if (grid->cells)
     // {

@@ -256,8 +256,8 @@ int main(int argc, char **argv)
     // camera, window, postion, speed, fov, near, far
     Camera_init(&camera, window, glm::vec3(width / 2.0f, height / 2.0f, (width + 20.0f) * spacing), 5.0f, 45.0f, 0.1f, 1000.0f);
 
-    MacGrid_t mac;
-    MAC_init(&mac, density, width, height, spacing, particle_radius, max_particles);
+    FlipGrid_t mac;
+    FLIP_init(&mac, density, width, height, spacing, particle_radius, max_particles);
 
     Obstacle_t obstacle;
     // obstacle, postion, radius, speed
@@ -277,22 +277,22 @@ int main(int argc, char **argv)
 
         if (frames > 0 || frames <= -1)
         {
-            MAC_integrateParticles(&mac, dt, gravity);
-            // MAC_pushParticlesApart(&mac, particles_push_apart_steps, dt);
-            MAC_handleObstacle(&mac, &obstacle, dt);
-            MAC_transferVelocities(&mac, 1, flip_ratio);
-            MAC_updateParticleDensity(&mac);
-            MAC_solveIncompressibility(&mac, pressure_solver_steps, dt, over_relaxation);
-            MAC_transferVelocities(&mac, 0, flip_ratio);
+            FLIP_integrateParticles(&mac, dt, gravity);
+            // FLIP_pushParticlesApart(&mac, particles_push_apart_steps, dt);
+            FLIP_handleObstacle(&mac, &obstacle, dt);
+            FLIP_transferVelocities(&mac, 1, flip_ratio);
+            FLIP_updateParticleDensity(&mac);
+            FLIP_solveIncompressibility(&mac, pressure_solver_steps, dt, over_relaxation);
+            FLIP_transferVelocities(&mac, 0, flip_ratio);
             frames--;
         }
 
-        Pair_t mac_grid_render_sizes = MAC_transformGridToVerticies(&mac, vertices, indices, show_sci);
+        Pair_t mac_grid_render_sizes = FLIP_transformGridToVerticies(&mac, vertices, indices, show_sci);
         render(window, camera, fluidShader, fluidVao, fluidVbo, fluidEbo, vertices, indices, mac_grid_render_sizes.first, mac_grid_render_sizes.second);
 
         if (show_markers)
         {
-            Pair_t mac_markers_render_sizes = MAC_transformMarkersToVertices(&mac, markerVertices, markerIndices);
+            Pair_t mac_markers_render_sizes = FLIP_transformMarkersToVertices(&mac, markerVertices, markerIndices);
             render(window, camera, markerShader, markerVao, markerVbo, markerEbo, markerVertices, markerIndices, mac_markers_render_sizes.first, mac_markers_render_sizes.second);
         }
 
@@ -304,7 +304,7 @@ int main(int argc, char **argv)
     }
 
     Obstacle_destroy(&obstacle);
-    MAC_destroy(&mac);
+    FLIP_destroy(&mac);
     VAO_destroy(&fluidVao);
     VBO_destroy(&fluidVbo);
     EBO_destroy(&fluidEbo);
