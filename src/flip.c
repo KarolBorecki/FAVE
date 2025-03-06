@@ -356,23 +356,23 @@ void FLIP_updateParticleDensity(FlipGrid_t *grid)
         if (x0 < grid->f_num_x && y1 < grid->f_num_y)
             grid->particle_density[y1 * n + x0] += sx * ty;
 
-        if (grid->particle_rest_density == 0.0f)
-        {
-            float sum = 0.0f;
-            int num_fluid_cells = 0;
-            for (int i = 0; i < grid->f_num_cells; i++)
-            {
-                if (grid->cell_type[i] == FLUID)
-                {
-                    sum += grid->particle_density[i];
-                    num_fluid_cells++;
-                }
-            }
-            if (num_fluid_cells > 0)
-            {
-                grid->particle_rest_density = sum / num_fluid_cells;
-            }
-        }
+        // if (grid->particle_rest_density == 0.0f) // TODO THIS STINKS AF 
+        // {
+        //     float sum = 0.0f;
+        //     int num_fluid_cells = 0;
+        //     for (int i = 0; i < grid->f_num_cells; i++)
+        //     {
+        //         if (grid->cell_type[i] == FLUID)
+        //         {
+        //             sum += grid->particle_density[i];
+        //             num_fluid_cells++;
+        //         }
+        //     }
+        //     if (num_fluid_cells > 0)
+        //     {
+        //         grid->particle_rest_density = sum / num_fluid_cells;
+        //     }
+        // }
     }
 }
 
