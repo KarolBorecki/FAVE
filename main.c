@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <array>
+#include <time.h>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -173,19 +174,36 @@ int main(int argc, char **argv)
     config.window_width = 1400;
     config.window_height = 1200;
 
-    float flip_ratio = 0.9f;
-    float over_relaxation = 1.63123f;
-    int pressure_solver_steps = 100;
-    int particles_push_apart_steps = 3;
+    float obstacle_speed = 1.0f;
+    float obstacle_radius = 1.1f;
+
+    // float flip_ratio = 0.01f;
+    // float over_relaxation = 1.9f;
+    // int pressure_solver_steps = 50;
+    // int particles_push_apart_steps = 3;
+    // int show_markers = 0;
+    // int show_sci = 0;
+    // float gravity = -9.81f;
+    // float density = 1000.0f;
+    // float spacing = 0.03f;
+    // float width = 4.3f;
+    // float height = 3.0f;
+    // float particle_radius = 0.009f;
+    // int max_particles = 10000;
+
+    float flip_ratio = 0.5f;
+    float over_relaxation = 1.9f;
+    int pressure_solver_steps = 5;
+    int particles_push_apart_steps = 2;
     int show_markers = 1;
     int show_sci = 0;
-    float gravity = -9.81f;
-    float density = 1.0f;
-    float spacing = 0.05f;
-    float width = 3.0f;
-    float height = 3.0f;
-    float particle_radius = 0.02f;
-    int max_particles = 500;
+    float gravity = -9.0f;
+    float density = 1000.0f;
+    float spacing = 1.0f;
+    float width = 15.0f;
+    float height = 15.0f;
+    float particle_radius = 0.1f;
+    int max_particles = 400;
 
     for (int i = 1; i < argc; i++)
     {
@@ -261,12 +279,16 @@ int main(int argc, char **argv)
 
     Obstacle_t obstacle;
     // obstacle, postion, radius, speed
-    Obstacle_init(&obstacle, glm::vec3(1.0f, 40.0f, 0.0f), 5.1f, 3.1f);
+    Obstacle_init(&obstacle, glm::vec3(width / 2.0f, height + obstacle_radius*2, 0.0f), obstacle_radius, obstacle_speed);
 
+    clock_t previousTime = clock();
     float dt = 1.0f / 60.0f; // TODO it should be calculated based on the time between frames or more sophisticated way
-    int frames = -1;
     while (!glfwWindowShouldClose(window))
     {
+        clock_t currentTime = clock();
+        dt = (float)(currentTime - previousTime) / CLOCKS_PER_SEC;
+        previousTime = currentTime;
+
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -275,17 +297,13 @@ int main(int argc, char **argv)
         Camera_processInput(&camera, window);
         Obstacle_processInput(&obstacle, window);
 
-        if (frames > 0 || frames <= -1)
-        {
-            FLIP_integrateParticles(&mac, dt, gravity);
-            FLIP_pushParticlesApart(&mac, particles_push_apart_steps, dt);
-            FLIP_handleObstacle(&mac, &obstacle, dt);
-            FLIP_transferVelocities(&mac, 1, flip_ratio);
-            FLIP_updateParticleDensity(&mac);
-            FLIP_solveIncompressibility(&mac, pressure_solver_steps, dt, over_relaxation);
-            FLIP_transferVelocities(&mac, 0, flip_ratio);
-            frames--;
-        }
+        FLIP_integrateParticles(&mac, dt, gravity);
+        FLIP_pushParticlesApart(&mac, particles_push_apart_steps, dt);
+        FLIP_handleObstacle(&mac, &obstacle, dt);
+        FLIP_transferVelocities(&mac, 1, flip_ratio);
+        FLIP_updateParticleDensity(&mac);
+        FLIP_solveIncompressibility(&mac, pressure_solver_steps, dt, over_relaxation);
+        FLIP_transferVelocities(&mac, 0, flip_ratio);
 
         Pair_t mac_grid_render_sizes = FLIP_transformGridToVerticies(&mac, vertices, indices, show_sci);
         render(window, camera, fluidShader, fluidVao, fluidVbo, fluidEbo, vertices, indices, mac_grid_render_sizes.first, mac_grid_render_sizes.second);

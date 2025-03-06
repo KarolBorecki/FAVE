@@ -32,7 +32,7 @@ extern "C"
         int f_num_x;
         int f_num_y;
         float h;
-        float f_inv_spacing;
+        float f_inv_spacing; 
         int f_num_cells;
 
         float *u;            // of size f_num_cells
@@ -46,23 +46,17 @@ extern "C"
         CellType *cell_type; // of size f_num_cells
         float *cell_color;   // of size f_num_cells * 3
 
-        int max_particles;
+        int num_particles;
         float *particle_pos;     // of size max_particles * 2
         float *particle_vel;     // of size max_particles * 2
         float *particle_density; // of size f_num_cells
         float particle_rest_density;
 
         float particle_radius;
-        float p_inv_spacing;
-        int p_num_x;
-        int p_num_y;
-        int p_num_cells; // p_num_x * p_num_y
 
-        int *num_cell_particles;  // of size p_num_cells
-        int *first_cell_particle; // of size p_num_cells + 1
-        int *cell_particle_ids;   // of size max_particles
-
-        int num_particles;
+        int *num_cell_particles;  // of size f_num_cells
+        int *first_cell_particle; // of size f_num_cells + 1
+        int *cell_particle_ids;   // of size num_particles
 
     } FlipGrid_t;
 
