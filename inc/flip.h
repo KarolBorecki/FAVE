@@ -19,41 +19,13 @@ extern "C"
 {
 #endif
 
-// TODO remove
-#define uint16_t int
-#define uint8_t int
-
-    enum CellType : uint8_t
+    enum CellType : int
     {
         FLUID = 0,
         SOLID = 1,
         AIR = 2
     };
-
-    typedef struct GridPos
-    {
-        uint16_t x;
-        uint16_t y;
-    } GridPos_t;
-
-    typedef struct GridCell
-    {
-        double p;
-        double v, u, w; // v - up/down vec, u - left/right vec, w - forward/backward vec
-        double dv, du, dw;
-        double prevv, prevu, prevw;
-        float s;
-        float density; // particleDensity
-        CellType type;
-    } GridCell_t;
-
-    typedef struct Marker
-    {
-        glm::vec3 position;
-        glm::vec3 velocity;
-        glm::vec4 color;
-    } Marker_t;
-
+    
     typedef struct MacGrid
     {
         float density;

@@ -26,7 +26,7 @@ extern "C"
         float speed;
         float sensitivity;
 
-        uint8_t first_input_click;
+        int first_input_click;
 
         glm::mat4 view_mat;
         glm::mat4 projection_mat;

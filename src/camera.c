@@ -24,7 +24,7 @@ void Camera_init(Camera_t *camera, GLFWwindow *window, glm::vec3 postion, float 
 
 void Camera_processInput(Camera_t *camera, GLFWwindow *window)
 {
-    uint8_t update_mat = 0;
+    int update_mat = 0;
     int window_width, window_height;
     glfwGetWindowSize(window, &window_width, &window_height);
 

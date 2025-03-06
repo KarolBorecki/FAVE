@@ -199,7 +199,7 @@ void MAC_pushParticlesApart(MacGrid_t *grid, int numIters, float dt)
     float minDist = 2.0f * grid->particle_radius;
     float minDist2 = minDist * minDist;
 
-    for (uint8_t iter = 0; iter < numIters; iter++)
+    for (int iter = 0; iter < numIters; iter++)
     {
         for (int i = 0; i < grid->num_particles; i++)
         {
@@ -418,7 +418,7 @@ void MAC_transferVelocities(MacGrid_t *grid, int toGrid, float flipRatio)
         }
     }
 
-    for (uint8_t component = 0; component < 2; component++) // 0 === u/x, 1 === v/y
+    for (int component = 0; component < 2; component++) // 0 === u/x, 1 === v/y
     {
         float dx = component == 0 ? 0.0f : h2;
         float dy = component == 0 ? h2 : 0.0f;
@@ -504,7 +504,7 @@ void MAC_transferVelocities(MacGrid_t *grid, int toGrid, float flipRatio)
             {
                 for (int j = 0; j < grid->f_num_y; j++)
                 {
-                    uint8_t solid = grid->cell_type[j * n + i] == SOLID ? 1 : 0;
+                    int solid = grid->cell_type[j * n + i] == SOLID ? 1 : 0;
                     if (solid == 1 || (i > 0 && grid->cell_type[j * n + (i - 1)] == SOLID))
                     {
                         grid->u[j * n + i] = grid->prev_u[j * n + i];
@@ -532,7 +532,7 @@ void MAC_solveIncompressibility(MacGrid_t *grid, int num_iters, float dt, float 
     int n = grid->f_num_x;
     double cp = grid->density * grid->h / dt;
 
-    for (uint8_t iter = 0; iter < num_iters; iter++)
+    for (int iter = 0; iter < num_iters; iter++)
     {
         for (int i = 1; i < grid->f_num_x - 1; i++)
         {

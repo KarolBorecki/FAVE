@@ -126,7 +126,7 @@ void setupObstacleBuffers(VAO_t &vao, VBO_t &vbo, EBO_t &ebo)
     EBO_unbind();
 }
 
-void render(GLFWwindow *window, Camera_t &camera, Shader_t &shaderProgram, VAO_t &vao, VBO_t &vbo, EBO_t &ebo, Vertex_t *vertices, GLuint *indices, uint16_t verticies_size, uint16_t indicies_size)
+void render(GLFWwindow *window, Camera_t &camera, Shader_t &shaderProgram, VAO_t &vao, VBO_t &vbo, EBO_t &ebo, Vertex_t *vertices, GLuint *indices, int verticies_size, int indicies_size)
 {
     Shader_use(&shaderProgram);
     Shader_setVector3f(&shaderProgram, "scale", 1.0f, 1.0f, 1.0f);
