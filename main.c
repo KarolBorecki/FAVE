@@ -181,11 +181,11 @@ int main(int argc, char **argv)
     int show_sci = 0;
     float gravity = -9.81f;
     float density = 1000.0f;
-    float spacing = 1.0f;
-    float width = 50.0f;
-    float height = 50.0f;
-    float particle_radius = 0.09f;
-    int max_particles = 2000;
+    float spacing = 0.1f;
+    float width = 3.0f;
+    float height = 3.0f;
+    float particle_radius = 0.01f;
+    int max_particles = 50;
 
     for (int i = 1; i < argc; i++)
     {
@@ -254,7 +254,7 @@ int main(int argc, char **argv)
 
     Camera_t camera;
     // camera, window, postion, speed, fov, near, far
-    Camera_init(&camera, window, glm::vec3(width / 2.0f, height / 2.0f, (width + 20.0f) * spacing), 5.0f, 45.0f, 0.1f, 1000.0f);
+    Camera_init(&camera, window, glm::vec3(width / 2.0f, height / 2.0f, (width + 50.0f) * spacing), 1.0f, 45.0f, 0.1f, 1000.0f);
 
     FlipGrid_t mac;
     FLIP_init(&mac, density, width, height, spacing, particle_radius, max_particles);
