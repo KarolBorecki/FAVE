@@ -1,11 +1,31 @@
 #include "obstacle.h"
 
-void Obstacle_init(Obstacle_t *obstacle, glm::vec3 position, float radius, float speed)
+void Obstacle_init(Obstacle_t *obstacle, float x, float y, float z, float radius, float speed, float push_coefficient)
 {
-    obstacle->position = position;
-    obstacle->last_position = position;
+    obstacle->x = x;
+    obstacle->last_x = x;
+    obstacle->y = y;
+    obstacle->last_y = y;
+    obstacle->z = z;
+    obstacle->last_z = z;
     obstacle->radius = radius;
     obstacle->speed = speed;
+    obstacle->push_coefficient = push_coefficient;
+}
+
+float Obstacle_getXVelocity(Obstacle_t *obstacle, float dt)
+{
+    return (obstacle->x - obstacle->last_x) * obstacle->speed / dt;
+}
+
+float Obstacle_getYVelocity(Obstacle_t *obstacle, float dt)
+{
+    return (obstacle->y - obstacle->last_y) * obstacle->speed / dt;
+}
+
+float Obstacle_getZVelocity(Obstacle_t *obstacle, float dt)
+{
+    return (obstacle->z - obstacle->last_z) * obstacle->speed / dt;
 }
 
 void Obstacle_processInput(Obstacle_t *obstacle, GLFWwindow *window)
@@ -20,25 +40,24 @@ void Obstacle_processInput(Obstacle_t *obstacle, GLFWwindow *window)
     //     obstacle->position += glm::vec3(0.0f, 0.0f, 1.0f * obstacle->speed);
     //     obstacle->velocity += glm::vec3(0.0f, 0.0f, 1.0f * obstacle->speed);
     // }
-    obstacle->last_position = obstacle->position;
+    obstacle->last_x = obstacle->x;
+    obstacle->last_y = obstacle->y;
     if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS)
     {
-        obstacle->position += glm::vec3(-1.0f * obstacle->speed, 0.0f, 0.0f);
+        obstacle->x += -1.0f * obstacle->speed;
     }
     if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS)
     {
-        obstacle->position += glm::vec3(1.0f * obstacle->speed, 0.0f, 0.0f);
+        obstacle->x += 1.0f * obstacle->speed;
     }
     if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS)
     {
-        obstacle->position += glm::vec3(0.0f, 1.0f * obstacle->speed, 0.0f);
+        obstacle->y += 1.0f * obstacle->speed;
     }
     if (glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS)
     {
-        obstacle->position += glm::vec3(0.0f, -1.0f * obstacle->speed, 0.0f);
+        obstacle->y += -1.0f * obstacle->speed;
     }
-
-
 }
 
 Pair_t Obstacle_transformToVertices(Obstacle_t *obstacle, Vertex_t *vertices, GLuint *indices)
@@ -50,9 +69,9 @@ Pair_t Obstacle_transformToVertices(Obstacle_t *obstacle, Vertex_t *vertices, GL
     int indexIndex = 0;
 
     float radius = obstacle->radius;
-    float centerX = obstacle->position.x;
-    float centerY = obstacle->position.y;
-    float centerZ = obstacle->position.z;
+    float centerX = obstacle->x;
+    float centerY = obstacle->y;
+    float centerZ = obstacle->z;
 
     // **Generowanie wierzchołków sfery**
     for (int i = 0; i <= stackCount; ++i)

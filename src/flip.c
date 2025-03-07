@@ -41,13 +41,19 @@ void FLIP_init(FlipGrid_t *grid, float density, float width, float height, float
     ALLOC_CHECK(grid->particle_density, "particle_density");
 
     grid->particle_radius = particle_radius;
+    grid->p_inv_spacing = 1.0f / (2.2f * grid->particle_radius);
+    grid->p_num_x = (int)(floorf(width * grid->p_inv_spacing) + 1.0f);
+    grid->p_num_y = (int)(floorf(height * grid->p_inv_spacing) + 1.0f);
+    grid->p_num_cells = grid->p_num_x * grid->p_num_y;
 
-    grid->num_cell_particles = (int *)calloc(grid->f_num_cells, sizeof(int));
+    grid->num_cell_particles = (int *)calloc(grid->p_num_cells, sizeof(int));
     ALLOC_CHECK(grid->num_cell_particles, "num_cell_particles");
-    grid->first_cell_particle = (int *)calloc(grid->f_num_cells + 1, sizeof(int));
+    grid->first_cell_particle = (int *)calloc(grid->p_num_cells + 1, sizeof(int));
     ALLOC_CHECK(grid->first_cell_particle, "first_cell_particle");
     grid->cell_particle_ids = (int *)calloc(grid->num_particles, sizeof(int));
     ALLOC_CHECK(grid->cell_particle_ids, "cell_particle_ids");
+
+    grid->num_particles = minf(grid->num_particles, grid->p_num_x * grid->p_num_y);
 
     int particles_per_cell = (int)ceilf((float)grid->num_particles / (float)((grid->f_num_x - 2) * (grid->f_num_y - 1)));
     int particle_index = 0;
@@ -81,21 +87,6 @@ void FLIP_init(FlipGrid_t *grid, float density, float width, float height, float
             }
         }
     }
-    // for (int w = 0; w < grid->num_particles * 2; w += 2)
-    // {
-    //     if (i >= grid->f_num_x - 1)
-    //     {
-    //         i = 1;
-    //         j++;
-    //     }
-    //     if (j >= grid->f_num_y - 1)
-    //     {
-    //         j = 1;
-    //     }
-    //     grid->particle_pos[w] = grid->h / 4 + grid->h * i;
-    //     grid->particle_pos[w + 1] = grid->h / 4 + grid->h * j;
-    //     i++;
-    // }
 
     for (int i = 0; i < grid->f_num_x; i++)
     {
@@ -104,6 +95,15 @@ void FLIP_init(FlipGrid_t *grid, float density, float width, float height, float
             grid->s[j * grid->f_num_x + i] = (i == 0 || i == grid->f_num_x - 1 || j == 0) ? 0.0f : 1.0f;
         }
     }
+
+    printf("FLIP grid initialized successfully!\n");
+    printf("f_num_x = %d, f_num_y = %d, h = %.2f, f_inv_spacing = %.2f, f_num_cells = %d\n",
+           grid->f_num_x, grid->f_num_y, grid->h, grid->f_inv_spacing, grid->f_num_cells);
+    printf("p_num_x = %d, p_num_y = %d, p_num_cells = %d\n", grid->p_num_x, grid->p_num_y, grid->p_num_cells);
+    printf("num_particles = %d, particle_radius = %.2f, p_inv_spacing = %.2f\n",
+           grid->num_particles, grid->particle_radius, grid->p_inv_spacing);
+    printf("particle_rest_density = %.2f\n", grid->particle_rest_density);
+    printf("density = %.2f\n", grid->density);
 }
 
 void FLIP_integrateParticles(FlipGrid_t *grid, float dt, float gravity)
@@ -116,87 +116,98 @@ void FLIP_integrateParticles(FlipGrid_t *grid, float dt, float gravity)
     }
 }
 
-void FLIP_pushParticlesApart(FlipGrid_t *grid, int num_iters, float dt)
+void FLIP_pushParticlesApart(FlipGrid_t *grid, int numIters, float dt)
 {
-    float r = grid->particle_radius;
-    for (int i = 0; i < grid->f_num_cells; i++)
+
+    for (int i = 0; i < grid->p_num_cells; i++)
     {
         grid->num_cell_particles[i] = 0;
     }
 
     for (int i = 0; i < grid->num_particles; i++)
     {
-        float x = grid->particle_pos[i * 2];
-        float y = grid->particle_pos[i * 2 + 1];
-        int xi = (int)floorf(x * grid->f_inv_spacing);
-        int yi = (int)floorf(y * grid->f_inv_spacing);
-        int cell_nr = yi * grid->f_num_x + xi;
+        float x = grid->particle_pos[2 * i];
+        float y = grid->particle_pos[2 * i + 1];
+
+        int xi = clamp((int)floorf(x * grid->p_inv_spacing), 0, grid->p_num_x - 1);
+        int yi = clamp((int)floorf(y * grid->p_inv_spacing), 0, grid->p_num_y - 1);
+        int cell_nr = yi * grid->p_num_x + xi;
         grid->num_cell_particles[cell_nr]++;
     }
 
     int first = 0;
-    for (int i = 0; i < grid->f_num_cells; i++)
+    for (int i = 0; i < grid->p_num_cells; i++)
     {
         first += grid->num_cell_particles[i];
         grid->first_cell_particle[i] = first;
     }
-    grid->first_cell_particle[grid->f_num_cells] = first;
+    grid->first_cell_particle[grid->p_num_cells] = first;
 
     for (int i = 0; i < grid->num_particles; i++)
     {
-        float x = grid->particle_pos[i * 2];
-        float y = grid->particle_pos[i * 2 + 1];
-        int xi = (int)floorf(x * grid->f_inv_spacing);
-        int yi = (int)floorf(y * grid->f_inv_spacing);
-        int cell_nr = yi * grid->f_num_x + xi;
+        float x = grid->particle_pos[2 * i];
+        float y = grid->particle_pos[2 * i + 1];
+
+        int xi = clamp((int)floorf(x * grid->p_inv_spacing), 0, grid->p_num_x - 1);
+        int yi = clamp((int)floorf(y * grid->p_inv_spacing), 0, grid->p_num_y - 1);
+        int cell_nr = yi * grid->p_num_x + xi;
         grid->first_cell_particle[cell_nr]--;
         grid->cell_particle_ids[grid->first_cell_particle[cell_nr]] = i;
     }
 
-    float min_dist = 2.0f * r;
-    float min_dist2 = min_dist * min_dist;
-    for (int iter = 0; iter < num_iters; iter++)
+    float minDist = 2.0f * grid->particle_radius;
+    float minDist2 = minDist * minDist;
+
+    for (int iter = 0; iter < numIters; iter++)
     {
-        for (int current = 0; current < grid->num_particles; current++)
+        for (int i = 0; i < grid->num_particles; i++)
         {
-            int pxi = (int)floorf(grid->particle_pos[2 * current] * grid->f_inv_spacing);
-            int pyi = (int)floorf(grid->particle_pos[2 * current + 1] * grid->f_inv_spacing);
+            float px = grid->particle_pos[2 * i];
+            float py = grid->particle_pos[2 * i + 1];
+
+            int pxi = (int)floorf(px * grid->p_inv_spacing);
+            int pyi = (int)floorf(py * grid->p_inv_spacing);
 
             int x0 = max(pxi - 1, 0);
             int y0 = max(pyi - 1, 0);
-            int x1 = min(pxi + 1, grid->f_num_x - 1);
-            int y1 = min(pyi + 1, grid->f_num_y - 1);
+            int x1 = min(pxi + 1, grid->p_num_x - 1);
+            int y1 = min(pyi + 1, grid->p_num_y - 1);
 
-            float curr_x = grid->particle_pos[2 * current];
-            float curr_y = grid->particle_pos[2 * current + 1];
-            for (int x = x0; x <= x1; x++)
+            for (int xi = x0; xi <= x1; xi++)
             {
-                for (int y = y0; y <= y1; y++)
+                for (int yi = y0; yi <= y1; yi++)
                 {
-                    int cell_nr = y * grid->f_num_x + x;
+                    int cell_nr = yi * grid->p_num_x + xi;
 
                     int first = grid->first_cell_particle[cell_nr];
                     int last = grid->first_cell_particle[cell_nr + 1];
-                    for (int other = first; other < last; other++)
+
+                    for (int j = first; j < last; j++)
                     {
-                        float other_x = grid->particle_pos[2 * other];
-                        float other_y = grid->particle_pos[2 * other + 1];
+                        int id = grid->cell_particle_ids[j];
 
-                        float dx = curr_x - other_x;
-                        float dy = curr_y - other_y;
-
-                        float dist2 = dx * dx + dy * dy;
-
-                        if (dist2 > min_dist2 || dist2 == 0.0f)
+                        if (id == i)
                             continue;
 
-                        float dist = sqrtf(dist2);
-                        float overlap_2 = (min_dist - dist) * 0.5f;
+                        float qx = grid->particle_pos[2 * id];
+                        float qy = grid->particle_pos[2 * id + 1];
 
-                        grid->particle_pos[2 * current] -= overlap_2;
-                        grid->particle_pos[2 * current + 1] -= overlap_2;
-                        grid->particle_pos[2 * other] += overlap_2;
-                        grid->particle_pos[2 * other + 1] += overlap_2;
+                        float dx = qx - px;
+                        float dy = qy - py;
+                        float d2 = dx * dx + dy * dy;
+                        if (d2 > minDist2 || d2 == 0.0f)
+                            continue;
+
+                        float d = sqrtf(d2);
+                        float s = 0.5f * (minDist - d) / d;
+
+                        dx *= s;
+                        dy *= s;
+
+                        grid->particle_pos[2 * i] -= dx;
+                        grid->particle_pos[2 * i + 1] -= dy;
+                        grid->particle_pos[2 * id] += dx;
+                        grid->particle_pos[2 * id + 1] += dy;
                     }
                 }
             }
@@ -207,17 +218,33 @@ void FLIP_pushParticlesApart(FlipGrid_t *grid, int num_iters, float dt)
 void FLIP_handleObstacle(FlipGrid_t *grid, Obstacle_t *obstacle, float dt)
 {
     float h = grid->h;
-    float r = grid->particle_radius;
+    float particle_r = grid->particle_radius;
 
-    float min_x = h + r;
-    float max_x = (grid->f_num_x - 1) * h - r;
-    float min_y = h + r;
-    float max_y = (grid->f_num_y - 1) * h - r;
+    float min_x = h + particle_r;
+    float max_x = (grid->f_num_x - 1) * h - particle_r;
+    float min_y = h + particle_r;
+    float max_y = (grid->f_num_y - 1) * h - particle_r;
+
+    float obstacle_x = obstacle->x;
+    float obstacle_y = obstacle->y;
+
+    float min_dist = particle_r + obstacle->radius;
+    float min_dist_2 = min_dist * min_dist;
 
     for (int i = 0; i < grid->num_particles; i++)
     {
-        // float x = grid->particle_pos[2 * i];
-        // float y = grid->particle_pos[2 * i + 1];
+        float x = grid->particle_pos[2 * i];
+        float y = grid->particle_pos[2 * i + 1];
+
+        float dx = x - obstacle_x;
+        float dy = y - obstacle_y;
+
+        float dist_2 = dx * dx + dy * dy;
+        if (dist_2 < min_dist_2)
+        {
+            grid->particle_vel[2 * i] = Obstacle_getXVelocity(obstacle, dt) * obstacle->push_coefficient;
+            grid->particle_vel[2 * i + 1] = Obstacle_getYVelocity(obstacle, dt) * obstacle->push_coefficient;
+        }
 
         if (grid->particle_pos[2 * i] < min_x)
         {

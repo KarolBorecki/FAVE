@@ -129,6 +129,12 @@ void setupObstacleBuffers(VAO_t &vao, VBO_t &vbo, EBO_t &ebo)
 
 void render(GLFWwindow *window, Camera_t &camera, Shader_t &shaderProgram, VAO_t &vao, VBO_t &vbo, EBO_t &ebo, Vertex_t *vertices, GLuint *indices, int verticies_size, int indicies_size)
 {
+    if (verticies_size > VERTICIES_SIZE || indicies_size > INDICIES_SIZE)
+    {
+        fprintf(stderr, "Too many verticies or indicies to render\n");
+        return;
+    }
+
     Shader_use(&shaderProgram);
     Shader_setVector3f(&shaderProgram, "scale", 1.0f, 1.0f, 1.0f);
     Shader_setVector3f(&shaderProgram, "rotation", 0.0f, 0.0f, 0.0f);
@@ -139,17 +145,12 @@ void render(GLFWwindow *window, Camera_t &camera, Shader_t &shaderProgram, VAO_t
     Shader_setMatrix4f(&shaderProgram, "camMatrix", glm::value_ptr(camera.cam_mat));
 
     VBO_bind(&vbo);
-    VBO_update(&vbo, vertices, VERTICIES_SIZE);
+    VBO_update(&vbo, vertices, verticies_size);
 
     EBO_bind(&ebo);
-    EBO_update(&ebo, indices, INDICIES_SIZE);
+    EBO_update(&ebo, indices, indicies_size);
 
     VAO_bind(&vao);
-    if (verticies_size > VERTICIES_SIZE || indicies_size > INDICIES_SIZE)
-    {
-        fprintf(stderr, "Too many verticies or indicies to render\n");
-        return;
-    }
     glDrawElements(GL_TRIANGLES, indicies_size, GL_UNSIGNED_INT, 0);
 
     VAO_unbind();
@@ -173,69 +174,6 @@ int main(int argc, char **argv)
 {
     config.window_width = 1400;
     config.window_height = 1200;
-
-    float obstacle_speed = 1.0f;
-    float obstacle_radius = 1.1f;
-
-    // float flip_ratio = 0.01f;
-    // float over_relaxation = 1.9f;
-    // int pressure_solver_steps = 50;
-    // int particles_push_apart_steps = 3;
-    // int show_markers = 0;
-    // int show_sci = 0;
-    // float gravity = -9.81f;
-    // float density = 1000.0f;
-    // float spacing = 0.03f;
-    // float width = 4.3f;
-    // float height = 3.0f;
-    // float particle_radius = 0.009f;
-    // int max_particles = 10000;
-
-    float flip_ratio = 0.5f;
-    float over_relaxation = 1.9f;
-    int pressure_solver_steps = 5;
-    int particles_push_apart_steps = 2;
-    int show_markers = 1;
-    int show_sci = 0;
-    float gravity = -9.0f;
-    float density = 1000.0f;
-    float spacing = 1.0f;
-    float width = 15.0f;
-    float height = 15.0f;
-    float particle_radius = 0.1f;
-    int max_particles = 400;
-
-    for (int i = 1; i < argc; i++)
-    {
-        parseArgument(argv[i], "flip_ratio", &flip_ratio, "float");
-        parseArgument(argv[i], "over_relaxation", &over_relaxation, "float");
-        parseArgument(argv[i], "pressure_solver_steps", &pressure_solver_steps, "int");
-        parseArgument(argv[i], "particles_push_apart_steps", &particles_push_apart_steps, "int");
-        parseArgument(argv[i], "show_markers", &show_markers, "int");
-        parseArgument(argv[i], "show_sci", &show_sci, "int");
-        parseArgument(argv[i], "gravity", &gravity, "float");
-        parseArgument(argv[i], "density", &density, "float");
-        parseArgument(argv[i], "spacing", &spacing, "float");
-        parseArgument(argv[i], "width", &width, "float");
-        parseArgument(argv[i], "height", &height, "float");
-        parseArgument(argv[i], "particle_radius", &particle_radius, "float");
-        parseArgument(argv[i], "max_particles", &max_particles, "int");
-    }
-
-    printf("Simulation Parameters:\n");
-    printf("flip_ratio = %.2f\n", flip_ratio);
-    printf("over_relaxation = %.2f\n", over_relaxation);
-    printf("pressure_solver_steps = %d\n", pressure_solver_steps);
-    printf("particles_push_apart_steps = %d\n", particles_push_apart_steps);
-    printf("show_markers = %d\n", show_markers);
-    printf("show_sci = %d\n", show_sci);
-    printf("gravity = %.2f\n", gravity);
-    printf("density = %.2f\n", density);
-    printf("spacing = %.2f\n", spacing);
-    printf("width = %.2f\n", width);
-    printf("height = %.2f\n", height);
-    printf("particle_radius = %.3f\n", particle_radius);
-    printf("max_particles = %d\n", max_particles);
 
     GLFWwindow *window = initializeWindow();
 
@@ -270,6 +208,57 @@ int main(int argc, char **argv)
     setupObstacleBuffers(obstacleVao, obstacleVbo, obstacleEbo);
     setupBuffers(markerVao, markerVbo, markerEbo);
 
+
+
+    // float flip_ratio = 0.01f;
+    // float over_relaxation = 1.9f;
+    // int pressure_solver_steps = 50;
+    // int particles_push_apart_steps = 3;
+    // int show_markers = 0;
+    // int show_sci = 0;
+    // float gravity = -9.81f;
+    // float density = 1000.0f;
+    // float spacing = 0.03f;
+    // float width = 4.3f;
+    // float height = 3.0f;
+    // float particle_radius = 0.009f;
+    // int max_particles = 10000;
+
+    float flip_ratio = 0.5f;
+    float over_relaxation = 1.9f;
+    int pressure_solver_steps = 5;
+    int particles_push_apart_steps = 2;
+    int show_markers = 1;
+    int show_sci = 0;
+    float gravity = -9.0f;
+    float density = 1000.0f;
+    float spacing = 1.0f;
+    float width = 15.0f;
+    float height = 15.0f;
+    float particle_radius = 0.1f;
+    int max_particles = 1000;
+
+    for (int i = 1; i < argc; i++)
+    {
+        parseArgument(argv[i], "flip_ratio", &flip_ratio, "float");
+        parseArgument(argv[i], "over_relaxation", &over_relaxation, "float");
+        parseArgument(argv[i], "pressure_solver_steps", &pressure_solver_steps, "int");
+        parseArgument(argv[i], "particles_push_apart_steps", &particles_push_apart_steps, "int");
+        parseArgument(argv[i], "show_markers", &show_markers, "int");
+        parseArgument(argv[i], "show_sci", &show_sci, "int");
+        parseArgument(argv[i], "gravity", &gravity, "float");
+        parseArgument(argv[i], "density", &density, "float");
+        parseArgument(argv[i], "spacing", &spacing, "float");
+        parseArgument(argv[i], "width", &width, "float");
+        parseArgument(argv[i], "height", &height, "float");
+        parseArgument(argv[i], "particle_radius", &particle_radius, "float");
+        parseArgument(argv[i], "max_particles", &max_particles, "int");
+    }
+
+    float obstacle_speed = 0.15f;
+    float obstacle_radius = 1.0f;
+    float obstacle_push = 5.0f;
+
     Camera_t camera;
     // camera, window, postion, speed, fov, near, far
     Camera_init(&camera, window, glm::vec3(width / 2.0f, height / 2.0f, (width + 20.0f) * spacing), 1.0f, 45.0f, 0.1f, 1000.0f);
@@ -278,16 +267,16 @@ int main(int argc, char **argv)
     FLIP_init(&mac, density, width, height, spacing, particle_radius, max_particles);
 
     Obstacle_t obstacle;
-    // obstacle, postion, radius, speed
-    Obstacle_init(&obstacle, glm::vec3(width / 2.0f, height + obstacle_radius*2, 0.0f), obstacle_radius, obstacle_speed);
+    // obstacle, x, y, z, radius, speed
+    Obstacle_init(&obstacle, width / 2.0f, height + obstacle_radius * 2, obstacle_radius, obstacle_radius, obstacle_speed, obstacle_push);
 
     clock_t previousTime = clock();
     float dt = 1.0f / 60.0f; // TODO it should be calculated based on the time between frames or more sophisticated way
     while (!glfwWindowShouldClose(window))
     {
         clock_t currentTime = clock();
-        dt = (float)(currentTime - previousTime) / CLOCKS_PER_SEC;
-        previousTime = currentTime;
+        // dt = (float)(currentTime - previousTime) / CLOCKS_PER_SEC;
+        dt = 1.0f / 60.0f; previousTime = currentTime;
 
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

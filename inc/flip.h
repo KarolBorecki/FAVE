@@ -53,6 +53,11 @@ extern "C"
         float particle_rest_density;
 
         float particle_radius;
+        // DEPRECATED???        
+        float p_inv_spacing;
+        int p_num_x;
+        int p_num_y;
+        int p_num_cells; // p_num_x * p_num_y
 
         int *num_cell_particles;  // of size f_num_cells
         int *first_cell_particle; // of size f_num_cells + 1
