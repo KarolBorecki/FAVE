@@ -292,7 +292,7 @@ int main(int argc, char **argv)
         FLIP_transferVelocities(&mac, 1, flip_ratio);
         FLIP_updateParticleDensity(&mac);
         FLIP_solveIncompressibility(&mac, pressure_solver_steps, dt, over_relaxation);
-        FLIP_transferVelocities(&mac, 0, flip_ratio);
+        // FLIP_transferVelocities(&mac, 0, flip_ratio);
 
         Pair_t mac_grid_render_sizes = FLIP_transformGridToVerticies(&mac, vertices, indices, show_sci);
         render(window, camera, fluidShader, fluidVao, fluidVbo, fluidEbo, vertices, indices, mac_grid_render_sizes.first, mac_grid_render_sizes.second);

@@ -275,6 +275,131 @@ void FLIP_updateParticleDensity(FlipGrid_t *grid)
 
 void FLIP_transferVelocities(FlipGrid_t *grid, int toGrid, float FLIPRatio)
 {
+
+    if (toGrid)
+    {
+        for (int i = 0; i < grid->f_num_cells; i++)
+        {
+            grid->prev_u[i] = grid->u[i];
+            grid->prev_v[i] = grid->v[i];
+            grid->du[i] = 0.0f;
+            grid->dv[i] = 0.0f;
+            grid->u[i] = 0.0f;
+            grid->v[i] = 0.0f;
+
+            grid->cell_type[i] = AIR;
+        }
+
+        for (int i=0; i<grid->num_particles; i++)
+        {
+            float x = grid->particle_pos[2 * i];
+            float y = grid->particle_pos[2 * i + 1];
+
+            int xi = clamp((int)floorf(x * grid->f_inv_spacing), 0, grid->f_num_x - 1);
+            int yi = clamp((int)floorf(y * grid->f_inv_spacing), 0, grid->f_num_y - 1);
+            int cell_nr = yi * grid->f_num_x + xi;
+            if (grid->cell_type[cell_nr] == AIR)
+            {
+                grid->cell_type[cell_nr] = FLUID;
+            }
+        }
+    }
+
+    for (int component = 0; component < 2; component++)
+    {
+        float *f = component == 0 ? grid->u : grid->v;
+        float *d = component == 0 ? grid->du : grid->dv;
+        float *prev_f = component == 0 ? grid->prev_u : grid->prev_v;
+
+        float shift_x = component == 0 ? 0.0f : 0.5f * grid->h;
+        float shift_y = component == 0 ? 0.5f * grid->h : 0.0f;
+
+        for (int i = 0; i < grid->num_particles; i++)
+        {
+            float x = grid->particle_pos[2 * i];
+            float y = grid->particle_pos[2 * i + 1];
+
+            float x0 = floorf((x - shift_x) * grid->f_inv_spacing);
+            float y0 = floorf((y - shift_y) * grid->f_inv_spacing);
+
+            float x1 = x0 + 1;
+            float y1 = y0 + 1;
+
+            float tx = (x - shift_x - x0 * grid->h) * grid->f_inv_spacing; // w0
+            float ty = (y - shift_y - y0 * grid->h) * grid->f_inv_spacing; // w1
+
+            float sx = 1.0f - tx; // (1 - w0)
+            float sy = 1.0f - ty; // (1 - w1)
+
+            float d0 = sx * sy; // (1-w0)(1-w1)
+            float d1 = tx * sy; // w0 * (1 - w1)
+            float d2 = tx * ty; // w0 * w1
+            float d3 = sx * ty; // (1 - w0) * w1
+
+            int nr0 = y0 * grid->f_num_x + x0;
+            int nr1 = y0 * grid->f_num_x + x1;
+            int nr2 = y1 * grid->f_num_x + x1;
+            int nr3 = y1 * grid->f_num_x + x0;
+
+            if (toGrid)
+            {
+                float particle_vel = grid->particle_vel[2 * i + component];
+                f[nr0] += d0 * particle_vel;
+                f[nr1] += d1 * particle_vel;
+                f[nr2] += d2 * particle_vel;
+                f[nr3] += d3 * particle_vel;
+
+                d[nr0] += d0;
+                d[nr1] += d1;
+                d[nr2] += d2;
+                d[nr3] += d3;
+            }
+            else
+            {
+                int offset = component == 0 ? 0 : grid->f_num_cells;
+
+                float valid0 = grid->cell_type[nr0] != AIR || grid->cell_type[nr0 + offset] != AIR ? 1.0f : 0.0f;
+                float valid1 = grid->cell_type[nr1] != AIR || grid->cell_type[nr1 + offset] != AIR ? 1.0f : 0.0f;
+                float valid2 = grid->cell_type[nr2] != AIR || grid->cell_type[nr2 + offset] != AIR ? 1.0f : 0.0f;
+                float valid3 = grid->cell_type[nr3] != AIR || grid->cell_type[nr3 + offset] != AIR ? 1.0f : 0.0f;
+                float velocity = grid->particle_vel[2 * i + component];
+
+                float d_v = valid0 * d0 + valid1 * d1 + valid2 * d2 + valid3 * d3;
+                if (d_v > 0.0f)
+                {
+                    float pic_vel = (valid0 * d0 * f[nr0] + valid1 * d1 * f[nr1] + valid2 * d2 * f[nr2] + valid3 * d3 * f[nr3]) / d_v;
+                    float corr = (valid0 * d0 * (f[nr0] - prev_f[nr0]) + valid1 * d1 * (f[nr1] - prev_f[nr1]) + valid2 * d2 * (f[nr2] - prev_f[nr2]) + valid3 * d3 * (f[nr3] - prev_f[nr3])) / d_v;
+                    grid->particle_vel[2 * i + component] = FLIPRatio * pic_vel + (1.0f - FLIPRatio) * (velocity + corr);
+                }
+            }
+        }
+        if (toGrid)
+        {
+            for (int i = 0; i < grid->f_num_cells; i++)
+            {
+                if (grid->cell_type[i] == FLUID)
+                {
+                    f[i] /= d[i];
+                }
+            }
+
+            for (int i = 0; i < grid->f_num_x; i++)
+            {
+                for (int j = 0; j < grid->f_num_y; j++)
+                {
+                    int solid = grid->cell_type[j * grid->f_num_x + i] == SOLID ? 1 : 0;
+                    if (solid || (i > 0 && grid->cell_type[j * grid->f_num_x + i - 1] == SOLID))
+                    {
+                        f[j * grid->f_num_x + i] = grid->prev_u[j * grid->f_num_x + i];
+                    }
+                    if (solid || (j > 0 && grid->cell_type[(j - 1) * grid->f_num_x + i] == SOLID))
+                    {
+                        f[j * grid->f_num_x + i] = grid->prev_v[j * grid->f_num_x + i];
+                    }
+                }
+            }
+        }
+    }
 }
 
 void FLIP_solveIncompressibility(FlipGrid_t *grid, int num_iters, float dt, float over_relaxation)
@@ -379,15 +504,12 @@ Pair_t FLIP_transformGridToVerticies(FlipGrid_t *grid, Vertex_t *vertices, GLuin
         }
     }
 
-    // printf("averagePressure: %f minPressure: %f, maxPressure: %f\n", (sumPressure/grid->total_size), minPressure, maxPressure);
     for (int y = 0; y < grid->f_num_y; y++)
     {
         for (int x = 0; x < grid->f_num_x; x++)
         {
-
             int cell_nr = y * grid->f_num_x + x;
             glm::vec3 cubePos = glm::vec3(x, y, 0) * grid->h;
-            // printf("cellIndex: %d, cellType: %d cellX: %d, cellY: %d, cubePos: (%.2f, %.2f, %.2f)\n", cell_nr, grid->cell_type[cell_nr], x, y, cubePos.x, cubePos.y, cubePos.z);
             float c[3] = {0.0f, 0.0f, 1.0f};
             if (grid->cell_type[cell_nr] == FLUID)
             {
@@ -425,7 +547,6 @@ Pair_t FLIP_transformGridToVerticies(FlipGrid_t *grid, Vertex_t *vertices, GLuin
                 indices[ind_index++] = offset + cubeIndices[i];
             }
         }
-        // printf("\n");
     }
     return {.first = (int)vert_index, .second = (int)ind_index};
 }
@@ -490,4 +611,36 @@ Pair_t FLIP_transformMarkersToVertices(FlipGrid_t *grid, Vertex_t *markerVertice
 
 void FLIP_destroy(FlipGrid_t *grid)
 {
+    // free(&grid->u);
+    // grid->u = NULL;
+    // free(grid->v);
+    // grid->v = NULL;
+    // free(grid->du);
+    // grid->du = NULL;
+    // free(grid->dv);
+    // grid->dv = NULL;
+    // free(grid->prev_u);
+    // grid->prev_u = NULL;
+    // free(grid->prev_v);
+    // grid->prev_v = NULL;
+    // free(grid->p);
+    // grid->p = NULL;
+    // free(grid->s);
+    // grid->s = NULL;
+    // free(grid->cell_type);
+    // grid->cell_type = NULL;
+    // free(grid->cell_color);
+    // grid->cell_color = NULL;
+    // free(grid->particle_pos);
+    // grid->particle_pos = NULL;
+    // free(grid->particle_vel);
+    // grid->particle_vel = NULL;
+    // free(grid->particle_density);
+    // grid->particle_density = NULL;
+    // free(grid->num_cell_particles);
+    // grid->num_cell_particles = NULL;
+    // free(grid->first_cell_particle);
+    // grid->first_cell_particle = NULL;
+    // free(grid->cell_particle_ids);
+    // grid->cell_particle_ids = NULL;
 }
