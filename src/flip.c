@@ -1,5 +1,5 @@
 #include "flip.h"
-
+#ifndef DEPRECATED
 void FLIP_init(FlipGrid_t *grid, float density, float width, float height, float spacing, float particle_radius, int num_particles)
 {
     printf("Initializing FLIP grid...\n");
@@ -271,6 +271,61 @@ void FLIP_handleObstacle(FlipGrid_t *grid, Obstacle_t *obstacle, float dt)
 
 void FLIP_updateParticleDensity(FlipGrid_t *grid)
 {
+    float shift = 0.5f * grid->h;
+    for (int i = 0; i < grid->f_num_cells; i++)
+    {
+        grid->particle_density[i] = 0.0f;
+    }
+    for (int i = 0; i < grid->num_particles; i++)
+    {
+        float x = grid->particle_pos[2 * i];
+        float y = grid->particle_pos[2 * i + 1];
+
+        int x0 = (int)floorf((x - shift) * grid->f_inv_spacing);
+        int y0 = (int)floorf((y - shift) * grid->f_inv_spacing);
+
+        int x1 = x0 + 1;
+        int y1 = y0 + 1;
+
+        float tx = (x - shift - x0 * grid->h) * grid->f_inv_spacing; // w0
+        float ty = (y - shift - y0 * grid->h) * grid->f_inv_spacing; // w1
+
+        float sx = 1.0f - tx; // (1 - w0)
+        float sy = 1.0f - ty; // (1 - w1)
+
+        float d0 = sx * sy; // (1-w0)(1-w1)
+        float d1 = tx * sy; // w0 * (1 - w1)
+        float d2 = tx * ty; // w0 * w1
+        float d3 = sx * ty; // (1 - w0) * w1
+
+        int nr0 = y0 * grid->f_num_x + x0;
+        int nr1 = y0 * grid->f_num_x + x1;
+        int nr2 = y1 * grid->f_num_x + x1;
+        int nr3 = y1 * grid->f_num_x + x0;
+
+        grid->particle_density[nr0] += d0;
+        grid->particle_density[nr1] += d1;
+        grid->particle_density[nr2] += d2;
+        grid->particle_density[nr3] += d3;
+    }
+
+    if (grid->particle_rest_density == 0.0f)
+    {
+        float sum = 0.0f;
+        int num_fluid_cells = 0;
+        for (int i = 0; i < grid->f_num_cells; i++)
+        {
+            if (grid->cell_type[i] == FLUID)
+            {
+                sum += grid->particle_density[i];
+                num_fluid_cells++;
+            }
+        }
+        if (num_fluid_cells > 0)
+        {
+            grid->particle_rest_density = sum / num_fluid_cells;
+        }
+    }
 }
 
 void FLIP_transferVelocities(FlipGrid_t *grid, int toGrid, float FLIPRatio)
@@ -287,10 +342,10 @@ void FLIP_transferVelocities(FlipGrid_t *grid, int toGrid, float FLIPRatio)
             grid->u[i] = 0.0f;
             grid->v[i] = 0.0f;
 
-            grid->cell_type[i] = AIR;
+            grid->cell_type[i] = grid->s[i] == 0.0f ? SOLID : AIR;
         }
 
-        for (int i=0; i<grid->num_particles; i++)
+        for (int i = 0; i < grid->num_particles; i++)
         {
             float x = grid->particle_pos[2 * i];
             float y = grid->particle_pos[2 * i + 1];
@@ -316,14 +371,17 @@ void FLIP_transferVelocities(FlipGrid_t *grid, int toGrid, float FLIPRatio)
 
         for (int i = 0; i < grid->num_particles; i++)
         {
-            float x = grid->particle_pos[2 * i];
-            float y = grid->particle_pos[2 * i + 1];
+            float x = clampf(grid->particle_pos[2 * i], grid->h, (grid->f_num_x - 1) * grid->h);
+            float y = clampf(grid->particle_pos[2 * i + 1], grid->h, (grid->f_num_y - 1) * grid->h);
 
-            float x0 = floorf((x - shift_x) * grid->f_inv_spacing);
-            float y0 = floorf((y - shift_y) * grid->f_inv_spacing);
+            int x0 = clamp((int)floorf((x - shift_x) * grid->f_inv_spacing), 0, grid->f_num_x - 1);
+            int y0 = clamp((int)floorf((y - shift_y) * grid->f_inv_spacing), 0, grid->f_num_y - 1);
 
-            float x1 = x0 + 1;
-            float y1 = y0 + 1;
+            // int x0 = (int)floorf((x - shift_x) * grid->f_inv_spacing);
+            // int y0 = (int)floorf((y - shift_y) * grid->f_inv_spacing);
+
+            int x1 = min(x0 + 1, grid->f_num_x - 1);
+            int y1 = min(y0 + 1, grid->f_num_y - 1);
 
             float tx = (x - shift_x - x0 * grid->h) * grid->f_inv_spacing; // w0
             float ty = (y - shift_y - y0 * grid->h) * grid->f_inv_spacing; // w1
@@ -644,3 +702,4 @@ void FLIP_destroy(FlipGrid_t *grid)
     // free(grid->cell_particle_ids);
     // grid->cell_particle_ids = NULL;
 }
+#endif

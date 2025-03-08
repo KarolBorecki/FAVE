@@ -210,33 +210,33 @@ int main(int argc, char **argv)
 
 
 
-    // float flip_ratio = 0.01f;
-    // float over_relaxation = 1.9f;
-    // int pressure_solver_steps = 50;
-    // int particles_push_apart_steps = 3;
-    // int show_markers = 0;
-    // int show_sci = 0;
-    // float gravity = -9.81f;
-    // float density = 1000.0f;
-    // float spacing = 0.03f;
-    // float width = 4.3f;
-    // float height = 3.0f;
-    // float particle_radius = 0.009f;
-    // int max_particles = 10000;
-
-    float flip_ratio = 0.5f;
+    float flip_ratio = 0.9f;
     float over_relaxation = 1.9f;
-    int pressure_solver_steps = 5;
-    int particles_push_apart_steps = 2;
-    int show_markers = 1;
+    int pressure_solver_steps = 50;
+    int particles_push_apart_steps = 3;
+    int show_markers = 0;
     int show_sci = 0;
-    float gravity = -9.0f;
+    float gravity = -9.81f;
     float density = 1000.0f;
-    float spacing = 1.0f;
-    float width = 15.0f;
-    float height = 15.0f;
-    float particle_radius = 0.1f;
-    int max_particles = 1000;
+    float spacing = 0.03f;
+    float width = 4.3f;
+    float height = 3.0f;
+    float particle_radius = 0.009f;
+    int max_particles = 2000;
+
+    // float flip_ratio = 0.5f;
+    // float over_relaxation = 1.2f;
+    // int pressure_solver_steps = 200;
+    // int particles_push_apart_steps = 2;
+    // int show_markers = 1;
+    // int show_sci = 0;
+    // float gravity = -90.0f;
+    // float density = 1000.0f;
+    // float spacing = 1.0f;
+    // float width = 15.0f;
+    // float height = 15.0f;
+    // float particle_radius = 0.1f;
+    // int max_particles = 200;
 
     for (int i = 1; i < argc; i++)
     {
@@ -261,7 +261,7 @@ int main(int argc, char **argv)
 
     Camera_t camera;
     // camera, window, postion, speed, fov, near, far
-    Camera_init(&camera, window, glm::vec3(width / 2.0f, height / 2.0f, (width + 20.0f) * spacing), 1.0f, 45.0f, 0.1f, 1000.0f);
+    Camera_init(&camera, window, glm::vec3(width / 2.0f, height / 2.0f, (width + 300.0f) * spacing), 1.0f, 45.0f, 0.1f, 1000.0f);
 
     FlipGrid_t mac;
     FLIP_init(&mac, density, width, height, spacing, particle_radius, max_particles);
@@ -275,8 +275,9 @@ int main(int argc, char **argv)
     while (!glfwWindowShouldClose(window))
     {
         clock_t currentTime = clock();
-        // dt = (float)(currentTime - previousTime) / CLOCKS_PER_SEC;
-        dt = 1.0f / 60.0f; previousTime = currentTime;
+        dt = (float)(currentTime - previousTime) / CLOCKS_PER_SEC;
+        dt = 1.0f / 60.0f; 
+        previousTime = currentTime;
 
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -292,7 +293,7 @@ int main(int argc, char **argv)
         FLIP_transferVelocities(&mac, 1, flip_ratio);
         FLIP_updateParticleDensity(&mac);
         FLIP_solveIncompressibility(&mac, pressure_solver_steps, dt, over_relaxation);
-        // FLIP_transferVelocities(&mac, 0, flip_ratio);
+        FLIP_transferVelocities(&mac, 0, flip_ratio);
 
         Pair_t mac_grid_render_sizes = FLIP_transformGridToVerticies(&mac, vertices, indices, show_sci);
         render(window, camera, fluidShader, fluidVao, fluidVbo, fluidEbo, vertices, indices, mac_grid_render_sizes.first, mac_grid_render_sizes.second);
