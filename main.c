@@ -217,10 +217,10 @@ int main(int argc, char **argv)
     float gravity = -9.81f;
     float density = 1000.0f;
     float spacing = 0.03f;
-    float width = 3.5f;
-    float height = 2.5f;
+    float width = 2.5f;
+    float height = 2.0f;
     float particle_radius = 0.009f;
-    int max_particles = 1800;
+    int max_particles = 5000;
 
     // float flip_ratio = 0.5f;
     // float over_relaxation = 1.2f;
