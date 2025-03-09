@@ -281,6 +281,9 @@ void FLIP_updateParticleDensity(FlipGrid_t *grid)
         float x = grid->particle_pos[2 * i];
         float y = grid->particle_pos[2 * i + 1];
 
+        x = clamp(x, grid->h, (grid->f_num_x - 1) * grid->h);
+        y = clamp(y, grid->h, (grid->f_num_y - 1) * grid->h);
+
         int x0 = (int)floorf((x - shift) * grid->f_inv_spacing);
         int y0 = (int)floorf((y - shift) * grid->f_inv_spacing);
 
