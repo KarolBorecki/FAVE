@@ -126,14 +126,8 @@ void printGrid(FlipGrid_t *grid)
         printf("+\n");
     }
 }
-// Alokacja pamięci + sprawdzanie błędów
-#define ALLOC_CHECK(ptr, name)                                     \
-    if (!(ptr))                                                    \
-    {                                                              \
-        printf("ERROR: Failed to allocate memory for " name "\n"); \
-        exit(EXIT_FAILURE);                                        \
-    }
-void FLIP_init(FlipGrid_t *grid, float density, float width, float height, float spacing, float particle_radius, int max_particles)
+
+void FLIP_init(FlipGrid_t *grid, float density, float width, float height, float spacing, float particle_radius, int num_particles)
 {
     printf("Initializing FLIP grid...\n");
 
@@ -165,10 +159,10 @@ void FLIP_init(FlipGrid_t *grid, float density, float width, float height, float
     grid->cell_color = (float *)calloc(grid->f_num_cells * 3, sizeof(float));
     ALLOC_CHECK(grid->cell_color, "cell_color");
 
-    grid->max_particles = max_particles;
-    grid->particle_pos = (float *)calloc(grid->max_particles * 2, sizeof(float));
+    grid->num_particles = num_particles;
+    grid->particle_pos = (float *)calloc(grid->num_particles * 2, sizeof(float));
     ALLOC_CHECK(grid->particle_pos, "particle_pos");
-    grid->particle_vel = (float *)calloc(grid->max_particles * 2, sizeof(float));
+    grid->particle_vel = (float *)calloc(grid->num_particles * 2, sizeof(float));
     ALLOC_CHECK(grid->particle_vel, "particle_vel");
     grid->particle_density = (float *)calloc(grid->f_num_cells, sizeof(float));
     ALLOC_CHECK(grid->particle_density, "particle_density");
@@ -183,26 +177,42 @@ void FLIP_init(FlipGrid_t *grid, float density, float width, float height, float
     ALLOC_CHECK(grid->num_cell_particles, "num_cell_particles");
     grid->first_cell_particle = (int *)calloc(grid->p_num_cells + 1, sizeof(int));
     ALLOC_CHECK(grid->first_cell_particle, "first_cell_particle");
-    grid->cell_particle_ids = (int *)calloc(grid->max_particles, sizeof(int));
+    grid->cell_particle_ids = (int *)calloc(grid->num_particles, sizeof(int));
     ALLOC_CHECK(grid->cell_particle_ids, "cell_particle_ids");
 
-    grid->num_particles = minf(grid->max_particles, grid->p_num_x * grid->p_num_y);
+    grid->num_particles = minf(grid->num_particles, grid->p_num_x * grid->p_num_y);
 
-    int i = 1, j = 1;
-    for (int w = 0; w < grid->num_particles * 2; w += 2)
+    int particles_per_cell = (int)ceilf((float)grid->num_particles / (float)((grid->f_num_x - 2) * (grid->f_num_y - 1)));
+    int particle_index = 0;
+    float particle_spacing_inside_cell = grid->h / 10.0f;
+    for (int j = 1; j < grid->f_num_y - 1; j++)
     {
-        if (i >= grid->f_num_x - 1)
+        for (int i = 1; i < grid->f_num_x - 1; i++)
         {
-            i = 1;
-            j++;
+            float start_x = i * grid->h + grid->particle_radius;
+            float start_y = j * grid->h + grid->particle_radius;
+            int x_index = 0;
+            int y_index = 0;
+            float x = start_x;
+            float y = start_y;
+            for (int k = 0; k < particles_per_cell; k++)
+            {
+                if (x < start_x + grid->h)
+                {
+                    x += ((grid->particle_radius * 2) + particle_spacing_inside_cell) * x_index;
+                    x_index++;
+                }
+                else
+                {
+                    x = start_x;
+                    y += ((grid->particle_radius * 2) + particle_spacing_inside_cell) * y_index;
+                    y_index++;
+                }
+                grid->particle_pos[2 * particle_index] = x;
+                grid->particle_pos[2 * particle_index + 1] = y;
+                particle_index++;
+            }
         }
-        if (j >= grid->f_num_y - 1)
-        {
-            break;
-        }
-        grid->particle_pos[w] = grid->h / 4 + grid->h * i;
-        grid->particle_pos[w + 1] = grid->h / 4 + grid->h * j;
-        i++;
     }
 
     for (int i = 0; i < grid->f_num_x; i++)
@@ -217,8 +227,8 @@ void FLIP_init(FlipGrid_t *grid, float density, float width, float height, float
     printf("f_num_x = %d, f_num_y = %d, h = %.2f, f_inv_spacing = %.2f, f_num_cells = %d\n",
            grid->f_num_x, grid->f_num_y, grid->h, grid->f_inv_spacing, grid->f_num_cells);
     printf("p_num_x = %d, p_num_y = %d, p_num_cells = %d\n", grid->p_num_x, grid->p_num_y, grid->p_num_cells);
-    printf("max_particles = %d, particle_radius = %.2f, p_inv_spacing = %.2f\n",
-           grid->max_particles, grid->particle_radius, grid->p_inv_spacing);
+    printf("num_particles = %d, particle_radius = %.2f, p_inv_spacing = %.2f\n",
+           grid->num_particles, grid->particle_radius, grid->p_inv_spacing);
     printf("particle_rest_density = %.2f\n", grid->particle_rest_density);
     printf("density = %.2f\n", grid->density);
 }
@@ -366,9 +376,8 @@ void FLIP_handleObstacle(FlipGrid_t *grid, Obstacle_t *obstacle, float dt)
 
         if (d2 < minDist2)
         {
-            glm::vec3 obstacle_vel = glm::vec3(obstacle->position - obstacle->last_position) * obstacle->speed * 5.0f;
-            grid->particle_vel[2 * i] = obstacle_vel.x;
-            grid->particle_vel[2 * i + 1] = obstacle_vel.y;
+            grid->particle_vel[2 * i] = Obstacle_getXVelocity(obstacle, dt) * obstacle->push_coefficient;
+            grid->particle_vel[2 * i + 1] = Obstacle_getYVelocity(obstacle, dt) * obstacle->push_coefficient;
             // printf("obstacle (%.2f, %.2f) hit marker %d and resulted in its velocity = (%.2f, %.2f)\n", obstacle->position.x, obstacle->position.y, marker_index, marker.velocity.x, marker.velocity.y);
         }
 

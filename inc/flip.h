@@ -1,5 +1,6 @@
 #ifndef FAVE_FLIP_H
 #define FAVE_FLIP_H
+// #define DEPRECATED
 
 #include <cstdio>
 #include <cinttypes>

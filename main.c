@@ -208,21 +208,19 @@ int main(int argc, char **argv)
     setupObstacleBuffers(obstacleVao, obstacleVbo, obstacleEbo);
     setupBuffers(markerVao, markerVbo, markerEbo);
 
-
-
     float flip_ratio = 0.9f;
     float over_relaxation = 1.9f;
-    int pressure_solver_steps = 50;
-    int particles_push_apart_steps = 3;
-    int show_markers = 0;
+    int pressure_solver_steps = 100;
+    int particles_push_apart_steps = 2;
+    int show_markers = 1;
     int show_sci = 0;
     float gravity = -9.81f;
     float density = 1000.0f;
     float spacing = 0.03f;
-    float width = 4.3f;
-    float height = 3.0f;
+    float width = 3.5f;
+    float height = 2.5f;
     float particle_radius = 0.009f;
-    int max_particles = 2000;
+    int max_particles = 1800;
 
     // float flip_ratio = 0.5f;
     // float over_relaxation = 1.2f;
@@ -255,13 +253,13 @@ int main(int argc, char **argv)
         parseArgument(argv[i], "max_particles", &max_particles, "int");
     }
 
-    float obstacle_speed = 0.15f;
-    float obstacle_radius = 1.0f;
-    float obstacle_push = 5.0f;
+    float obstacle_speed = 0.05f;
+    float obstacle_radius = 0.2f;
+    float obstacle_push = 20.0f;
 
     Camera_t camera;
     // camera, window, postion, speed, fov, near, far
-    Camera_init(&camera, window, glm::vec3(width / 2.0f, height / 2.0f, (width + 300.0f) * spacing), 1.0f, 45.0f, 0.1f, 1000.0f);
+    Camera_init(&camera, window, glm::vec3(width / 2.0f, height / 2.0f, (width + 300.0f) * spacing), 0.2f, 45.0f, 0.1f, 1000.0f);
 
     FlipGrid_t mac;
     FLIP_init(&mac, density, width, height, spacing, particle_radius, max_particles);
@@ -276,7 +274,7 @@ int main(int argc, char **argv)
     {
         clock_t currentTime = clock();
         dt = (float)(currentTime - previousTime) / CLOCKS_PER_SEC;
-        dt = 1.0f / 60.0f; 
+        // dt = 1.0f / 60.0f; 
         previousTime = currentTime;
 
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);

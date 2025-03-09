@@ -6,8 +6,8 @@
 #define INDICIES_SIZE 5000000
 
 #define MAC_RESOURCE_PATH "/Users/karolborecki/repo/FAVE/resources/"
-#define RESOURCE_PATH "./resources/"
-// #define RESOURCE_PATH "/Users/karolborecki/repo/FAVE/resources/"
+// #define RESOURCE_PATH "./resources/"
+#define RESOURCE_PATH "/Users/karolborecki/repo/FAVE/resources/"
 
 #define ALLOC_CHECK(ptr, name)                                     \
     if (!(ptr))                                                    \
