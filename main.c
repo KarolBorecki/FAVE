@@ -193,16 +193,16 @@ int main(int argc, char **argv)
     float over_relaxation = 1.9f;
     int pressure_solver_steps = 100;
     int particles_push_apart_steps = 2;
-    int show_markers = 1;
-    int show_sci = 0;
+    int show_markers = 0;
+    int show_sci = 1;
     float gravity = -9.81f;
     float density = 1000.0f;
-    float spacing = 0.05f;
+    float spacing = 0.06f;
     float size_x = 1.5f;
     float size_y = 1.5f;
     float size_z = 1.5f;
-    float particle_radius = 0.02f;
-    int max_particles = 5000;
+    float particle_radius = 0.021f;
+    int max_particles = 20000;
 
     // float flip_ratio = 0.5f;
     // float over_relaxation = 1.2f;

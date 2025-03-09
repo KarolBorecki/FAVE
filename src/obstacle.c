@@ -60,6 +60,7 @@ void Obstacle_processInput(Obstacle_t *obstacle, GLFWwindow *window)
     }
 }
 
+
 Pair_t Obstacle_transformToVertices(Obstacle_t *obstacle, Vertex_t *vertices, GLuint *indices)
 {
     const int sectorCount = 36; // Ilość podziałów w poziomie (południki)
