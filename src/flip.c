@@ -40,9 +40,9 @@ void FLIP_init(FlipGrid_t *grid, float density, float size_x, float size_y, floa
     ALLOC_CHECK(grid->cell_color, "cell_color");
 
     grid->num_particles = num_particles;
-    grid->particle_pos = (float *)calloc(grid->num_particles * 2, sizeof(float));
+    grid->particle_pos = (float *)calloc(grid->num_particles * 3, sizeof(float));
     ALLOC_CHECK(grid->particle_pos, "particle_pos");
-    grid->particle_vel = (float *)calloc(grid->num_particles * 2, sizeof(float));
+    grid->particle_vel = (float *)calloc(grid->num_particles * 3, sizeof(float));
     ALLOC_CHECK(grid->particle_vel, "particle_vel");
     grid->particle_density = (float *)calloc(grid->f_num_cells, sizeof(float));
     ALLOC_CHECK(grid->particle_density, "particle_density");
@@ -63,7 +63,7 @@ void FLIP_init(FlipGrid_t *grid, float density, float size_x, float size_y, floa
 
     grid->num_particles = minf(grid->num_particles, grid->p_num_x * grid->p_num_y);
 
-    int particles_per_cell = (int)ceilf((float)grid->num_particles / (float)((grid->f_num_x - 2) * (grid->f_num_y - 1) * (grid->f_num_z - 1)));
+    int particles_per_cell = (int)floorf((float)grid->num_particles / (float)((grid->f_num_x) * (grid->f_num_y) * (grid->f_num_z)));
     int particle_index = 0;
     float particle_spacing_inside_cell = grid->h / 10.0f;
 
@@ -122,7 +122,7 @@ void FLIP_init(FlipGrid_t *grid, float density, float size_x, float size_y, floa
             for (int k = 0; k < grid->f_num_z; k++)
             {
                 int cell_nr = k * grid->f_num_x * grid->f_num_y + j * grid->f_num_x + i;
-                grid->s[cell_nr] = (i == 0 || i == grid->f_num_x - 1 || j == 0) ? 0.0f : 1.0f;
+                grid->s[cell_nr] = (i == 0 || i == grid->f_num_x - 1 || j == 0 || k == grid->f_num_z - 1 || k == 0) ? 0.0f : 1.0f;
             }
         }
     }
@@ -648,12 +648,14 @@ Pair_t FLIP_transformGridToVerticies(FlipGrid_t *grid, Vertex_t *vertices, GLuin
                     c[0] = 1.0f;
                     c[1] = 1.0f;
                     c[2] = 1.0f;
+                    continue;   
                 }
                 else if (grid->cell_type[cell_nr] == AIR)
                 {
                     c[0] = 0.53f;
                     c[1] = 0.81f;
                     c[2] = 0.94f;
+                    continue;
                 }
 
                 for (int i = 0; i < 8; i++)

@@ -88,11 +88,11 @@ void processInput(GLFWwindow *window)
     }
 }
 
-void setupBuffers(VAO_t &vao, VBO_t &vbo, EBO_t &ebo)
+void setupBuffers(VAO_t &vao, VBO_t &vbo, EBO_t &ebo, long verticies_size, long indicies_size)
 {
     VAO_init(&vao);
-    VBO_init(&vbo, VERTICIES_SIZE);
-    EBO_init(&ebo, INDICIES_SIZE);
+    VBO_init(&vbo, verticies_size);
+    EBO_init(&ebo, indicies_size);
 
     VAO_bind(&vao);
     VBO_bind(&vbo);
@@ -107,29 +107,10 @@ void setupBuffers(VAO_t &vao, VBO_t &vbo, EBO_t &ebo)
     VBO_unbind();
     EBO_unbind();
 }
-void setupObstacleBuffers(VAO_t &vao, VBO_t &vbo, EBO_t &ebo)
+
+void render(GLFWwindow *window, Camera_t &camera, Shader_t &shaderProgram, VAO_t &vao, VBO_t &vbo, EBO_t &ebo, Vertex_t *fluid_vertices, GLuint *fluid_indices, int verticies_size, int indicies_size)
 {
-    VAO_init(&vao);
-    VBO_init(&vbo, VERTICIES_SIZE);
-    EBO_init(&ebo, INDICIES_SIZE);
-
-    VAO_bind(&vao);
-    VBO_bind(&vbo);
-    EBO_bind(&ebo);
-
-    VAO_linkAttrib(0, 3, GL_FLOAT, sizeof(Vertex), (void *)0);                   // Pozycja
-    VAO_linkAttrib(1, 3, GL_FLOAT, sizeof(Vertex), (void *)(3 * sizeof(float))); // Normale
-    VAO_linkAttrib(2, 3, GL_FLOAT, sizeof(Vertex), (void *)(6 * sizeof(float))); // Kolor
-    VAO_linkAttrib(3, 2, GL_FLOAT, sizeof(Vertex), (void *)(9 * sizeof(float))); // Współrzędne UV
-
-    VAO_unbind();
-    VBO_unbind();
-    EBO_unbind();
-}
-
-void render(GLFWwindow *window, Camera_t &camera, Shader_t &shaderProgram, VAO_t &vao, VBO_t &vbo, EBO_t &ebo, Vertex_t *vertices, GLuint *indices, int verticies_size, int indicies_size)
-{
-    if (verticies_size > VERTICIES_SIZE || indicies_size > INDICIES_SIZE)
+    if (verticies_size > MAX_VERTICIES || indicies_size > MAX_INDICIES)
     {
         fprintf(stderr, "Too many verticies or indicies to render\n");
         return;
@@ -145,10 +126,10 @@ void render(GLFWwindow *window, Camera_t &camera, Shader_t &shaderProgram, VAO_t
     Shader_setMatrix4f(&shaderProgram, "camMatrix", glm::value_ptr(camera.cam_mat));
 
     VBO_bind(&vbo);
-    VBO_update(&vbo, vertices, verticies_size);
+    VBO_update(&vbo, fluid_vertices, verticies_size);
 
     EBO_bind(&ebo);
-    EBO_update(&ebo, indices, indicies_size);
+    EBO_update(&ebo, fluid_indices, indicies_size);
 
     VAO_bind(&vao);
     glDrawElements(GL_TRIANGLES, indicies_size, GL_UNSIGNED_INT, 0);
@@ -180,18 +161,18 @@ int main(int argc, char **argv)
     if (!window)
         return -1;
 
-    Vertex_t *vertices = (Vertex_t *)calloc(VERTICIES_SIZE, sizeof(Vertex_t));
-    GLuint *indices = (GLuint *)calloc(INDICIES_SIZE, sizeof(GLuint));
+    Vertex_t *fluid_vertices = (Vertex_t *)calloc(FLUID_VERTICIES_SIZE, sizeof(Vertex_t));
+    GLuint *fluid_indices = (GLuint *)calloc(FLUID_INDICIES_SIZE, sizeof(GLuint));
 
-    Vertex_t *obstacleVertices = (Vertex_t *)calloc(VERTICIES_SIZE, sizeof(Vertex_t));
-    GLuint *obstacleIndices = (GLuint *)calloc(INDICIES_SIZE, sizeof(GLuint));
+    Vertex_t *obstacle_vertices = (Vertex_t *)calloc(OBSTACLE_VERTICIES_SIZE, sizeof(Vertex_t));
+    GLuint *obstacle_indices = (GLuint *)calloc(OBSTACLE_INDICIES_SIZE, sizeof(GLuint));
 
-    Vertex_t *markerVertices = (Vertex_t *)calloc(VERTICIES_SIZE, sizeof(Vertex_t));
-    GLuint *markerIndices = (GLuint *)calloc(INDICIES_SIZE, sizeof(GLuint));
+    Vertex_t *marker_vertices = (Vertex_t *)calloc(PARTICLES_VERTICIES_SIZE, sizeof(Vertex_t));
+    GLuint *marker_indices = (GLuint *)calloc(PARTICLES_INDICIES_SIZE, sizeof(GLuint));
 
-    if (!vertices || !indices || !obstacleVertices || !obstacleIndices || !markerVertices || !markerIndices)
+    if (!fluid_vertices || !fluid_indices || !obstacle_vertices || !obstacle_indices || !marker_vertices || !marker_indices)
     {
-        fprintf(stderr, "Failed to allocate memory for vertices and indices\n");
+        fprintf(stderr, "Failed to allocate memory for fluid_vertices and fluid_indices\n");
         return -1;
     }
 
@@ -204,24 +185,24 @@ int main(int argc, char **argv)
     VBO_t fluidVbo, obstacleVbo, markerVbo;
     EBO_t fluidEbo, obstacleEbo, markerEbo;
 
-    setupBuffers(fluidVao, fluidVbo, fluidEbo);
-    setupObstacleBuffers(obstacleVao, obstacleVbo, obstacleEbo);
-    setupBuffers(markerVao, markerVbo, markerEbo);
+    setupBuffers(fluidVao, fluidVbo, fluidEbo, FLUID_VERTICIES_SIZE, FLUID_INDICIES_SIZE);
+    setupBuffers(obstacleVao, obstacleVbo, obstacleEbo, OBSTACLE_VERTICIES_SIZE, OBSTACLE_INDICIES_SIZE);
+    setupBuffers(markerVao, markerVbo, markerEbo, PARTICLES_VERTICIES_SIZE, PARTICLES_INDICIES_SIZE);
 
     float flip_ratio = 0.9f;
     float over_relaxation = 1.9f;
     int pressure_solver_steps = 100;
     int particles_push_apart_steps = 2;
-    int show_markers = 0;
+    int show_markers = 1;
     int show_sci = 0;
     float gravity = -9.81f;
     float density = 1000.0f;
-    float spacing = 0.03f;
-    float size_x = 2.5f;
-    float size_y = 2.5f;
-    float size_z = 2.5f;
+    float spacing = 0.05f;
+    float size_x = 1.5f;
+    float size_y = 1.5f;
+    float size_z = 1.5f;
     float particle_radius = 0.009f;
-    int max_particles = 5000;
+    int max_particles = 50000;
 
     // float flip_ratio = 0.5f;
     // float over_relaxation = 1.2f;
@@ -294,17 +275,17 @@ int main(int argc, char **argv)
         FLIP_solveIncompressibility(&mac, pressure_solver_steps, dt, over_relaxation);
         FLIP_transferVelocities(&mac, 0, flip_ratio);
 
-        Pair_t mac_grid_render_sizes = FLIP_transformGridToVerticies(&mac, vertices, indices, show_sci);
-        render(window, camera, fluidShader, fluidVao, fluidVbo, fluidEbo, vertices, indices, mac_grid_render_sizes.first, mac_grid_render_sizes.second);
+        Pair_t mac_grid_render_sizes = FLIP_transformGridToVerticies(&mac, fluid_vertices, fluid_indices, show_sci);
+        render(window, camera, fluidShader, fluidVao, fluidVbo, fluidEbo, fluid_vertices, fluid_indices, mac_grid_render_sizes.first, mac_grid_render_sizes.second);
 
         if (show_markers)
         {
-            Pair_t mac_markers_render_sizes = FLIP_transformMarkersToVertices(&mac, markerVertices, markerIndices);
-            render(window, camera, markerShader, markerVao, markerVbo, markerEbo, markerVertices, markerIndices, mac_markers_render_sizes.first, mac_markers_render_sizes.second);
+            Pair_t mac_markers_render_sizes = FLIP_transformMarkersToVertices(&mac, marker_vertices, marker_indices);
+            render(window, camera, markerShader, markerVao, markerVbo, markerEbo, marker_vertices, marker_indices, mac_markers_render_sizes.first, mac_markers_render_sizes.second);
         }
 
-        Pair_t obstacle_render_sizes = Obstacle_transformToVertices(&obstacle, obstacleVertices, obstacleIndices);
-        render(window, camera, obstacleShader, obstacleVao, obstacleVbo, obstacleEbo, obstacleVertices, obstacleIndices, obstacle_render_sizes.first, obstacle_render_sizes.second);
+        Pair_t obstacle_render_sizes = Obstacle_transformToVertices(&obstacle, obstacle_vertices, obstacle_indices);
+        render(window, camera, obstacleShader, obstacleVao, obstacleVbo, obstacleEbo, obstacle_vertices, obstacle_indices, obstacle_render_sizes.first, obstacle_render_sizes.second);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -321,13 +302,13 @@ int main(int argc, char **argv)
     Shader_destroy(&fluidShader);
     Shader_destroy(&obstacleShader);
     Camera_destroy(&camera);
-    free(vertices);
-    free(indices);
-    free(obstacleVertices);
-    free(obstacleIndices);
+    free(fluid_vertices);
+    free(fluid_indices);
+    free(obstacle_vertices);
+    free(obstacle_indices);
 
-    free(markerVertices);
-    free(markerIndices);
+    free(marker_vertices);
+    free(marker_indices);
     Shader_destroy(&markerShader);
     VAO_destroy(&markerVao);
     VBO_destroy(&markerVbo);
