@@ -30,18 +30,10 @@ float Obstacle_getZVelocity(Obstacle_t *obstacle, float dt)
 
 void Obstacle_processInput(Obstacle_t *obstacle, GLFWwindow *window)
 {
-    // if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS)
-    // {
-    //     obstacle->position += glm::vec3(0.0f, 0.0f, -1.0f * obstacle->speed);
-    //     obstacle->velocity += glm::vec3(0.0f, 0.0f, -1.0f * obstacle->speed);
-    // }
-    // if (glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS)
-    // {
-    //     obstacle->position += glm::vec3(0.0f, 0.0f, 1.0f * obstacle->speed);
-    //     obstacle->velocity += glm::vec3(0.0f, 0.0f, 1.0f * obstacle->speed);
-    // }
+
     obstacle->last_x = obstacle->x;
     obstacle->last_y = obstacle->y;
+    obstacle->last_z = obstacle->z;
     if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS)
     {
         obstacle->x += -1.0f * obstacle->speed;
@@ -57,6 +49,14 @@ void Obstacle_processInput(Obstacle_t *obstacle, GLFWwindow *window)
     if (glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS)
     {
         obstacle->y += -1.0f * obstacle->speed;
+    }
+    if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS)
+    {
+        obstacle->z += -1.0f * obstacle->speed;
+    }
+    if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS)
+    {
+        obstacle->z += 1.0f * obstacle->speed;
     }
 }
 

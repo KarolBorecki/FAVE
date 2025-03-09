@@ -201,8 +201,8 @@ int main(int argc, char **argv)
     float size_x = 1.5f;
     float size_y = 1.5f;
     float size_z = 1.5f;
-    float particle_radius = 0.009f;
-    int max_particles = 50000;
+    float particle_radius = 0.02f;
+    int max_particles = 5000;
 
     // float flip_ratio = 0.5f;
     // float over_relaxation = 1.2f;
@@ -235,13 +235,15 @@ int main(int argc, char **argv)
         parseArgument(argv[i], "max_particles", &max_particles, "int");
     }
 
+    float camera_speed = 0.1f;
+
     float obstacle_speed = 0.05f;
     float obstacle_radius = 0.2f;
-    float obstacle_push = 20.0f;
+    float obstacle_push = 50.0f;
 
     Camera_t camera;
     // camera, window, postion, speed, fov, near, far
-    Camera_init(&camera, window, glm::vec3(size_x / 2.0f, size_y / 2.0f, (size_x + 300.0f) * spacing), 0.2f, 45.0f, 0.1f, 1000.0f);
+    Camera_init(&camera, window, glm::vec3(size_x / 2.0f, size_y / 2.0f, (size_x + 300.0f) * spacing), camera_speed, 45.0f, 0.1f, 1000.0f);
 
     FlipGrid_t mac;
     FLIP_init(&mac, density, size_x, size_y, size_z, spacing, particle_radius, max_particles);
