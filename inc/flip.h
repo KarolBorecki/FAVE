@@ -32,33 +32,38 @@ extern "C"
         float density;
         int f_num_x;
         int f_num_y;
+        int f_num_z;
         float h;
-        float f_inv_spacing; 
+        float f_inv_spacing;
         int f_num_cells;
 
         float *u;            // of size f_num_cells
         float *v;            // of size f_num_cells
+        float *w;            // of size f_num_cells
         float *du;           // of size f_num_cells
         float *dv;           // of size f_num_cells
+        float *dw;           // of size f_num_cells
         float *prev_u;       // of size f_num_cells
         float *prev_v;       // of size f_num_cells
+        float *prev_w;       // of size f_num_cells
         float *p;            // of size f_num_cells
         float *s;            // of size f_num_cells
         CellType *cell_type; // of size f_num_cells
         float *cell_color;   // of size f_num_cells * 3
 
         int num_particles;
-        float *particle_pos;     // of size max_particles * 2
-        float *particle_vel;     // of size max_particles * 2
+        float *particle_pos;     // of size max_particles * 3
+        float *particle_vel;     // of size max_particles * 3
         float *particle_density; // of size f_num_cells
         float particle_rest_density;
 
         float particle_radius;
-        // DEPRECATED???        
+        // DEPRECATED???
         float p_inv_spacing;
         int p_num_x;
         int p_num_y;
-        int p_num_cells; // p_num_x * p_num_y
+        int p_num_z;
+        int p_num_cells; // p_num_x * p_num_y * p_num_z
 
         int *num_cell_particles;  // of size f_num_cells
         int *first_cell_particle; // of size f_num_cells + 1
@@ -66,7 +71,7 @@ extern "C"
 
     } FlipGrid_t;
 
-    void FLIP_init(FlipGrid_t *grid, float density, float size_x, float size_y, float cell_size, float marker_count, int marker_size);
+    void FLIP_init(FlipGrid_t *grid, float density, float size_x, float size_y, float size_z, float cell_size, float marker_count, int marker_size);
     void FLIP_handleObstacle(FlipGrid_t *grid, Obstacle_t *obstacle, float dt);
     void FLIP_integrateParticles(FlipGrid_t *grid, float dt, float gravity);
     void FLIP_pushParticlesApart(FlipGrid_t *grid, int numIters, float dt);

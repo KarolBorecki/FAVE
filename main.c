@@ -217,8 +217,9 @@ int main(int argc, char **argv)
     float gravity = -9.81f;
     float density = 1000.0f;
     float spacing = 0.03f;
-    float width = 2.5f;
-    float height = 2.0f;
+    float size_x = 2.5f;
+    float size_y = 2.5f;
+    float size_z = 2.5f;
     float particle_radius = 0.009f;
     int max_particles = 5000;
 
@@ -231,8 +232,8 @@ int main(int argc, char **argv)
     // float gravity = -90.0f;
     // float density = 1000.0f;
     // float spacing = 1.0f;
-    // float width = 15.0f;
-    // float height = 15.0f;
+    // float size_x = 15.0f;
+    // float size_y = 15.0f;
     // float particle_radius = 0.1f;
     // int max_particles = 200;
 
@@ -247,8 +248,8 @@ int main(int argc, char **argv)
         parseArgument(argv[i], "gravity", &gravity, "float");
         parseArgument(argv[i], "density", &density, "float");
         parseArgument(argv[i], "spacing", &spacing, "float");
-        parseArgument(argv[i], "width", &width, "float");
-        parseArgument(argv[i], "height", &height, "float");
+        parseArgument(argv[i], "size_x", &size_x, "float");
+        parseArgument(argv[i], "size_y", &size_y, "float");
         parseArgument(argv[i], "particle_radius", &particle_radius, "float");
         parseArgument(argv[i], "max_particles", &max_particles, "int");
     }
@@ -259,14 +260,14 @@ int main(int argc, char **argv)
 
     Camera_t camera;
     // camera, window, postion, speed, fov, near, far
-    Camera_init(&camera, window, glm::vec3(width / 2.0f, height / 2.0f, (width + 300.0f) * spacing), 0.2f, 45.0f, 0.1f, 1000.0f);
+    Camera_init(&camera, window, glm::vec3(size_x / 2.0f, size_y / 2.0f, (size_x + 300.0f) * spacing), 0.2f, 45.0f, 0.1f, 1000.0f);
 
     FlipGrid_t mac;
-    FLIP_init(&mac, density, width, height, spacing, particle_radius, max_particles);
+    FLIP_init(&mac, density, size_x, size_y, size_z, spacing, particle_radius, max_particles);
 
     Obstacle_t obstacle;
     // obstacle, x, y, z, radius, speed
-    Obstacle_init(&obstacle, width / 2.0f, height + obstacle_radius * 2, obstacle_radius, obstacle_radius, obstacle_speed, obstacle_push);
+    Obstacle_init(&obstacle, size_x / 2.0f, size_y + obstacle_radius * 2, obstacle_radius, obstacle_radius, obstacle_speed, obstacle_push);
 
     clock_t previousTime = clock();
     float dt = 1.0f / 60.0f; // TODO it should be calculated based on the time between frames or more sophisticated way

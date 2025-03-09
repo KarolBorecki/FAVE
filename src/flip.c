@@ -1,28 +1,35 @@
 #include "flip.h"
 #ifndef DEPRECATED
-void FLIP_init(FlipGrid_t *grid, float density, float width, float height, float spacing, float particle_radius, int num_particles)
+void FLIP_init(FlipGrid_t *grid, float density, float size_x, float size_y, float size_z, float spacing, float particle_radius, int num_particles)
 {
     printf("Initializing FLIP grid...\n");
 
     grid->density = density;
-    grid->f_num_x = (int)(floorf(width / spacing) + 1.0f);
-    grid->f_num_y = (int)(floorf(height / spacing) + 1.0f);
-    grid->h = maxf(width / grid->f_num_x, height / grid->f_num_y);
+    grid->f_num_x = (int)(floorf(size_x / spacing) + 1.0f);
+    grid->f_num_y = (int)(floorf(size_y / spacing) + 1.0f);
+    grid->f_num_z = (int)(floorf(size_z / spacing) + 1.0f);
+    grid->h = maxf(size_x / grid->f_num_x, size_y / grid->f_num_y); // TODO: check if it should not contain z component
     grid->f_inv_spacing = 1.0f / grid->h;
-    grid->f_num_cells = grid->f_num_x * grid->f_num_y;
+    grid->f_num_cells = grid->f_num_x * grid->f_num_y * grid->f_num_z;
 
     grid->u = (float *)calloc(grid->f_num_cells, sizeof(float));
     ALLOC_CHECK(grid->u, "u");
     grid->v = (float *)calloc(grid->f_num_cells, sizeof(float));
     ALLOC_CHECK(grid->v, "v");
+    grid->w = (float *)calloc(grid->f_num_cells, sizeof(float));
+    ALLOC_CHECK(grid->w, "w");
     grid->du = (float *)calloc(grid->f_num_cells, sizeof(float));
     ALLOC_CHECK(grid->du, "du");
     grid->dv = (float *)calloc(grid->f_num_cells, sizeof(float));
     ALLOC_CHECK(grid->dv, "dv");
+    grid->dw = (float *)calloc(grid->f_num_cells, sizeof(float));
+    ALLOC_CHECK(grid->dw, "dw");
     grid->prev_u = (float *)calloc(grid->f_num_cells, sizeof(float));
     ALLOC_CHECK(grid->prev_u, "prev_u");
     grid->prev_v = (float *)calloc(grid->f_num_cells, sizeof(float));
     ALLOC_CHECK(grid->prev_v, "prev_v");
+    grid->prev_w = (float *)calloc(grid->f_num_cells, sizeof(float));
+    ALLOC_CHECK(grid->prev_w, "prev_w");
     grid->p = (float *)calloc(grid->f_num_cells, sizeof(float));
     ALLOC_CHECK(grid->p, "p");
     grid->s = (float *)calloc(grid->f_num_cells, sizeof(float));
@@ -42,9 +49,10 @@ void FLIP_init(FlipGrid_t *grid, float density, float width, float height, float
 
     grid->particle_radius = particle_radius;
     grid->p_inv_spacing = 1.0f / (2.2f * grid->particle_radius);
-    grid->p_num_x = (int)(floorf(width * grid->p_inv_spacing) + 1.0f);
-    grid->p_num_y = (int)(floorf(height * grid->p_inv_spacing) + 1.0f);
-    grid->p_num_cells = grid->p_num_x * grid->p_num_y;
+    grid->p_num_x = (int)(floorf(size_x * grid->p_inv_spacing) + 1.0f);
+    grid->p_num_y = (int)(floorf(size_y * grid->p_inv_spacing) + 1.0f);
+    grid->p_num_z = (int)(floorf(size_z * grid->p_inv_spacing) + 1.0f);
+    grid->p_num_cells = grid->p_num_x * grid->p_num_y * grid->p_num_z;
 
     grid->num_cell_particles = (int *)calloc(grid->p_num_cells, sizeof(int));
     ALLOC_CHECK(grid->num_cell_particles, "num_cell_particles");
@@ -55,35 +63,54 @@ void FLIP_init(FlipGrid_t *grid, float density, float width, float height, float
 
     grid->num_particles = minf(grid->num_particles, grid->p_num_x * grid->p_num_y);
 
-    int particles_per_cell = (int)ceilf((float)grid->num_particles / (float)((grid->f_num_x - 2) * (grid->f_num_y - 1)));
+    int particles_per_cell = (int)ceilf((float)grid->num_particles / (float)((grid->f_num_x - 2) * (grid->f_num_y - 1) * (grid->f_num_z - 1)));
     int particle_index = 0;
     float particle_spacing_inside_cell = grid->h / 10.0f;
-    for (int j = 1; j < grid->f_num_y - 1; j++)
+
+    for (int k = 1; k < grid->f_num_z - 1; k++)
     {
-        for (int i = 1; i < grid->f_num_x - 1; i++)
+        for (int j = 1; j < grid->f_num_y - 1; j++)
         {
-            float start_x = i * grid->h + grid->particle_radius;
-            float start_y = j * grid->h + grid->particle_radius;
-            int x_index = 0;
-            int y_index = 0;
-            float x = start_x;
-            float y = start_y;
-            for (int k = 0; k < particles_per_cell; k++)
+            for (int i = 1; i < grid->f_num_x - 1; i++)
             {
-                if (x < start_x + grid->h)
+                float start_x = i * grid->h + grid->particle_radius;
+                float start_y = j * grid->h + grid->particle_radius;
+                float start_z = k * grid->h + grid->particle_radius;
+
+                int x_index = 0;
+                int y_index = 0;
+                int z_index = 0;
+
+                float x = start_x;
+                float y = start_y;
+                float z = start_z;
+
+                for (int n = 0; n < particles_per_cell; n++)
                 {
-                    x += ((grid->particle_radius * 2) + particle_spacing_inside_cell) * x_index;
-                    x_index++;
+                    if (x < start_x + grid->h)
+                    {
+                        x += ((grid->particle_radius * 2) + particle_spacing_inside_cell) * x_index;
+                        x_index++;
+                    }
+                    else if (y < start_y + grid->h)
+                    {
+                        x = start_x;
+                        y += ((grid->particle_radius * 2) + particle_spacing_inside_cell) * y_index;
+                        y_index++;
+                    }
+                    else
+                    {
+                        x = start_x;
+                        y = start_y;
+                        z += ((grid->particle_radius * 2) + particle_spacing_inside_cell) * z_index;
+                        z_index++;
+                    }
+
+                    grid->particle_pos[3 * particle_index] = x;
+                    grid->particle_pos[3 * particle_index + 1] = y;
+                    grid->particle_pos[3 * particle_index + 2] = z;
+                    particle_index++;
                 }
-                else
-                {
-                    x = start_x;
-                    y += ((grid->particle_radius * 2) + particle_spacing_inside_cell) * y_index;
-                    y_index++;
-                }
-                grid->particle_pos[2 * particle_index] = x;
-                grid->particle_pos[2 * particle_index + 1] = y;
-                particle_index++;
             }
         }
     }
@@ -92,16 +119,18 @@ void FLIP_init(FlipGrid_t *grid, float density, float width, float height, float
     {
         for (int j = 0; j < grid->f_num_y; j++)
         {
-            grid->s[j * grid->f_num_x + i] = (i == 0 || i == grid->f_num_x - 1 || j == 0) ? 0.0f : 1.0f;
+            for (int k = 0; k < grid->f_num_z; k++)
+            {
+                int cell_nr = k * grid->f_num_x * grid->f_num_y + j * grid->f_num_x + i;
+                grid->s[cell_nr] = (i == 0 || i == grid->f_num_x - 1 || j == 0) ? 0.0f : 1.0f;
+            }
         }
     }
 
     printf("FLIP grid initialized successfully!\n");
-    printf("f_num_x = %d, f_num_y = %d, h = %.2f, f_inv_spacing = %.2f, f_num_cells = %d\n",
-           grid->f_num_x, grid->f_num_y, grid->h, grid->f_inv_spacing, grid->f_num_cells);
-    printf("p_num_x = %d, p_num_y = %d, p_num_cells = %d\n", grid->p_num_x, grid->p_num_y, grid->p_num_cells);
-    printf("num_particles = %d, particle_radius = %.2f, p_inv_spacing = %.2f\n",
-           grid->num_particles, grid->particle_radius, grid->p_inv_spacing);
+    printf("f_num_x = %d, f_num_y = %d, f_num_z = %d, f_num_cells = %d\n", grid->f_num_x, grid->f_num_y, grid->f_num_z, grid->f_num_cells);
+    printf("p_num_x = %d, p_num_y = %d, p_num_z = %d, p_num_cells = %d\n", grid->p_num_x, grid->p_num_y, grid->p_num_z, grid->p_num_cells);
+    printf("num_particles = %d, particle_radius = %.2f, p_inv_spacing = %.2f\n", grid->num_particles, grid->particle_radius, grid->p_inv_spacing);
     printf("particle_rest_density = %.2f\n", grid->particle_rest_density);
     printf("density = %.2f\n", grid->density);
 }
@@ -110,9 +139,10 @@ void FLIP_integrateParticles(FlipGrid_t *grid, float dt, float gravity)
 {
     for (int i = 0; i < grid->num_particles; i++)
     {
-        grid->particle_vel[2 * i + 1] += gravity * dt;
-        grid->particle_pos[2 * i] += grid->particle_vel[2 * i] * dt;
-        grid->particle_pos[2 * i + 1] += grid->particle_vel[2 * i + 1] * dt;
+        grid->particle_vel[3 * i + 1] += gravity * dt;
+        grid->particle_pos[3 * i] += grid->particle_vel[2 * i] * dt;
+        grid->particle_pos[3 * i + 1] += grid->particle_vel[2 * i + 1] * dt;
+        grid->particle_pos[3 * i + 2] += grid->particle_vel[2 * i + 2] * dt;
     }
 }
 
@@ -126,12 +156,14 @@ void FLIP_pushParticlesApart(FlipGrid_t *grid, int numIters, float dt)
 
     for (int i = 0; i < grid->num_particles; i++)
     {
-        float x = grid->particle_pos[2 * i];
-        float y = grid->particle_pos[2 * i + 1];
+        float x = grid->particle_pos[3 * i];
+        float y = grid->particle_pos[3 * i + 1];
+        float z = grid->particle_pos[3 * i + 2];
 
         int xi = clamp((int)floorf(x * grid->p_inv_spacing), 0, grid->p_num_x - 1);
         int yi = clamp((int)floorf(y * grid->p_inv_spacing), 0, grid->p_num_y - 1);
-        int cell_nr = yi * grid->p_num_x + xi;
+        int zi = clamp((int)floorf(z * grid->p_inv_spacing), 0, grid->p_num_z - 1);
+        int cell_nr = zi * grid->p_num_x * grid->p_num_y + yi * grid->p_num_x + xi;
         grid->num_cell_particles[cell_nr]++;
     }
 
@@ -145,12 +177,14 @@ void FLIP_pushParticlesApart(FlipGrid_t *grid, int numIters, float dt)
 
     for (int i = 0; i < grid->num_particles; i++)
     {
-        float x = grid->particle_pos[2 * i];
-        float y = grid->particle_pos[2 * i + 1];
+        float x = grid->particle_pos[3 * i];
+        float y = grid->particle_pos[3 * i + 1];
+        float z = grid->particle_pos[3 * i + 2];
 
         int xi = clamp((int)floorf(x * grid->p_inv_spacing), 0, grid->p_num_x - 1);
         int yi = clamp((int)floorf(y * grid->p_inv_spacing), 0, grid->p_num_y - 1);
-        int cell_nr = yi * grid->p_num_x + xi;
+        int zi = clamp((int)floorf(z * grid->p_inv_spacing), 0, grid->p_num_z - 1);
+        int cell_nr = zi * grid->p_num_x * grid->p_num_y + yi * grid->p_num_x + xi;
         grid->first_cell_particle[cell_nr]--;
         grid->cell_particle_ids[grid->first_cell_particle[cell_nr]] = i;
     }
@@ -162,52 +196,63 @@ void FLIP_pushParticlesApart(FlipGrid_t *grid, int numIters, float dt)
     {
         for (int i = 0; i < grid->num_particles; i++)
         {
-            float px = grid->particle_pos[2 * i];
-            float py = grid->particle_pos[2 * i + 1];
+            float px = grid->particle_pos[3 * i];
+            float py = grid->particle_pos[3 * i + 1];
+            float pz = grid->particle_pos[3 * i + 2];
 
             int pxi = (int)floorf(px * grid->p_inv_spacing);
             int pyi = (int)floorf(py * grid->p_inv_spacing);
+            int pzi = (int)floorf(pz * grid->p_inv_spacing);
 
             int x0 = max(pxi - 1, 0);
             int y0 = max(pyi - 1, 0);
+            int z0 = max(pzi - 1, 0);
+
             int x1 = min(pxi + 1, grid->p_num_x - 1);
             int y1 = min(pyi + 1, grid->p_num_y - 1);
+            int z1 = min(pzi + 1, grid->p_num_z - 1);
 
             for (int xi = x0; xi <= x1; xi++)
             {
                 for (int yi = y0; yi <= y1; yi++)
                 {
-                    int cell_nr = yi * grid->p_num_x + xi;
-
-                    int first = grid->first_cell_particle[cell_nr];
-                    int last = grid->first_cell_particle[cell_nr + 1];
-
-                    for (int j = first; j < last; j++)
+                    for (int zi = z0; zi <= z1; zi++)
                     {
-                        int id = grid->cell_particle_ids[j];
+                        int cell_nr = zi * grid->p_num_x * grid->p_num_y + yi * grid->p_num_x + xi;
 
-                        if (id == i)
-                            continue;
+                        int first = grid->first_cell_particle[cell_nr];
+                        int last = grid->first_cell_particle[cell_nr + 1];
 
-                        float qx = grid->particle_pos[2 * id];
-                        float qy = grid->particle_pos[2 * id + 1];
+                        for (int j = first; j < last; j++)
+                        {
+                            int id = grid->cell_particle_ids[j];
 
-                        float dx = qx - px;
-                        float dy = qy - py;
-                        float d2 = dx * dx + dy * dy;
-                        if (d2 > minDist2 || d2 == 0.0f)
-                            continue;
+                            if (id == i)
+                                continue;
 
-                        float d = sqrtf(d2);
-                        float s = 0.5f * (minDist - d) / d;
+                            float qx = grid->particle_pos[3 * id];
+                            float qy = grid->particle_pos[3 * id + 1];
+                            float qz = grid->particle_pos[3 * id + 2];
 
-                        dx *= s;
-                        dy *= s;
+                            float dx = qx - px;
+                            float dy = qy - py;
+                            float dz = qz - pz;
 
-                        grid->particle_pos[2 * i] -= dx;
-                        grid->particle_pos[2 * i + 1] -= dy;
-                        grid->particle_pos[2 * id] += dx;
-                        grid->particle_pos[2 * id + 1] += dy;
+                            float d2 = dx * dx + dy * dy; // todo: how to calculate distance in 3d?
+                            if (d2 > minDist2 || d2 == 0.0f)
+                                continue;
+
+                            float d = sqrtf(d2);
+                            float s = 0.5f * (minDist - d) / d;
+
+                            dx *= s;
+                            dy *= s;
+
+                            grid->particle_pos[2 * i] -= dx;
+                            grid->particle_pos[2 * i + 1] -= dy;
+                            grid->particle_pos[2 * id] += dx;
+                            grid->particle_pos[2 * id + 1] += dy;
+                        }
                     }
                 }
             }
@@ -224,22 +269,27 @@ void FLIP_handleObstacle(FlipGrid_t *grid, Obstacle_t *obstacle, float dt)
     float max_x = (grid->f_num_x - 1) * h - particle_r;
     float min_y = h + particle_r;
     float max_y = (grid->f_num_y - 1) * h - particle_r;
+    float min_z = h + particle_r;
+    float max_z = (grid->f_num_z - 1) * h - particle_r;
 
     float obstacle_x = obstacle->x;
     float obstacle_y = obstacle->y;
+    float obstacle_z = obstacle->z;
 
     float min_dist = particle_r + obstacle->radius;
     float min_dist_2 = min_dist * min_dist;
 
     for (int i = 0; i < grid->num_particles; i++)
     {
-        float x = grid->particle_pos[2 * i];
-        float y = grid->particle_pos[2 * i + 1];
+        float x = grid->particle_pos[3 * i];
+        float y = grid->particle_pos[3 * i + 1];
+        float z = grid->particle_pos[3 * i + 2];
 
         float dx = x - obstacle_x;
         float dy = y - obstacle_y;
+        float dz = z - obstacle_z;
 
-        float dist_2 = dx * dx + dy * dy;
+        float dist_2 = dx * dx + dy * dy; // todo: how to calculate distance in 3d?
         if (dist_2 < min_dist_2)
         {
             grid->particle_vel[2 * i] = Obstacle_getXVelocity(obstacle, dt) * obstacle->push_coefficient;
@@ -278,25 +328,31 @@ void FLIP_updateParticleDensity(FlipGrid_t *grid)
     }
     for (int i = 0; i < grid->num_particles; i++)
     {
-        float x = grid->particle_pos[2 * i];
-        float y = grid->particle_pos[2 * i + 1];
+        float x = grid->particle_pos[3 * i];
+        float y = grid->particle_pos[3 * i + 1];
+        float z = grid->particle_pos[3 * i + 2];
 
         x = clamp(x, grid->h, (grid->f_num_x - 1) * grid->h);
         y = clamp(y, grid->h, (grid->f_num_y - 1) * grid->h);
+        z = clamp(z, grid->h, (grid->f_num_z - 1) * grid->h);
 
         int x0 = (int)floorf((x - shift) * grid->f_inv_spacing);
         int y0 = (int)floorf((y - shift) * grid->f_inv_spacing);
+        int z0 = (int)floorf((z - shift) * grid->f_inv_spacing);
 
         int x1 = x0 + 1;
         int y1 = y0 + 1;
+        int z1 = z0 + 1;
 
         float tx = (x - shift - x0 * grid->h) * grid->f_inv_spacing; // w0
         float ty = (y - shift - y0 * grid->h) * grid->f_inv_spacing; // w1
+        float tz = (z - shift - z0 * grid->h) * grid->f_inv_spacing; // w2
 
         float sx = 1.0f - tx; // (1 - w0)
         float sy = 1.0f - ty; // (1 - w1)
+        float sz = 1.0f - tz; // (1 - w2)
 
-        float d0 = sx * sy; // (1-w0)(1-w1)
+        float d0 = sx * sy; // (1-w0)(1-w1) //todo: it should be different for 3d - everything in this function belowwm this point should be adjusted
         float d1 = tx * sy; // w0 * (1 - w1)
         float d2 = tx * ty; // w0 * w1
         float d3 = sx * ty; // (1 - w0) * w1
@@ -340,29 +396,34 @@ void FLIP_transferVelocities(FlipGrid_t *grid, int toGrid, float FLIPRatio)
         {
             grid->prev_u[i] = grid->u[i];
             grid->prev_v[i] = grid->v[i];
+            grid->prev_w[i] = grid->w[i];
             grid->du[i] = 0.0f;
             grid->dv[i] = 0.0f;
+            grid->dw[i] = 0.0f;
             grid->u[i] = 0.0f;
             grid->v[i] = 0.0f;
+            grid->w[i] = 0.0f;
 
             grid->cell_type[i] = grid->s[i] == 0.0f ? SOLID : AIR;
         }
 
         for (int i = 0; i < grid->num_particles; i++)
         {
-            float x = grid->particle_pos[2 * i];
-            float y = grid->particle_pos[2 * i + 1];
+            float x = grid->particle_pos[3 * i];
+            float y = grid->particle_pos[3 * i + 1];
+            float z = grid->particle_pos[3 * i + 2];
 
             int xi = clamp((int)floorf(x * grid->f_inv_spacing), 0, grid->f_num_x - 1);
             int yi = clamp((int)floorf(y * grid->f_inv_spacing), 0, grid->f_num_y - 1);
-            int cell_nr = yi * grid->f_num_x + xi;
+            int zi = clamp((int)floorf(z * grid->f_inv_spacing), 0, grid->f_num_z - 1);
+            int cell_nr = zi * grid->f_num_x * grid->f_num_y + yi * grid->f_num_x + xi;
             if (grid->cell_type[cell_nr] == AIR)
             {
                 grid->cell_type[cell_nr] = FLUID;
             }
         }
     }
-
+    // todo: now we have 3 components - adjustd everything below this point
     for (int component = 0; component < 2; component++)
     {
         float *f = component == 0 ? grid->u : grid->v;
@@ -470,9 +531,10 @@ void FLIP_solveIncompressibility(FlipGrid_t *grid, int num_iters, float dt, floa
         grid->p[i] = 0.0f;
         grid->prev_u[i] = grid->u[i];
         grid->prev_v[i] = grid->v[i];
+        grid->prev_w[i] = grid->w[i];
     }
+    // todo: now we have 3 components - adjustd everything below this point
 
-    int n = grid->f_num_x;
     double cp = grid->density * grid->h / dt;
 
     for (int iter = 0; iter < num_iters; iter++)
@@ -481,16 +543,16 @@ void FLIP_solveIncompressibility(FlipGrid_t *grid, int num_iters, float dt, floa
         {
             for (int j = 1; j < grid->f_num_y - 1; j++)
             {
-                int center = j * n + i;
+                int center = j * grid->f_num_x + i;
                 if (grid->cell_type[center] != FLUID)
                 {
                     continue;
                 }
 
-                int left = j * n + (i - 1);
-                int right = j * n + (i + 1);
-                int bottom = (j - 1) * n + i;
-                int top = (j + 1) * n + i;
+                int left = j * grid->f_num_x + (i - 1);
+                int right = j * grid->f_num_x + (i + 1);
+                int bottom = (j - 1) * grid->f_num_x + i;
+                int top = (j + 1) * grid->f_num_x + i;
 
                 float sx0 = grid->s[left];
                 float sx1 = grid->s[right];
@@ -569,43 +631,46 @@ Pair_t FLIP_transformGridToVerticies(FlipGrid_t *grid, Vertex_t *vertices, GLuin
     {
         for (int x = 0; x < grid->f_num_x; x++)
         {
-            int cell_nr = y * grid->f_num_x + x;
-            glm::vec3 cubePos = glm::vec3(x, y, 0) * grid->h;
-            float c[3] = {0.0f, 0.0f, 1.0f};
-            if (grid->cell_type[cell_nr] == FLUID)
+            for (int z = 0; z < grid->f_num_z; z++)
             {
-                if (show_sci)
+                int cell_nr = z * grid->f_num_x * grid->f_num_y + y * grid->f_num_x + x;
+                glm::vec3 cubePos = glm::vec3(x, y, z) * grid->h;
+                float c[3] = {0.0f, 0.0f, 1.0f};
+                if (grid->cell_type[cell_nr] == FLUID)
                 {
-                    getSciColor(grid->p[cell_nr], minPressure, maxPressure, c);
+                    if (show_sci)
+                    {
+                        getSciColor(grid->p[cell_nr], minPressure, maxPressure, c);
+                    }
                 }
-            }
-            else if (grid->cell_type[cell_nr] == SOLID)
-            {
-                c[0] = 1.0f;
-                c[1] = 1.0f;
-                c[2] = 1.0f;
-            }
-            else if (grid->cell_type[cell_nr] == AIR)
-            {
-                c[0] = 0.53f;
-                c[1] = 0.81f;
-                c[2] = 0.94f;
-            }
+                else if (grid->cell_type[cell_nr] == SOLID)
+                {
+                    c[0] = 1.0f;
+                    c[1] = 1.0f;
+                    c[2] = 1.0f;
+                }
+                else if (grid->cell_type[cell_nr] == AIR)
+                {
+                    c[0] = 0.53f;
+                    c[1] = 0.81f;
+                    c[2] = 0.94f;
+                }
 
-            for (int i = 0; i < 8; i++)
-            {
-                vertices[vert_index].position = cubePos + cubeVertices[i] * grid->h;
-                vertices[vert_index].color.x = c[0];
-                vertices[vert_index].color.y = c[1];
-                vertices[vert_index].color.z = c[2];
-                vertices[vert_index].normal = glm::normalize(cubeVertices[i]);
-                vert_index++;
-            }
+                for (int i = 0; i < 8; i++)
+                {
+                    vertices[vert_index].position = cubePos + cubeVertices[i] * grid->h;
+                    vertices[vert_index].color.x = c[0];
+                    vertices[vert_index].color.y = c[1];
+                    vertices[vert_index].color.z = c[2];
+                    vertices[vert_index].normal = glm::normalize(cubeVertices[i]);
+                    vert_index++;
+                }
 
-            size_t offset = vert_index - 8;
-            for (int i = 0; i < 36; i++)
-            {
-                indices[ind_index++] = offset + cubeIndices[i];
+                size_t offset = vert_index - 8;
+                for (int i = 0; i < 36; i++)
+                {
+                    indices[ind_index++] = offset + cubeIndices[i];
+                }
             }
         }
     }
