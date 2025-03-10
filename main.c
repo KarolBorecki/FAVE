@@ -190,8 +190,8 @@ int main(int argc, char **argv)
     setupBuffers(markerVao, markerVbo, markerEbo, PARTICLES_VERTICIES_SIZE, PARTICLES_INDICIES_SIZE);
 
     float flip_ratio = 0.9f;
-    float over_relaxation = 1.65f;
-    int pressure_solver_steps = 100;
+    float over_relaxation = 1.84f;
+    int pressure_solver_steps = 120;
     int particles_push_apart_steps = 2;
     int show_markers = 0;
     int show_cubes = 1;
