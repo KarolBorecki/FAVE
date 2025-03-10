@@ -190,10 +190,11 @@ int main(int argc, char **argv)
     setupBuffers(markerVao, markerVbo, markerEbo, PARTICLES_VERTICIES_SIZE, PARTICLES_INDICIES_SIZE);
 
     float flip_ratio = 0.9f;
-    float over_relaxation = 1.9f;
+    float over_relaxation = 1.65f;
     int pressure_solver_steps = 100;
     int particles_push_apart_steps = 2;
     int show_markers = 0;
+    int show_cubes = 1;
     int show_sci = 1;
     float gravity = -9.81f;
     float density = 1000.0f;
@@ -204,20 +205,6 @@ int main(int argc, char **argv)
     float particle_radius = 0.021f;
     int max_particles = 20000;
 
-    // float flip_ratio = 0.5f;
-    // float over_relaxation = 1.2f;
-    // int pressure_solver_steps = 200;
-    // int particles_push_apart_steps = 2;
-    // int show_markers = 1;
-    // int show_sci = 0;
-    // float gravity = -90.0f;
-    // float density = 1000.0f;
-    // float spacing = 1.0f;
-    // float size_x = 15.0f;
-    // float size_y = 15.0f;
-    // float particle_radius = 0.1f;
-    // int max_particles = 200;
-
     for (int i = 1; i < argc; i++)
     {
         parseArgument(argv[i], "flip_ratio", &flip_ratio, "float");
@@ -225,30 +212,35 @@ int main(int argc, char **argv)
         parseArgument(argv[i], "pressure_solver_steps", &pressure_solver_steps, "int");
         parseArgument(argv[i], "particles_push_apart_steps", &particles_push_apart_steps, "int");
         parseArgument(argv[i], "show_markers", &show_markers, "int");
+        parseArgument(argv[i], "show_cubes", &show_cubes, "int");
         parseArgument(argv[i], "show_sci", &show_sci, "int");
         parseArgument(argv[i], "gravity", &gravity, "float");
         parseArgument(argv[i], "density", &density, "float");
         parseArgument(argv[i], "spacing", &spacing, "float");
         parseArgument(argv[i], "size_x", &size_x, "float");
         parseArgument(argv[i], "size_y", &size_y, "float");
+        parseArgument(argv[i], "size_z", &size_z, "float");
         parseArgument(argv[i], "particle_radius", &particle_radius, "float");
         parseArgument(argv[i], "max_particles", &max_particles, "int");
     }
 
     float camera_speed = 0.1f;
 
-    float obstacle_speed = 0.05f;
-    float obstacle_radius = 0.2f;
-    float obstacle_push = 50.0f;
-
-    Camera_t camera;
-    // camera, window, postion, speed, fov, near, far
-    Camera_init(&camera, window, glm::vec3(size_x / 2.0f, size_y / 2.0f, (size_x + 300.0f) * spacing), camera_speed, 45.0f, 0.1f, 1000.0f);
+    float obstacle_speed = 0.09f;
+    float obstacle_radius = 0.3f;
+    float obstacle_push = 20.0f;
 
     FlipGrid_t mac;
     FLIP_init(&mac, density, size_x, size_y, size_z, spacing, particle_radius, max_particles);
 
+    Camera_t camera;
+    camera_speed = mac.h * 1.5f;
+    // camera, window, postion, speed, fov, near, far
+    Camera_init(&camera, window, glm::vec3(size_x / 2.0f, size_y / 2.0f, size_z + 5.0f), camera_speed, 45.0f, 0.1f, 1000.0f);
+
     Obstacle_t obstacle;
+    obstacle_radius = mac.h * 4.0f;
+    obstacle_speed = obstacle_speed * 2.0f;
     // obstacle, x, y, z, radius, speed
     Obstacle_init(&obstacle, size_x / 2.0f, size_y + obstacle_radius * 2, obstacle_radius, obstacle_radius, obstacle_speed, obstacle_push);
 
@@ -258,7 +250,7 @@ int main(int argc, char **argv)
     {
         clock_t currentTime = clock();
         dt = (float)(currentTime - previousTime) / CLOCKS_PER_SEC;
-        // dt = 1.0f / 60.0f; 
+        // dt = 1.0f / 60.0f;
         previousTime = currentTime;
 
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
@@ -277,8 +269,11 @@ int main(int argc, char **argv)
         FLIP_solveIncompressibility(&mac, pressure_solver_steps, dt, over_relaxation);
         FLIP_transferVelocities(&mac, 0, flip_ratio);
 
-        Pair_t mac_grid_render_sizes = FLIP_transformGridToVerticies(&mac, fluid_vertices, fluid_indices, show_sci);
-        render(window, camera, fluidShader, fluidVao, fluidVbo, fluidEbo, fluid_vertices, fluid_indices, mac_grid_render_sizes.first, mac_grid_render_sizes.second);
+        if (show_cubes)
+        {
+            Pair_t mac_grid_render_sizes = FLIP_transformGridToVerticies(&mac, fluid_vertices, fluid_indices, show_sci);
+            render(window, camera, fluidShader, fluidVao, fluidVbo, fluidEbo, fluid_vertices, fluid_indices, mac_grid_render_sizes.first, mac_grid_render_sizes.second);
+        }
 
         if (show_markers)
         {
