@@ -814,6 +814,105 @@ Pair_t FLIP_transformGridToVerticies(FlipGrid_t *grid, Vertex_t *vertices, GLuin
                     }
                 }
 
+                // Renderowanie bocznych ścian Marching Cubes
+                if (grid->cell_type[cellNr] == FLUID)
+                {
+                    for (int face = 0; face < 6; face++)
+                    {
+                        // Indeks sąsiadującej komórki
+                        int neighborOffset[6] = {
+                            -1, 1,                                                        // Oś X: lewa/prawa
+                            -grid->f_num_x, grid->f_num_x,                                // Oś Y: dolna/górna
+                            -grid->f_num_x * grid->f_num_y, grid->f_num_x * grid->f_num_y // Oś Z: przednia/tylna
+                        };
+
+                        int neighborCell = cellNr + neighborOffset[face];
+
+                        // Jeśli sąsiadująca komórka to SOLID, rysuj ścianę boczną
+                        if (neighborCell >= 0 && neighborCell < grid->f_num_cells && grid->cell_type[neighborCell] == SOLID)
+                        {
+                            glm::vec3 sideVertices[4];
+                            glm::vec3 sideNormal;
+
+                            switch (face)
+                            {
+                            case 0: // Lewa ściana
+                                sideVertices[0] = cubePos + cornerOffsets[0] * grid->h;
+                                sideVertices[1] = cubePos + cornerOffsets[3] * grid->h;
+                                sideVertices[2] = cubePos + cornerOffsets[7] * grid->h;
+                                sideVertices[3] = cubePos + cornerOffsets[4] * grid->h;
+                                sideNormal = glm::vec3(-1, 0, 0);
+                                break;
+
+                            case 1: // Prawa ściana
+                                sideVertices[0] = cubePos + cornerOffsets[1] * grid->h;
+                                sideVertices[1] = cubePos + cornerOffsets[2] * grid->h;
+                                sideVertices[2] = cubePos + cornerOffsets[6] * grid->h;
+                                sideVertices[3] = cubePos + cornerOffsets[5] * grid->h;
+                                sideNormal = glm::vec3(1, 0, 0);
+                                break;
+
+                            case 2: // Dolna ściana
+                                sideVertices[0] = cubePos + cornerOffsets[0] * grid->h;
+                                sideVertices[1] = cubePos + cornerOffsets[1] * grid->h;
+                                sideVertices[2] = cubePos + cornerOffsets[5] * grid->h;
+                                sideVertices[3] = cubePos + cornerOffsets[4] * grid->h;
+                                sideNormal = glm::vec3(0, -1, 0);
+                                break;
+
+                            case 3: // Górna ściana
+                                sideVertices[0] = cubePos + cornerOffsets[3] * grid->h;
+                                sideVertices[1] = cubePos + cornerOffsets[2] * grid->h;
+                                sideVertices[2] = cubePos + cornerOffsets[6] * grid->h;
+                                sideVertices[3] = cubePos + cornerOffsets[7] * grid->h;
+                                sideNormal = glm::vec3(0, 1, 0);
+                                break;
+
+                            case 4: // Przednia ściana
+                                sideVertices[0] = cubePos + cornerOffsets[0] * grid->h;
+                                sideVertices[1] = cubePos + cornerOffsets[1] * grid->h;
+                                sideVertices[2] = cubePos + cornerOffsets[2] * grid->h;
+                                sideVertices[3] = cubePos + cornerOffsets[3] * grid->h;
+                                sideNormal = glm::vec3(0, 0, -1);
+                                break;
+
+                            case 5: // Tylna ściana
+                                sideVertices[0] = cubePos + cornerOffsets[4] * grid->h;
+                                sideVertices[1] = cubePos + cornerOffsets[5] * grid->h;
+                                sideVertices[2] = cubePos + cornerOffsets[6] * grid->h;
+                                sideVertices[3] = cubePos + cornerOffsets[7] * grid->h;
+                                sideNormal = glm::vec3(0, 0, 1);
+                                break;
+                            }
+
+                            // Dodanie ścian
+                            vertices[vert_index].position = sideVertices[0];
+                            vertices[vert_index + 1].position = sideVertices[1];
+                            vertices[vert_index + 2].position = sideVertices[2];
+                            vertices[vert_index + 3].position = sideVertices[3];
+                            float c[3] = {0.0f, 0.0f, 1.0f};
+                            getSciColor(grid->particle_density[cellNr],
+                                        minPressure, maxPressure, c);
+
+                            for (int v = 0; v < 4; v++)
+                            {
+                                vertices[vert_index + v].normal = sideNormal;
+                                vertices[vert_index + v].color = glm::vec3(c[0], c[1], c[2]);
+                            }
+
+                            indices[ind_index++] = vert_index;
+                            indices[ind_index++] = vert_index + 1;
+                            indices[ind_index++] = vert_index + 2;
+
+                            indices[ind_index++] = vert_index;
+                            indices[ind_index++] = vert_index + 2;
+                            indices[ind_index++] = vert_index + 3;
+
+                            vert_index += 4;
+                        }
+                    }
+                }
+
                 int cubeIndex = 0;
                 float cornerValues[8];
                 for (int i = 0; i < 8; i++)
