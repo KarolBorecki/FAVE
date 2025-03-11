@@ -14,6 +14,7 @@
 #include "utils.h"
 #include "buffers/vbo.h"
 #include "obstacle.h"
+#include "marching_cubes.h"
 
 #ifdef __cplusplus
 extern "C"

@@ -749,24 +749,6 @@ void FLIP_solveIncompressibility(FlipGrid_t *grid, int num_iters, float dt, floa
 
 Pair_t FLIP_transformGridToVerticies(FlipGrid_t *grid, Vertex_t *vertices, GLuint *indices, int show_sci)
 {
-    glm::vec3 cubeVertices[8] = {
-        glm::vec3(0.0f, 0.0f, 0.0f),
-        glm::vec3(1.0f, 0.0f, 0.0f),
-        glm::vec3(1.0f, 1.0f, 0.0f),
-        glm::vec3(0.0f, 1.0f, 0.0f),
-        glm::vec3(0.0f, 0.0f, 1.0f),
-        glm::vec3(1.0f, 0.0f, 1.0f),
-        glm::vec3(1.0f, 1.0f, 1.0f),
-        glm::vec3(0.0f, 1.0f, 1.0f)};
-
-    GLuint cubeIndices[36] = {
-        0, 1, 2, 2, 3, 0,
-        4, 5, 6, 6, 7, 4,
-        4, 0, 3, 3, 7, 4,
-        1, 5, 6, 6, 2, 1,
-        3, 2, 6, 6, 7, 3,
-        4, 5, 1, 1, 0, 4};
-
     size_t vert_index = 0;
     size_t ind_index = 0;
 
@@ -778,63 +760,123 @@ Pair_t FLIP_transformGridToVerticies(FlipGrid_t *grid, Vertex_t *vertices, GLuin
         if (grid->cell_type[i] == FLUID)
         {
             float p = grid->p[i];
-            if (p < minPressure)
-                minPressure = p;
-            if (p > maxPressure)
-                maxPressure = p;
+            minPressure = std::min(minPressure, p);
+            maxPressure = std::max(maxPressure, p);
             sumPressure += p;
         }
     }
 
-    for (int y = 0; y < grid->f_num_y; y++)
+    for (int y = 0; y < grid->f_num_y - 1; y++)
     {
-        for (int x = 0; x < grid->f_num_x; x++)
+        for (int x = 0; x < grid->f_num_x - 1; x++)
         {
-            for (int z = 0; z < grid->f_num_z; z++)
+            for (int z = 0; z < grid->f_num_z - 1; z++)
             {
-                int cell_nr = z * grid->f_num_x * grid->f_num_y + y * grid->f_num_x + x;
+                int cellNr = z * grid->f_num_x * grid->f_num_y + y * grid->f_num_x + x;
                 glm::vec3 cubePos = glm::vec3(x, y, z) * grid->h;
-                float c[3] = {0.0f, 0.0f, 1.0f};
-                if (grid->cell_type[cell_nr] == FLUID)
+
+                if (grid->cell_type[cellNr] == SOLID)
                 {
-                    if (show_sci)
+                    glm::vec3 solidCubeVertices[8];
+                    for (int i = 0; i < 8; i++)
                     {
-                        getSciColor(grid->p[cell_nr], minPressure, maxPressure, c);
+                        solidCubeVertices[i] = cubePos + cornerOffsets[i] * grid->h;
+                    }
+
+                    // Indices for drawing a solid cube (6 faces x 2 triangles each)
+                    int solidCubeIndices[36] = {
+                        0, 1, 2, 2, 3, 0, // Front face
+                        4, 5, 6, 6, 7, 4, // Back face
+                        0, 4, 7, 7, 3, 0, // Left face
+                        1, 5, 6, 6, 2, 1, // Right face
+                        3, 2, 6, 6, 7, 3, // Top face
+                        0, 1, 5, 5, 4, 0  // Bottom face
+                    };
+
+                    glm::vec3 solidCubeNormals[6] = {
+                        glm::vec3(0, 0, -1), // Front face
+                        glm::vec3(0, 0, 1),  // Back face
+                        glm::vec3(-1, 0, 0), // Left face
+                        glm::vec3(1, 0, 0),  // Right face
+                        glm::vec3(0, 1, 0),  // Top face
+                        glm::vec3(0, -1, 0)  // Bottom face
+                    };
+
+                    for (int i = 0; i < 36; i++)
+                    {
+                        vertices[vert_index].position = solidCubeVertices[solidCubeIndices[i]];
+                        vertices[vert_index].color = glm::vec3(0.9f, 0.9f, 0.9f);
+
+                        // Wyznaczenie normalnych dla każdej ściany (6 ścian po 6 wierzchołków)
+                        vertices[vert_index].normal = solidCubeNormals[i / 6];
+
+                        indices[ind_index++] = vert_index++;
                     }
                 }
-                else if (grid->cell_type[cell_nr] == SOLID)
-                {
-                    c[0] = 1.0f;
-                    c[1] = 1.0f;
-                    c[2] = 1.0f;
-                    continue;
-                }
-                else if (grid->cell_type[cell_nr] == AIR)
-                {
-                    c[0] = 0.53f;
-                    c[1] = 0.81f;
-                    c[2] = 0.94f;
-                    continue;
-                }
 
+                int cubeIndex = 0;
+                float cornerValues[8];
                 for (int i = 0; i < 8; i++)
                 {
-                    vertices[vert_index].position = cubePos + cubeVertices[i] * grid->h;
-                    vertices[vert_index].color.x = c[0];
-                    vertices[vert_index].color.y = c[1];
-                    vertices[vert_index].color.z = c[2];
-                    vertices[vert_index].normal = glm::normalize(cubeVertices[i]);
-                    vert_index++;
+                    int cornerCell = cellNr +
+                                     cornerOffsets[i].x +
+                                     cornerOffsets[i].y * grid->f_num_x +
+                                     cornerOffsets[i].z * grid->f_num_x * grid->f_num_y;
+                    cornerValues[i] = grid->p[cornerCell];
+                    if (cornerValues[i] < 0.0f) // Assume 0 as isosurface threshold
+                        cubeIndex |= (1 << i);
                 }
 
-                size_t offset = vert_index - 8;
-                for (int i = 0; i < 36; i++)
+                // Skip empty cubes
+                if (edgeTable[cubeIndex] == 0)
+                    continue;
+
+                // Interpolate vertex positions on edges
+                glm::vec3 vertexList[12];
+                for (int i = 0; i < 12; i++)
                 {
-                    indices[ind_index++] = offset + cubeIndices[i];
+                    if (edgeTable[cubeIndex] & (1 << i))
+                    {
+                        int idxA = cornerIndexAFromEdge[i];
+                        int idxB = cornerIndexBFromEdge[i];
+
+                        float valA = cornerValues[idxA];
+                        float valB = cornerValues[idxB];
+
+                        float t = (0.0f - valA) / (valB - valA);
+                        vertexList[i] = cubePos +
+                                        cornerOffsets[idxA] * grid->h * (1.0f - t) +
+                                        cornerOffsets[idxB] * grid->h * t;
+                    }
+                }
+
+                // Generate triangles from triTable
+                for (int i = 0; triTable[cubeIndex][i] != -1; i += 3)
+                {
+                    vertices[vert_index].position = vertexList[triTable[cubeIndex][i]];
+                    vertices[vert_index + 1].position = vertexList[triTable[cubeIndex][i + 1]];
+                    vertices[vert_index + 2].position = vertexList[triTable[cubeIndex][i + 2]];
+
+                    for (int j = 0; j < 3; j++)
+                    {
+                        float c[3] = {0.0f, 0.0f, 1.0f};
+                        if (show_sci)
+                        {
+                            getSciColor(cornerValues[triTable[cubeIndex][i + j]],
+                                        minPressure, maxPressure, c);
+                        }
+                        vertices[vert_index + j].color = glm::vec3(c[0], c[1], c[2]);
+                    }
+
+                    indices[ind_index++] = vert_index;
+                    indices[ind_index++] = vert_index + 1;
+                    indices[ind_index++] = vert_index + 2;
+                    vert_index += 3;
                 }
             }
         }
     }
+
     return {.first = (int)vert_index, .second = (int)ind_index};
 }
 
