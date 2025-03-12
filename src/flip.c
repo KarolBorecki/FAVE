@@ -747,7 +747,7 @@ void FLIP_solveIncompressibility(FlipGrid_t *grid, int num_iters, float dt, floa
     }
 }
 
-Pair_t FLIP_transformGridToVerticies(FlipGrid_t *grid, Vertex_t *vertices, GLuint *indices, int show_sci)
+Pair_t FLIP_transformGridToVerticiesMarchingCubes(FlipGrid_t *grid, Vertex_t *vertices, GLuint *indices, int show_sci)
 {
     size_t vert_index = 0;
     size_t ind_index = 0;
@@ -756,7 +756,6 @@ Pair_t FLIP_transformGridToVerticies(FlipGrid_t *grid, Vertex_t *vertices, GLuin
     float maxPressure = FLT_MIN;
     float sumPressure = 0.0f;
 
-    // Precalculate min, max and average pressure in one loop for efficiency
     for (int i = 0; i < grid->f_num_cells; i++)
     {
         if (grid->cell_type[i] == FLUID)
@@ -768,12 +767,11 @@ Pair_t FLIP_transformGridToVerticies(FlipGrid_t *grid, Vertex_t *vertices, GLuin
         }
     }
 
-    // Main Marching Cubes logic
-    for (int z = 1; z < grid->f_num_z - 1; z++)
+    for (int z = 0; z < grid->f_num_z; z++)
     {
-        for (int y = 1; y < grid->f_num_y - 1; y++)
+        for (int y = 0; y < grid->f_num_y; y++)
         {
-            for (int x = 1; x < grid->f_num_x - 1; x++)
+            for (int x = 0; x < grid->f_num_x; x++)
             {
                 int cellNr = z * grid->f_num_x * grid->f_num_y + y * grid->f_num_x + x;
                 glm::vec3 cubePos = glm::vec3(x, y, z) * grid->h;
@@ -781,23 +779,20 @@ Pair_t FLIP_transformGridToVerticies(FlipGrid_t *grid, Vertex_t *vertices, GLuin
                 int cubeIndex = 0;
                 float cornerValues[8];
 
-                // Calculate corner values and determine the cube index
                 for (int i = 0; i < 8; i++)
                 {
                     int cornerCell = cellNr +
-                                     cornerOffsets[i].x +
-                                     cornerOffsets[i].y * grid->f_num_x +
-                                     cornerOffsets[i].z * grid->f_num_x * grid->f_num_y;
+                                     (int)cornerOffsets[i].x +
+                                     (int)cornerOffsets[i].y * grid->f_num_x +
+                                     (int)cornerOffsets[i].z * grid->f_num_x * grid->f_num_y;
                     cornerValues[i] = grid->p[cornerCell];
                     if (cornerValues[i] <= 0.0f)
                         cubeIndex |= (1 << i);
                 }
 
-                // Skip empty cubes
                 if (cubeIndex == 0 || cubeIndex == 255)
                     continue;
 
-                // Calculate vertices on cube edges
                 glm::vec3 vertexList[12];
                 for (int i = 0; i < 12; i++)
                 {
@@ -809,45 +804,50 @@ Pair_t FLIP_transformGridToVerticies(FlipGrid_t *grid, Vertex_t *vertices, GLuin
                         float valA = cornerValues[idxA];
                         float valB = cornerValues[idxB];
 
-                        // Improved interpolation calculation
-                        float t = (fabs(valB - valA) < 0.0f) ? 0.5f : (0.0f - valA) / (valB - valA);
+                        float t = (fabs(valB - valA) < 1e-6f) ? 0.5f : (0.0f - valA) / (valB - valA);
+                        
+                        glm::vec3 posNotClamped = cubePos +
+                                       cornerOffsets[idxA] * grid->h * (1.0f - t) +
+                                       cornerOffsets[idxB] * grid->h * t;
+                        float x = clampf(posNotClamped.x, 0.0f, (grid->f_num_x - 1) * grid->h);
+                        float y = clampf(posNotClamped.y, 0.0f, (grid->f_num_y - 1) * grid->h);
+                        float z = clampf(posNotClamped.z, 0.0f, (grid->f_num_z - 1) * grid->h);
+                        vertexList[i] = glm::vec3(x, y, z);
 
-                        vertexList[i] = cubePos +
-                                        cornerOffsets[idxA] * grid->h * (1.0f - t) +
-                                        cornerOffsets[idxB] * grid->h * t;
+                        if (vertexList[i].x < 0 || vertexList[i].x >= grid->f_num_x ||
+                            vertexList[i].y < 0 || vertexList[i].y >= grid->f_num_y ||
+                            vertexList[i].z < 0 || vertexList[i].z >= grid->f_num_z)
+                        {
+                            printf("Out of range: x=%d, y=%d, z=%d\n", x, y, z);
+                            
+                        } else{
+                        }
                     }
                 }
 
-                // Add triangles
                 for (int i = 0; triTable[cubeIndex][i] != -1; i += 3)
                 {
+
+
                     glm::vec3 v0 = vertexList[triTable[cubeIndex][i]];
                     glm::vec3 v1 = vertexList[triTable[cubeIndex][i + 1]];
                     glm::vec3 v2 = vertexList[triTable[cubeIndex][i + 2]];
 
-                    // Oblicz wektory krawędzi
                     glm::vec3 edge1 = v1 - v0;
                     glm::vec3 edge2 = v2 - v0;
 
-                    // Oblicz normalną jako iloczyn wektorowy
                     glm::vec3 normal = glm::normalize(glm::cross(edge1, edge2));
                     for (int j = 0; j < 3; j++)
                     {
                         int vertID = triTable[cubeIndex][i + j];
-                        vertices[vert_index].position = vertexList[vertID];
-
-                        float color[3] = {0.0f, 0.0f, 1.0f};
+                        float color[3] = {0.113f, 0.353f, 0.403f};
                         if (show_sci)
                         {
                             getSciColor(cornerValues[vertID], minPressure, maxPressure, color);
                         }
+                        vertices[vert_index].position = vertexList[vertID];
                         vertices[vert_index].color = glm::vec3(color[0], color[1], color[2]);
-                        glm::vec3 gradient = glm::vec3(
-                            grid->p[cellNr + 1] - grid->p[cellNr - 1],                                                        // różnica wzdłuż osi X
-                            grid->p[cellNr + grid->f_num_x] - grid->p[cellNr - grid->f_num_x],                                // różnica wzdłuż osi Y
-                            grid->p[cellNr + grid->f_num_x * grid->f_num_y] - grid->p[cellNr - grid->f_num_x * grid->f_num_y] // różnica wzdłuż osi Z
-                        );
-                        vertices[vert_index].normal = normal; // glm::normalize(gradient)
+                        vertices[vert_index].normal = normal;
                         indices[ind_index++] = vert_index++;
                     }
                 }
