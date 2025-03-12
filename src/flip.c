@@ -908,15 +908,6 @@ Pair_t FLIP_transformGridToVerticiesMarchingCubes(FlipGrid_t *grid, Vertex_t *ve
                         float y = clampf(posNotClamped.y, 0.0f, (grid->f_num_y - 1) * grid->h);
                         float z = clampf(posNotClamped.z, 0.0f, (grid->f_num_z - 1) * grid->h);
                         vertexList[i] = glm::vec3(x, y, z);
-
-                        if (vertexList[i].x < 0 || vertexList[i].x >= grid->f_num_x ||
-                            vertexList[i].y < 0 || vertexList[i].y >= grid->f_num_y ||
-                            vertexList[i].z < 0 || vertexList[i].z >= grid->f_num_z)
-                        {
-                            printf("Out of range: x=%d, y=%d, z=%d\n", x, y, z);
-                            
-                        } else{
-                        }
                     }
                 }
 
