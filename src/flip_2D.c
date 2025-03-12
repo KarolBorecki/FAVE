@@ -8,7 +8,7 @@ void FLIP2D_init(FlipGrid_t *grid, float density, float size_x, float size_y, fl
     grid->f_num_z = 1;
     grid->h = maxf(size_x / grid->f_num_x, size_y / grid->f_num_y);
     grid->f_inv_spacing = 1.0f / grid->h;
-    grid->f_num_cells = grid->f_num_x * grid->f_num_y * grid->f_num_z;
+    grid->f_num_cells = grid->f_num_x * grid->f_num_y;
 
     grid->u = (float *)calloc(grid->f_num_cells, sizeof(float));
     ALLOC_CHECK(grid->u, "u");
@@ -30,9 +30,9 @@ void FLIP2D_init(FlipGrid_t *grid, float density, float size_x, float size_y, fl
     ALLOC_CHECK(grid->cell_type, "cell_type");
 
     grid->num_particles = num_particles;
-    grid->particle_pos = (float *)calloc(grid->num_particles * 2, sizeof(float));
+    grid->particle_pos = (float *)calloc(grid->num_particles * 3, sizeof(float));
     ALLOC_CHECK(grid->particle_pos, "particle_pos");
-    grid->particle_vel = (float *)calloc(grid->num_particles * 2, sizeof(float));
+    grid->particle_vel = (float *)calloc(grid->num_particles * 3, sizeof(float));
     ALLOC_CHECK(grid->particle_vel, "particle_vel");
     grid->particle_density = (float *)calloc(grid->f_num_cells, sizeof(float));
     ALLOC_CHECK(grid->particle_density, "particle_density");
@@ -52,38 +52,45 @@ void FLIP2D_init(FlipGrid_t *grid, float density, float size_x, float size_y, fl
     ALLOC_CHECK(grid->cell_particle_ids, "cell_particle_ids");
 
     grid->num_particles = minf(grid->num_particles, grid->p_num_x * grid->p_num_y);
-    float min_x = grid->h + grid->particle_radius;
-    float max_x = (grid->f_num_x - 1) * grid->h - grid->particle_radius;
-    float min_y = grid->h + grid->particle_radius;
-    float max_y = (grid->f_num_y - 1) * grid->h - grid->particle_radius;
-
-    float x = min_x;
-    float y = min_y;
-    for (int i = 0; i < grid->num_particles; i++)
+    int particles_per_cell = (int)ceilf((float)grid->num_particles / (float)((grid->f_num_x - 2) * (grid->f_num_y - 1)));
+    int particle_index = 0;
+    float particle_spacing_inside_cell = grid->h / 10.0f;
+    for (int j = 1; j < grid->f_num_y - 1; j++)
     {
-        x += grid->particle_radius * 2;
-        if (x >= max_x)
+        for (int i = 1; i < grid->f_num_x - 1; i++)
         {
-            x = min_x;
-            y += grid->particle_radius * 2;
+            float start_x = i * grid->h + grid->particle_radius;
+            float start_y = j * grid->h + grid->particle_radius;
+            int x_index = 0;
+            int y_index = 0;
+            float x = start_x;
+            float y = start_y;
+            for (int k = 0; k < particles_per_cell; k++)
+            {
+                if (x < start_x + grid->h)
+                {
+                    x += ((grid->particle_radius * 2) + particle_spacing_inside_cell) * x_index;
+                    x_index++;
+                }
+                else
+                {
+                    x = start_x;
+                    y += ((grid->particle_radius * 2) + particle_spacing_inside_cell) * y_index;
+                    y_index++;
+                }
+                grid->particle_pos[3 * particle_index] = x;
+                grid->particle_pos[3 * particle_index + 1] = y;
+                grid->particle_pos[3 * particle_index + 2] = grid->h;
+                particle_index++;
+            }
         }
-        if (y >= max_y)
-        {
-            grid->num_particles = i + 1;
-            break;
-        }
-
-        grid->particle_pos[2 * i] = x;
-        grid->particle_pos[2 * i + 1] = y;
     }
 
     for (int i = 0; i < grid->f_num_x; i++)
     {
         for (int j = 0; j < grid->f_num_y; j++)
         {
-
-            int cell_nr = j * grid->f_num_x + i;
-            grid->s[cell_nr] = (i == 0 || i == grid->f_num_x - 1 || j == 0) ? 0.0f : 1.0f;
+            grid->s[j * grid->f_num_x + i] = (i == 0 || i == grid->f_num_x - 1 || j == 0) ? 0.0f : 1.0f;
         }
     }
 }
@@ -92,9 +99,9 @@ void FLIP2D_integrateParticles(FlipGrid_t *grid, float dt, float gravity)
 {
     for (int i = 0; i < grid->num_particles; i++)
     {
-        grid->particle_vel[2 * i + 1] += gravity * dt;
-        grid->particle_pos[2 * i] += grid->particle_vel[2 * i] * dt;
-        grid->particle_pos[2 * i + 1] += grid->particle_vel[2 * i + 1] * dt;
+        grid->particle_vel[3 * i + 1] += gravity * dt;
+        grid->particle_pos[3 * i] += grid->particle_vel[3 * i] * dt;
+        grid->particle_pos[3 * i + 1] += grid->particle_vel[3 * i + 1] * dt;
     }
 }
 
@@ -108,8 +115,8 @@ void FLIP2D_pushParticlesApart(FlipGrid_t *grid, int numIters, float dt)
 
     for (int i = 0; i < grid->num_particles; i++)
     {
-        float x = grid->particle_pos[2 * i];
-        float y = grid->particle_pos[2 * i + 1];
+        float x = grid->particle_pos[3 * i];
+        float y = grid->particle_pos[3 * i + 1];
 
         int xi = clamp((int)floorf(x * grid->p_inv_spacing), 0, grid->p_num_x - 1);
         int yi = clamp((int)floorf(y * grid->p_inv_spacing), 0, grid->p_num_y - 1);
@@ -127,8 +134,8 @@ void FLIP2D_pushParticlesApart(FlipGrid_t *grid, int numIters, float dt)
 
     for (int i = 0; i < grid->num_particles; i++)
     {
-        float x = grid->particle_pos[2 * i];
-        float y = grid->particle_pos[2 * i + 1];
+        float x = grid->particle_pos[3 * i];
+        float y = grid->particle_pos[3 * i + 1];
 
         int xi = clamp((int)floorf(x * grid->p_inv_spacing), 0, grid->p_num_x - 1);
         int yi = clamp((int)floorf(y * grid->p_inv_spacing), 0, grid->p_num_y - 1);
@@ -144,8 +151,8 @@ void FLIP2D_pushParticlesApart(FlipGrid_t *grid, int numIters, float dt)
     {
         for (int i = 0; i < grid->num_particles; i++)
         {
-            float px = grid->particle_pos[2 * i];
-            float py = grid->particle_pos[2 * i + 1];
+            float px = grid->particle_pos[3 * i];
+            float py = grid->particle_pos[3 * i + 1];
 
             int pxi = (int)floorf(px * grid->p_inv_spacing);
             int pyi = (int)floorf(py * grid->p_inv_spacing);
@@ -171,8 +178,8 @@ void FLIP2D_pushParticlesApart(FlipGrid_t *grid, int numIters, float dt)
                         if (id == i)
                             continue;
 
-                        float qx = grid->particle_pos[2 * id];
-                        float qy = grid->particle_pos[2 * id + 1];
+                        float qx = grid->particle_pos[3 * id];
+                        float qy = grid->particle_pos[3 * id + 1];
 
                         float dx = qx - px;
                         float dy = qy - py;
@@ -186,10 +193,10 @@ void FLIP2D_pushParticlesApart(FlipGrid_t *grid, int numIters, float dt)
                         dx *= s;
                         dy *= s;
 
-                        grid->particle_pos[2 * i] -= dx;
-                        grid->particle_pos[2 * i + 1] -= dy;
-                        grid->particle_pos[2 * id] += dx;
-                        grid->particle_pos[2 * id + 1] += dy;
+                        grid->particle_pos[3 * i] -= dx;
+                        grid->particle_pos[3 * i + 1] -= dy;
+                        grid->particle_pos[3 * id] += dx;
+                        grid->particle_pos[3 * id + 1] += dy;
                     }
                 }
             }
@@ -215,8 +222,8 @@ void FLIP2D_handleObstacle(FlipGrid_t *grid, Obstacle_t *obstacle, float dt)
 
     for (int i = 0; i < grid->num_particles; i++)
     {
-        float x = grid->particle_pos[2 * i];
-        float y = grid->particle_pos[2 * i + 1];
+        float x = grid->particle_pos[3 * i];
+        float y = grid->particle_pos[3 * i + 1];
 
         float dx = x - obstacle_x;
         float dy = y - obstacle_y;
@@ -224,29 +231,29 @@ void FLIP2D_handleObstacle(FlipGrid_t *grid, Obstacle_t *obstacle, float dt)
         float dist_2 = dx * dx + dy * dy;
         if (dist_2 < min_dist_2)
         {
-            grid->particle_vel[2 * i] = Obstacle_getXVelocity(obstacle, dt) * obstacle->push_coefficient;
-            grid->particle_vel[2 * i + 1] = Obstacle_getYVelocity(obstacle, dt) * obstacle->push_coefficient;
+            grid->particle_vel[3 * i] = Obstacle_getXVelocity(obstacle, dt) * obstacle->push_coefficient;
+            grid->particle_vel[3 * i + 1] = Obstacle_getYVelocity(obstacle, dt) * obstacle->push_coefficient;
         }
 
-        if (grid->particle_pos[2 * i] < min_x)
+        if (grid->particle_pos[3 * i] < min_x)
         {
-            grid->particle_pos[2 * i] = min_x;
-            grid->particle_vel[2 * i] = 0.0f;
+            grid->particle_pos[3 * i] = min_x;
+            grid->particle_vel[3 * i] = 0.0f;
         }
-        if (grid->particle_pos[2 * i] > max_x)
+        if (grid->particle_pos[3 * i] > max_x)
         {
-            grid->particle_pos[2 * i] = max_x;
-            grid->particle_vel[2 * i] = 0.0f;
+            grid->particle_pos[3 * i] = max_x;
+            grid->particle_vel[3 * i] = 0.0f;
         }
-        if (grid->particle_pos[2 * i + 1] < min_y)
+        if (grid->particle_pos[3 * i + 1] < min_y)
         {
-            grid->particle_pos[2 * i + 1] = min_y;
-            grid->particle_vel[2 * i + 1] = 0.0f;
+            grid->particle_pos[3 * i + 1] = min_y;
+            grid->particle_vel[3 * i + 1] = 0.0f;
         }
-        if (grid->particle_pos[2 * i + 1] > max_y)
+        if (grid->particle_pos[3 * i + 1] > max_y)
         {
-            grid->particle_pos[2 * i + 1] = max_y;
-            grid->particle_vel[2 * i + 1] = 0.0f;
+            grid->particle_pos[3 * i + 1] = max_y;
+            grid->particle_vel[3 * i + 1] = 0.0f;
         }
     }
 }
@@ -260,8 +267,8 @@ void FLIP2D_updateParticleDensity(FlipGrid_t *grid)
     }
     for (int i = 0; i < grid->num_particles; i++)
     {
-        float x = grid->particle_pos[2 * i];
-        float y = grid->particle_pos[2 * i + 1];
+        float x = grid->particle_pos[3 * i];
+        float y = grid->particle_pos[3 * i + 1];
 
         x = clamp(x, grid->h, (grid->f_num_x - 1) * grid->h);
         y = clamp(y, grid->h, (grid->f_num_y - 1) * grid->h);
@@ -332,8 +339,8 @@ void FLIP2D_transferVelocities(FlipGrid_t *grid, int toGrid, float FLIP2DRatio)
 
         for (int i = 0; i < grid->num_particles; i++)
         {
-            float x = grid->particle_pos[2 * i];
-            float y = grid->particle_pos[2 * i + 1];
+            float x = grid->particle_pos[3 * i];
+            float y = grid->particle_pos[3 * i + 1];
 
             int xi = clamp((int)floorf(x * grid->f_inv_spacing), 0, grid->f_num_x - 1);
             int yi = clamp((int)floorf(y * grid->f_inv_spacing), 0, grid->f_num_y - 1);
@@ -356,8 +363,8 @@ void FLIP2D_transferVelocities(FlipGrid_t *grid, int toGrid, float FLIP2DRatio)
 
         for (int i = 0; i < grid->num_particles; i++)
         {
-            float x = clampf(grid->particle_pos[2 * i], grid->h, (grid->f_num_x - 1) * grid->h);
-            float y = clampf(grid->particle_pos[2 * i + 1], grid->h, (grid->f_num_y - 1) * grid->h);
+            float x = clampf(grid->particle_pos[3 * i], grid->h, (grid->f_num_x - 1) * grid->h);
+            float y = clampf(grid->particle_pos[3 * i + 1], grid->h, (grid->f_num_y - 1) * grid->h);
 
             int x0 = clamp((int)floorf((x - shift_x) * grid->f_inv_spacing), 0, grid->f_num_x - 1);
             int y0 = clamp((int)floorf((y - shift_y) * grid->f_inv_spacing), 0, grid->f_num_y - 1);
@@ -386,7 +393,7 @@ void FLIP2D_transferVelocities(FlipGrid_t *grid, int toGrid, float FLIP2DRatio)
 
             if (toGrid)
             {
-                float particle_vel = grid->particle_vel[2 * i + component];
+                float particle_vel = grid->particle_vel[3 * i + component];
                 f[nr0] += d0 * particle_vel;
                 f[nr1] += d1 * particle_vel;
                 f[nr2] += d2 * particle_vel;
@@ -405,14 +412,14 @@ void FLIP2D_transferVelocities(FlipGrid_t *grid, int toGrid, float FLIP2DRatio)
                 float valid1 = grid->cell_type[nr1] != AIR || grid->cell_type[nr1 + offset] != AIR ? 1.0f : 0.0f;
                 float valid2 = grid->cell_type[nr2] != AIR || grid->cell_type[nr2 + offset] != AIR ? 1.0f : 0.0f;
                 float valid3 = grid->cell_type[nr3] != AIR || grid->cell_type[nr3 + offset] != AIR ? 1.0f : 0.0f;
-                float velocity = grid->particle_vel[2 * i + component];
+                float velocity = grid->particle_vel[3 * i + component];
 
                 float d_v = valid0 * d0 + valid1 * d1 + valid2 * d2 + valid3 * d3;
                 if (d_v > 0.0f)
                 {
                     float pic_vel = (valid0 * d0 * f[nr0] + valid1 * d1 * f[nr1] + valid2 * d2 * f[nr2] + valid3 * d3 * f[nr3]) / d_v;
                     float corr = (valid0 * d0 * (f[nr0] - prev_f[nr0]) + valid1 * d1 * (f[nr1] - prev_f[nr1]) + valid2 * d2 * (f[nr2] - prev_f[nr2]) + valid3 * d3 * (f[nr3] - prev_f[nr3])) / d_v;
-                    grid->particle_vel[2 * i + component] = FLIP2DRatio * pic_vel + (1.0f - FLIP2DRatio) * (velocity + corr);
+                    grid->particle_vel[3 * i + component] = FLIP2DRatio * pic_vel + (1.0f - FLIP2DRatio) * (velocity + corr);
                 }
             }
         }

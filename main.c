@@ -308,7 +308,7 @@ int main(int argc, char **argv)
     while (!glfwWindowShouldClose(window))
     {
         clock_t currentTime = clock();
-        // dt = (float)(currentTime - previousTime) / CLOCKS_PER_SEC;
+        dt = (float)(currentTime - previousTime) / CLOCKS_PER_SEC;
         previousTime = currentTime;
 
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
@@ -348,13 +348,13 @@ int main(int argc, char **argv)
         if (config.show_cubes)
         {
             Pair_t mac_grid_render_sizes;
-            if (config.marching_cubes)
+            if (!config.marching_cubes)
             {
-                mac_grid_render_sizes = FLIP_transformGridToVerticiesMarchingCubes(&mac, fluid_vertices, fluid_indices, config.show_sci, config.show_air, config.show_solids);
+                mac_grid_render_sizes = FLIP_transformGridToVerticies(&mac, fluid_vertices, fluid_indices, config.show_sci, config.show_air, config.show_solids);
             }
             else
             {
-                mac_grid_render_sizes = FLIP_transformGridToVerticies(&mac, fluid_vertices, fluid_indices, config.show_sci, config.show_air, config.show_solids);
+                mac_grid_render_sizes = FLIP_transformGridToVerticiesMarchingCubes(&mac, fluid_vertices, fluid_indices, config.show_sci, config.show_air, config.show_solids);
             }
             render(window, camera, fluidShader, fluidVao, fluidVbo, fluidEbo, fluid_vertices, fluid_indices, mac_grid_render_sizes.first, mac_grid_render_sizes.second);
         }

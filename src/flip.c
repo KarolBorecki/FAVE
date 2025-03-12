@@ -827,10 +827,11 @@ Pair_t FLIP_transformGridToVerticiesMarchingCubes(FlipGrid_t *grid, Vertex_t *ve
     return {.first = (int)vert_index, .second = (int)ind_index};
 }
 
-#define SPHERE_LAT_SLICES 3
-#define SPHERE_LON_SLICES 3
 Pair_t FLIP_transformMarkersToVertices(FlipGrid_t *grid, Vertex_t *markerVertices, GLuint *markerIndices)
 {
+    int sphere_lat_slices = 3;
+    int sphere_lon_slices = 3;
+    
     int indexOffset = 0;
     int vertexOffset = 0;
 
@@ -866,15 +867,15 @@ Pair_t FLIP_transformMarkersToVertices(FlipGrid_t *grid, Vertex_t *markerVertice
         getSciColor(glm::length(glm::vec3(grid->particle_vel[3 * m], grid->particle_vel[3 * m + 1], grid->particle_vel[3 * m + 2])), min_velocity, max_velocity, c);
         glm::vec3 markerColor = glm::vec3(c[0], c[1], c[2]);
         float radius = grid->particle_radius;
-        for (int i = 0; i <= SPHERE_LAT_SLICES; i++)
+        for (int i = 0; i <= sphere_lat_slices; i++)
         {
-            float theta = (float)i / SPHERE_LAT_SLICES * M_PI;
+            float theta = (float)i / sphere_lat_slices * M_PI;
             float sinTheta = sinf(theta);
             float cosTheta = cosf(theta);
 
-            for (int j = 0; j <= SPHERE_LON_SLICES; j++)
+            for (int j = 0; j <= sphere_lon_slices; j++)
             {
-                float phi = (float)j / SPHERE_LON_SLICES * 2.0f * M_PI;
+                float phi = (float)j / sphere_lon_slices * 2.0f * M_PI;
                 float sinPhi = sinf(phi);
                 float cosPhi = cosf(phi);
 
@@ -891,12 +892,12 @@ Pair_t FLIP_transformMarkersToVertices(FlipGrid_t *grid, Vertex_t *markerVertice
             }
         }
 
-        for (int i = 0; i < SPHERE_LAT_SLICES; i++)
+        for (int i = 0; i < sphere_lat_slices; i++)
         {
-            for (int j = 0; j < SPHERE_LON_SLICES; j++)
+            for (int j = 0; j < sphere_lon_slices; j++)
             {
-                int first = vertexOffset - (SPHERE_LAT_SLICES + 1) * (SPHERE_LON_SLICES + 1) + i * (SPHERE_LON_SLICES + 1) + j;
-                int second = first + SPHERE_LON_SLICES + 1;
+                int first = vertexOffset - (sphere_lat_slices + 1) * (sphere_lon_slices + 1) + i * (sphere_lon_slices + 1) + j;
+                int second = first + sphere_lon_slices + 1;
 
                 markerIndices[indexOffset++] = first;
                 markerIndices[indexOffset++] = second;
