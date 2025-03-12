@@ -18,9 +18,6 @@
 extern "C"
 {
 #endif
-
-#define PI 3.14159265359f
-
     typedef struct Obstacle
     {
         glm::vec3 position;

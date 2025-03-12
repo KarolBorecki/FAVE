@@ -107,5 +107,4 @@ void Camera_processInput(Camera_t *camera, GLFWwindow *window)
 
 void Camera_destroy(Camera_t *camera)
 {
-    // Nothing to do here
 }

@@ -17,4 +17,3 @@ extern "C"
 #endif
 
 #endif // FAVE_TYPES_H
-

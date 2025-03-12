@@ -1,6 +1,5 @@
 #ifndef FAVE_FLIP_H
 #define FAVE_FLIP_H
-// #define DEPRECATED
 
 #include <cstdio>
 #include <cinttypes>
@@ -59,7 +58,6 @@ extern "C"
         float particle_rest_density;
 
         float particle_radius;
-        // DEPRECATED???
         float p_inv_spacing;
         int p_num_x;
         int p_num_y;

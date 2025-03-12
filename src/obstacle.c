@@ -107,11 +107,10 @@ void Obstacle_processInput(Obstacle_t *obstacle, GLFWwindow *window)
     }
 }
 
-
 Pair_t Obstacle_transformToVertices(Obstacle_t *obstacle, Vertex_t *vertices, GLuint *indices)
 {
-    const int sectorCount = 36; // Ilość podziałów w poziomie (południki)
-    const int stackCount = 18;  // Ilość podziałów w pionie (równoleżniki)
+    const int sectorCount = 36;
+    const int stackCount = 18;
 
     int vertexIndex = 0;
     int indexIndex = 0;
@@ -121,32 +120,30 @@ Pair_t Obstacle_transformToVertices(Obstacle_t *obstacle, Vertex_t *vertices, GL
     float centerY = obstacle->y;
     float centerZ = obstacle->z;
 
-    // **Generowanie wierzchołków sfery**
     for (int i = 0; i <= stackCount; ++i)
     {
-        float stackAngle = PI / 2 - (i * PI / stackCount); // Od -PI/2 do PI/2
-        float xy = radius * cosf(stackAngle);              // r * cos(u)
-        float z = radius * sinf(stackAngle);               // r * sin(u)
+        float stackAngle = M_PI / 2 - (i * M_PI / stackCount);
+        float xy = radius * cosf(stackAngle);
+        float z = radius * sinf(stackAngle);
 
         for (int j = 0; j <= sectorCount; ++j)
         {
-            float sectorAngle = j * 2 * PI / sectorCount; // Od 0 do 2PI
+            float sectorAngle = j * 2 * M_PI / sectorCount;
 
-            float x = xy * cosf(sectorAngle); // r * cos(u) * cos(v)
-            float y = xy * sinf(sectorAngle); // r * cos(u) * sin(v)
+            float x = xy * cosf(sectorAngle);
+            float y = xy * sinf(sectorAngle);
 
             float nx = x / radius;
             float ny = y / radius;
             float nz = z / radius;
 
-            // Tworzenie wierzchołka
             vertices[vertexIndex].position.x = x + centerX;
             vertices[vertexIndex].position.y = y + centerY;
             vertices[vertexIndex].position.z = z + centerZ;
             vertices[vertexIndex].normal.x = nx;
             vertices[vertexIndex].normal.y = ny;
             vertices[vertexIndex].normal.z = nz;
-            vertices[vertexIndex].color.x = 1.0f; // Kolor czerwony
+            vertices[vertexIndex].color.x = 1.0f;
             vertices[vertexIndex].color.y = 0.0f;
             vertices[vertexIndex].color.z = 0.0f;
 
@@ -154,22 +151,21 @@ Pair_t Obstacle_transformToVertices(Obstacle_t *obstacle, Vertex_t *vertices, GL
         }
     }
 
-    // **Generowanie indeksów siatki**
     for (int i = 0; i < stackCount; ++i)
     {
-        int k1 = i * (sectorCount + 1); // Wiersz bieżący
-        int k2 = k1 + sectorCount + 1;  // Następny wiersz
+        int k1 = i * (sectorCount + 1);
+        int k2 = k1 + sectorCount + 1;
 
         for (int j = 0; j < sectorCount; ++j, ++k1, ++k2)
         {
-            if (i != 0) // Górny trójkąt
+            if (i != 0)
             {
                 indices[indexIndex++] = k1;
                 indices[indexIndex++] = k2;
                 indices[indexIndex++] = k1 + 1;
             }
 
-            if (i != (stackCount - 1)) // Dolny trójkąt
+            if (i != (stackCount - 1))
             {
                 indices[indexIndex++] = k1 + 1;
                 indices[indexIndex++] = k2;
@@ -183,5 +179,4 @@ Pair_t Obstacle_transformToVertices(Obstacle_t *obstacle, Vertex_t *vertices, GL
 
 void Obstacle_destroy(Obstacle_t *obstacle)
 {
-    // Nothing to do here
 }

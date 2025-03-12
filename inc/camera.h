@@ -42,4 +42,3 @@ extern "C"
 #endif
 
 #endif // FAVE_CAMERA_H
-
