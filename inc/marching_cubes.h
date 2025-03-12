@@ -16,6 +16,12 @@ extern "C"
     extern const int cornerIndexAFromEdge[12];
     extern const int cornerIndexBFromEdge[12];
 
+    extern const int edgeTable2D[16];
+    extern const int triTable2D[16][4];
+    extern const glm::vec3 cornerOffsets2D[4];
+    extern const glm::vec3 edgeVertexOffsets2D[4][2];
+    extern const int cornerIndexAFromEdge2D[4];
+    extern const int cornerIndexBFromEdge2D[4];
 #ifdef __cplusplus
 }
 #endif

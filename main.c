@@ -356,7 +356,10 @@ int main(int argc, char **argv)
             }
             else
             {
-                mac_grid_render_sizes = FLIP_transformGridToVerticiesMarchingCubes(&mac, fluid_vertices, fluid_indices, config.show_sci, config.show_air, config.show_solids);
+                // if (!config.use_2D)
+                    mac_grid_render_sizes = FLIP_transformGridToVerticiesMarchingCubes(&mac, fluid_vertices, fluid_indices, config.show_sci, config.show_air, config.show_solids);
+                // else
+                //     mac_grid_render_sizes = FLIP2D_transformGridToVerticiesMarchingSquares(&mac, fluid_vertices, fluid_indices, config.show_sci, config.show_air, config.show_solids);
             }
             render(window, camera, fluidShader, fluidVao, fluidVbo, fluidEbo, fluid_vertices, fluid_indices, mac_grid_render_sizes.first, mac_grid_render_sizes.second);
         }

@@ -514,3 +514,105 @@ void FLIP2D_solveIncompressibility(FlipGrid_t *grid, int num_iters, float dt, fl
         }
     }
 }
+Pair_t FLIP2D_transformGridToVerticiesMarchingSquares(
+    FlipGrid_t *grid, Vertex_t *vertices, GLuint *indices,
+    int show_sci, int show_air, int show_solids)
+{
+    size_t vert_index = 0;
+    size_t ind_index = 0;
+
+    float minPressure = FLT_MAX, maxPressure = FLT_MIN;
+
+    const glm::vec3 cornerOffsets2D[4] = {
+        {0, 0, 0}, {1, 0, 0}, {1, 1, 0}, {0, 1, 0}};
+
+    glm::vec3 vertexList[4];
+    float cornerValues[4];
+
+    for (int y = 0; y < grid->f_num_y; y++)
+    {
+        for (int x = 0; x < grid->f_num_x; x++)
+        {
+            int cellNr = y * grid->f_num_x + x;
+            glm::vec3 squarePos = glm::vec3(x, y, 0) * grid->h;
+
+            int squareIndex = 0;
+
+            for (int i = 0; i < 4; i++)
+            {
+                int cornerCell = cellNr +
+                                 (int)cornerOffsets2D[i].x +
+                                 (int)cornerOffsets2D[i].y * grid->f_num_x;
+
+                cornerValues[i] = grid->p[cornerCell];
+
+                if (std::isnan(cornerValues[i]) || std::isinf(cornerValues[i]))
+                    cornerValues[i] = 0.0f;
+
+                if (cornerValues[i] <= 0.0f)
+                    squareIndex |= (1 << i);
+
+                if (grid->cell_type[cornerCell] == FLUID)
+                {
+                    minPressure = std::min(minPressure, cornerValues[i]);
+                    maxPressure = std::max(maxPressure, cornerValues[i]);
+                }
+            }
+
+            if (squareIndex == 0 || squareIndex == 15)
+                continue;
+
+            for (int i = 0; i < 4; i++)
+            {
+                vertexList[i] = glm::vec3(0.0f); // Inicjalizacja vertexList[]
+            }
+
+            for (int i = 0; i < 4; i++)
+            {
+                if (edgeTable2D[squareIndex] & (1 << i))
+                {
+                    int idxA = cornerIndexAFromEdge2D[i];
+                    int idxB = cornerIndexBFromEdge2D[i];
+
+                    float valA = cornerValues[idxA];
+                    float valB = cornerValues[idxB];
+
+                    float t = (valA == valB) ? 0.5f : glm::clamp((0.0f - valA) / (valB - valA), 0.0f, 1.0f);
+
+                    vertexList[i] = glm::mix(
+                        squarePos + cornerOffsets2D[idxA] * grid->h,
+                        squarePos + cornerOffsets2D[idxB] * grid->h,
+                        t);
+                }
+            }
+
+            for (int i = 0; triTable2D[squareIndex][i] != -1 && i < 4; i += 3)
+            {
+                glm::vec3 v0 = vertexList[triTable2D[squareIndex][i]];
+                glm::vec3 v1 = vertexList[triTable2D[squareIndex][i + 1]];
+                glm::vec3 v2 = vertexList[triTable2D[squareIndex][i + 2]];
+
+                glm::vec3 normal = glm::normalize(glm::cross(v1 - v0, v2 - v0));
+
+                for (int j = 0; j < 3; j++)
+                {
+                    int vertID = triTable2D[squareIndex][i + j];
+                    float color[3] = {0.113f, 0.353f, 0.403f};
+
+                    if (show_sci)
+                    {
+                        getSciColor(cornerValues[vertID], minPressure, maxPressure, color);
+                    }
+
+                    vertices[vert_index].position = vertexList[vertID];
+                    vertices[vert_index].color = glm::vec3(color[0], color[1], color[2]);
+                    vertices[vert_index].normal = normal;
+
+                    indices[ind_index++] = vert_index++;
+                }
+            }
+        }
+    }
+
+    return {.first = (int)vert_index, .second = (int)ind_index};
+}

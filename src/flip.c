@@ -742,7 +742,6 @@ Pair_t FLIP_transformGridToVerticiesMarchingCubes(
 
                 int cubeIndex = 0;
 
-                // Corner values & Cube Index Calculation
                 for (int i = 0; i < 8; i++)
                 {
                     int cornerCell = cellNr +
@@ -755,7 +754,6 @@ Pair_t FLIP_transformGridToVerticiesMarchingCubes(
                     if (cornerValues[i] <= 0.0f)
                         cubeIndex |= (1 << i);
 
-                    // Aktualizacja min/max ciśnienia
                     if (grid->cell_type[cornerCell] == FLUID)
                     {
                         minPressure = std::min(minPressure, cornerValues[i]);
@@ -763,11 +761,9 @@ Pair_t FLIP_transformGridToVerticiesMarchingCubes(
                     }
                 }
 
-                // Ominięcie zbędnego renderowania
                 if (cubeIndex == 0 || cubeIndex == 255)
                     continue;
 
-                // Vertex Interpolation
                 for (int i = 0; i < 12; i++)
                 {
                     if (edgeTable[cubeIndex] & (1 << i))
@@ -787,7 +783,6 @@ Pair_t FLIP_transformGridToVerticiesMarchingCubes(
                     }
                 }
 
-                // Triangle Generation
                 for (int i = 0; triTable[cubeIndex][i] != -1; i += 3)
                 {
                     glm::vec3 v0 = vertexList[triTable[cubeIndex][i]];
