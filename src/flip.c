@@ -755,6 +755,8 @@ Pair_t FLIP_transformGridToVerticies(FlipGrid_t *grid, Vertex_t *vertices, GLuin
     float minPressure = FLT_MAX;
     float maxPressure = FLT_MIN;
     float sumPressure = 0.0f;
+
+    // Precalculate min, max and average pressure in one loop for efficiency
     for (int i = 0; i < grid->f_num_cells; i++)
     {
         if (grid->cell_type[i] == FLUID)
@@ -766,155 +768,20 @@ Pair_t FLIP_transformGridToVerticies(FlipGrid_t *grid, Vertex_t *vertices, GLuin
         }
     }
 
-    for (int y = 0; y < grid->f_num_y - 1; y++)
+    // Main Marching Cubes logic
+    for (int z = 1; z < grid->f_num_z - 1; z++)
     {
-        for (int x = 0; x < grid->f_num_x - 1; x++)
+        for (int y = 1; y < grid->f_num_y - 1; y++)
         {
-            for (int z = 0; z < grid->f_num_z - 1; z++)
+            for (int x = 1; x < grid->f_num_x - 1; x++)
             {
                 int cellNr = z * grid->f_num_x * grid->f_num_y + y * grid->f_num_x + x;
                 glm::vec3 cubePos = glm::vec3(x, y, z) * grid->h;
 
-                if (grid->cell_type[cellNr] == SOLID)
-                {
-                    glm::vec3 solidCubeVertices[8];
-                    for (int i = 0; i < 8; i++)
-                    {
-                        solidCubeVertices[i] = cubePos + cornerOffsets[i] * grid->h;
-                    }
-
-                    // Indices for drawing a solid cube (6 faces x 2 triangles each)
-                    int solidCubeIndices[36] = {
-                        0, 1, 2, 2, 3, 0, // Front face
-                        4, 5, 6, 6, 7, 4, // Back face
-                        0, 4, 7, 7, 3, 0, // Left face
-                        1, 5, 6, 6, 2, 1, // Right face
-                        3, 2, 6, 6, 7, 3, // Top face
-                        0, 1, 5, 5, 4, 0  // Bottom face
-                    };
-
-                    glm::vec3 solidCubeNormals[6] = {
-                        glm::vec3(0, 0, -1), // Front face
-                        glm::vec3(0, 0, 1),  // Back face
-                        glm::vec3(-1, 0, 0), // Left face
-                        glm::vec3(1, 0, 0),  // Right face
-                        glm::vec3(0, 1, 0),  // Top face
-                        glm::vec3(0, -1, 0)  // Bottom face
-                    };
-
-                    for (int i = 0; i < 36; i++)
-                    {
-                        vertices[vert_index].position = solidCubeVertices[solidCubeIndices[i]];
-                        vertices[vert_index].color = glm::vec3(0.9f, 0.9f, 0.9f);
-
-                        // Wyznaczenie normalnych dla każdej ściany (6 ścian po 6 wierzchołków)
-                        vertices[vert_index].normal = solidCubeNormals[i / 6];
-
-                        indices[ind_index++] = vert_index++;
-                    }
-                }
-
-                // Renderowanie bocznych ścian Marching Cubes
-                if (grid->cell_type[cellNr] == FLUID)
-                {
-                    for (int face = 0; face < 6; face++)
-                    {
-                        // Indeks sąsiadującej komórki
-                        int neighborOffset[6] = {
-                            -1, 1,                                                        // Oś X: lewa/prawa
-                            -grid->f_num_x, grid->f_num_x,                                // Oś Y: dolna/górna
-                            -grid->f_num_x * grid->f_num_y, grid->f_num_x * grid->f_num_y // Oś Z: przednia/tylna
-                        };
-
-                        int neighborCell = cellNr + neighborOffset[face];
-
-                        // Jeśli sąsiadująca komórka to SOLID, rysuj ścianę boczną
-                        if (neighborCell >= 0 && neighborCell < grid->f_num_cells && grid->cell_type[neighborCell] == SOLID)
-                        {
-                            glm::vec3 sideVertices[4];
-                            glm::vec3 sideNormal;
-
-                            switch (face)
-                            {
-                            case 0: // Lewa ściana
-                                sideVertices[0] = cubePos + cornerOffsets[0] * grid->h;
-                                sideVertices[1] = cubePos + cornerOffsets[3] * grid->h;
-                                sideVertices[2] = cubePos + cornerOffsets[7] * grid->h;
-                                sideVertices[3] = cubePos + cornerOffsets[4] * grid->h;
-                                sideNormal = glm::vec3(-1, 0, 0);
-                                break;
-
-                            case 1: // Prawa ściana
-                                sideVertices[0] = cubePos + cornerOffsets[1] * grid->h;
-                                sideVertices[1] = cubePos + cornerOffsets[2] * grid->h;
-                                sideVertices[2] = cubePos + cornerOffsets[6] * grid->h;
-                                sideVertices[3] = cubePos + cornerOffsets[5] * grid->h;
-                                sideNormal = glm::vec3(1, 0, 0);
-                                break;
-
-                            case 2: // Dolna ściana
-                                sideVertices[0] = cubePos + cornerOffsets[0] * grid->h;
-                                sideVertices[1] = cubePos + cornerOffsets[1] * grid->h;
-                                sideVertices[2] = cubePos + cornerOffsets[5] * grid->h;
-                                sideVertices[3] = cubePos + cornerOffsets[4] * grid->h;
-                                sideNormal = glm::vec3(0, -1, 0);
-                                break;
-
-                            case 3: // Górna ściana
-                                sideVertices[0] = cubePos + cornerOffsets[3] * grid->h;
-                                sideVertices[1] = cubePos + cornerOffsets[2] * grid->h;
-                                sideVertices[2] = cubePos + cornerOffsets[6] * grid->h;
-                                sideVertices[3] = cubePos + cornerOffsets[7] * grid->h;
-                                sideNormal = glm::vec3(0, 1, 0);
-                                break;
-
-                            case 4: // Przednia ściana
-                                sideVertices[0] = cubePos + cornerOffsets[0] * grid->h;
-                                sideVertices[1] = cubePos + cornerOffsets[1] * grid->h;
-                                sideVertices[2] = cubePos + cornerOffsets[2] * grid->h;
-                                sideVertices[3] = cubePos + cornerOffsets[3] * grid->h;
-                                sideNormal = glm::vec3(0, 0, -1);
-                                break;
-
-                            case 5: // Tylna ściana
-                                sideVertices[0] = cubePos + cornerOffsets[4] * grid->h;
-                                sideVertices[1] = cubePos + cornerOffsets[5] * grid->h;
-                                sideVertices[2] = cubePos + cornerOffsets[6] * grid->h;
-                                sideVertices[3] = cubePos + cornerOffsets[7] * grid->h;
-                                sideNormal = glm::vec3(0, 0, 1);
-                                break;
-                            }
-
-                            // Dodanie ścian
-                            vertices[vert_index].position = sideVertices[0];
-                            vertices[vert_index + 1].position = sideVertices[1];
-                            vertices[vert_index + 2].position = sideVertices[2];
-                            vertices[vert_index + 3].position = sideVertices[3];
-                            float c[3] = {0.0f, 0.0f, 1.0f};
-                            getSciColor(grid->particle_density[cellNr],
-                                        minPressure, maxPressure, c);
-
-                            for (int v = 0; v < 4; v++)
-                            {
-                                vertices[vert_index + v].normal = sideNormal;
-                                vertices[vert_index + v].color = glm::vec3(c[0], c[1], c[2]);
-                            }
-
-                            indices[ind_index++] = vert_index;
-                            indices[ind_index++] = vert_index + 1;
-                            indices[ind_index++] = vert_index + 2;
-
-                            indices[ind_index++] = vert_index;
-                            indices[ind_index++] = vert_index + 2;
-                            indices[ind_index++] = vert_index + 3;
-
-                            vert_index += 4;
-                        }
-                    }
-                }
-
                 int cubeIndex = 0;
                 float cornerValues[8];
+
+                // Calculate corner values and determine the cube index
                 for (int i = 0; i < 8; i++)
                 {
                     int cornerCell = cellNr +
@@ -922,15 +789,15 @@ Pair_t FLIP_transformGridToVerticies(FlipGrid_t *grid, Vertex_t *vertices, GLuin
                                      cornerOffsets[i].y * grid->f_num_x +
                                      cornerOffsets[i].z * grid->f_num_x * grid->f_num_y;
                     cornerValues[i] = grid->p[cornerCell];
-                    if (cornerValues[i] < 0.0f) // Assume 0 as isosurface threshold
+                    if (cornerValues[i] <= 0.0f)
                         cubeIndex |= (1 << i);
                 }
 
                 // Skip empty cubes
-                if (edgeTable[cubeIndex] == 0)
+                if (cubeIndex == 0 || cubeIndex == 255)
                     continue;
 
-                // Interpolate vertex positions on edges
+                // Calculate vertices on cube edges
                 glm::vec3 vertexList[12];
                 for (int i = 0; i < 12; i++)
                 {
@@ -942,13 +809,8 @@ Pair_t FLIP_transformGridToVerticies(FlipGrid_t *grid, Vertex_t *vertices, GLuin
                         float valA = cornerValues[idxA];
                         float valB = cornerValues[idxB];
 
-                        float t;
-
-                        float epsilon = 1e-6f;
-                        if (fabs(valB - valA) < epsilon)
-                            t = 0.5f; // Środek krawędzi jako bezpieczny punkt
-                        else
-                            t = (0.0f - valA) / ((valB - valA) + epsilon);
+                        // Improved interpolation calculation
+                        float t = (fabs(valB - valA) < 0.0f) ? 0.5f : (0.0f - valA) / (valB - valA);
 
                         vertexList[i] = cubePos +
                                         cornerOffsets[idxA] * grid->h * (1.0f - t) +
@@ -956,28 +818,38 @@ Pair_t FLIP_transformGridToVerticies(FlipGrid_t *grid, Vertex_t *vertices, GLuin
                     }
                 }
 
-                // Generate triangles from triTable
+                // Add triangles
                 for (int i = 0; triTable[cubeIndex][i] != -1; i += 3)
                 {
-                    vertices[vert_index].position = vertexList[triTable[cubeIndex][i]];
-                    vertices[vert_index + 1].position = vertexList[triTable[cubeIndex][i + 1]];
-                    vertices[vert_index + 2].position = vertexList[triTable[cubeIndex][i + 2]];
+                    glm::vec3 v0 = vertexList[triTable[cubeIndex][i]];
+                    glm::vec3 v1 = vertexList[triTable[cubeIndex][i + 1]];
+                    glm::vec3 v2 = vertexList[triTable[cubeIndex][i + 2]];
 
+                    // Oblicz wektory krawędzi
+                    glm::vec3 edge1 = v1 - v0;
+                    glm::vec3 edge2 = v2 - v0;
+
+                    // Oblicz normalną jako iloczyn wektorowy
+                    glm::vec3 normal = glm::normalize(glm::cross(edge1, edge2));
                     for (int j = 0; j < 3; j++)
                     {
-                        float c[3] = {0.0f, 0.0f, 1.0f};
+                        int vertID = triTable[cubeIndex][i + j];
+                        vertices[vert_index].position = vertexList[vertID];
+
+                        float color[3] = {0.0f, 0.0f, 1.0f};
                         if (show_sci)
                         {
-                            getSciColor(cornerValues[triTable[cubeIndex][i + j]],
-                                        minPressure, maxPressure, c);
+                            getSciColor(cornerValues[vertID], minPressure, maxPressure, color);
                         }
-                        vertices[vert_index + j].color = glm::vec3(c[0], c[1], c[2]);
+                        vertices[vert_index].color = glm::vec3(color[0], color[1], color[2]);
+                        glm::vec3 gradient = glm::vec3(
+                            grid->p[cellNr + 1] - grid->p[cellNr - 1],                                                        // różnica wzdłuż osi X
+                            grid->p[cellNr + grid->f_num_x] - grid->p[cellNr - grid->f_num_x],                                // różnica wzdłuż osi Y
+                            grid->p[cellNr + grid->f_num_x * grid->f_num_y] - grid->p[cellNr - grid->f_num_x * grid->f_num_y] // różnica wzdłuż osi Z
+                        );
+                        vertices[vert_index].normal = normal; // glm::normalize(gradient)
+                        indices[ind_index++] = vert_index++;
                     }
-
-                    indices[ind_index++] = vert_index;
-                    indices[ind_index++] = vert_index + 1;
-                    indices[ind_index++] = vert_index + 2;
-                    vert_index += 3;
                 }
             }
         }
@@ -1001,8 +873,8 @@ Pair_t FLIP_transformMarkersToVertices(FlipGrid_t *grid, Vertex_t *markerVertice
         if (grid->cell_type[i] == FLUID)
         {
             float vel = grid->particle_vel[3 * i] * grid->particle_vel[3 * i] +
-                      grid->particle_vel[3 * i + 1] * grid->particle_vel[3 * i + 1] +
-                      grid->particle_vel[3 * i + 2] * grid->particle_vel[3 * i + 2];
+                        grid->particle_vel[3 * i + 1] * grid->particle_vel[3 * i + 1] +
+                        grid->particle_vel[3 * i + 2] * grid->particle_vel[3 * i + 2];
             vel = sqrtf(vel);
             if (vel < min_velocity)
                 min_velocity = vel;
@@ -1049,7 +921,7 @@ Pair_t FLIP_transformMarkersToVertices(FlipGrid_t *grid, Vertex_t *markerVertice
                 vertexOffset++;
             }
         }
-        
+
         for (int i = 0; i < SPHERE_LAT_SLICES; i++)
         {
             for (int j = 0; j < SPHERE_LON_SLICES; j++)

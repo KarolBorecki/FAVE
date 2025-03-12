@@ -235,7 +235,7 @@ int main(int argc, char **argv)
     Camera_t camera;
     camera_speed = mac.h * 1.5f;
     // camera, window, postion, speed, fov, near, far
-    Camera_init(&camera, window, glm::vec3(size_x / 2.0f, size_y / 2.0f, size_z + 5.0f), camera_speed, 45.0f, 0.1f, 1000.0f);
+    Camera_init(&camera, window, glm::vec3(2.75f, 2.0f, 2.74f), camera_speed, 45.0f, 0.1f, 1000.0f);
 
     Obstacle_t obstacle;
     obstacle_radius = mac.h * 4.0f;
