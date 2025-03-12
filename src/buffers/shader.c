@@ -2,16 +2,32 @@
 
 void Shader_init(Shader_t *shader, const char *vertexPath, const char *fragmentPath)
 {
+    GLint success;
+
     char *vertexShaderSource = loadResourceFileContent(vertexPath);
     char *fragmentShaderSource = loadResourceFileContent(fragmentPath);
 
     GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vertexShader, 1, (const char **)&vertexShaderSource, NULL);
     glCompileShader(vertexShader);
+    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
+    if (!success)
+    {
+        char log[512];
+        glGetShaderInfoLog(vertexShader, sizeof(log), NULL, log);
+        fprintf(stderr, "error compiling vertex shader:\n%s\n", log);
+    }
 
     GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(fragmentShader, 1, (const char **)&fragmentShaderSource, NULL);
     glCompileShader(fragmentShader);
+    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
+    if (!success)
+    {
+        char log[512];
+        glGetShaderInfoLog(fragmentShader, sizeof(log), NULL, log);
+        fprintf(stderr, "error compiling fragment shader:\n%s\n", log);
+    }
 
     shader->ID = glCreateProgram();
     glAttachShader(shader->ID, vertexShader);
@@ -23,10 +39,24 @@ void Shader_init(Shader_t *shader, const char *vertexPath, const char *fragmentP
 
     free(vertexShaderSource);
     free(fragmentShaderSource);
+
+    Shader_use(shader);
+    Shader_setVector3f(shader, "scale", 1.0f, 1.0f, 1.0f);
+    Shader_setVector3f(shader, "rotation", 0.0f, 0.0f, 0.0f);
+    Shader_setVector3f(shader, "position", 0.0f, 0.0f, 0.0f);
+
+    Shader_setVector4f(shader, "lightColor", 1.0f, 1.0f, 1.0f, 1.0f);
+    Shader_setVector3f(shader, "lightPos", 0.0f, 10.0f, 0.0f);
 }
 
 void Shader_use(Shader_t *shader)
 {
+    if (!shader || shader->ID == 0)
+    {
+        fprintf(stderr, "Błąd: Shader nie został poprawnie zainicjalizowany\n");
+        return;
+    }
+
     glUseProgram(shader->ID);
 }
 

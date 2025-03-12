@@ -29,6 +29,15 @@
 
 CoreConfig_t config;
 
+void checkGLError(const char *message)
+{
+    GLenum error;
+    while ((error = glGetError()) != GL_NO_ERROR)
+    {
+        fprintf(stderr, "[OpenGL Error] %s - Kod błędu: %d\n", message, error);
+    }
+}
+
 void load_config(const char *filename, CoreConfig_t &core_config)
 {
     FILE *file = fopen(filename, "r");
@@ -176,22 +185,17 @@ void setupBuffers(VAO_t &vao, VBO_t &vbo, EBO_t &ebo, long verticies_size, long 
     VBO_unbind();
     EBO_unbind();
 }
-
 void render(GLFWwindow *window, Camera_t &camera, Shader_t &shaderProgram, VAO_t &vao, VBO_t &vbo, EBO_t &ebo, Vertex_t *fluid_vertices, GLuint *fluid_indices, int verticies_size, int indicies_size)
 {
     if (verticies_size <= 0 || indicies_size <= 0 || verticies_size > MAX_VERTICIES || indicies_size > MAX_INDICIES)
     {
-        fprintf(stderr, "icnorrect verticies/indicies sizes: verticies=%d, indicies=%d\n", verticies_size, indicies_size);
+        fprintf(stderr, "incorrect verticies/indicies sizes: verticies=%d, indicies=%d\n",
+                verticies_size, indicies_size);
         return;
     }
 
     Shader_use(&shaderProgram);
-    Shader_setVector3f(&shaderProgram, "scale", 1.0f, 1.0f, 1.0f);
-    Shader_setVector3f(&shaderProgram, "rotation", 0.0f, 0.0f, 0.0f);
-    Shader_setVector3f(&shaderProgram, "position", 0.0f, 0.0f, 0.0f);
-
-    Shader_setVector4f(&shaderProgram, "lightColor", 1.0f, 1.0f, 1.0f, 1.0f);
-    Shader_setVector3f(&shaderProgram, "lightPos", 0.0f, 10.0f, 0.0f);
+    checkGLError("Shader_use");
     Shader_setMatrix4f(&shaderProgram, "camMatrix", glm::value_ptr(camera.cam_mat));
 
     VBO_bind(&vbo);
@@ -202,6 +206,7 @@ void render(GLFWwindow *window, Camera_t &camera, Shader_t &shaderProgram, VAO_t
 
     VAO_bind(&vao);
     glDrawElements(GL_TRIANGLES, indicies_size, GL_UNSIGNED_INT, 0);
+    checkGLError("glDrawElements");
 
     VAO_unbind();
     VBO_unbind();

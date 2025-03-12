@@ -631,19 +631,13 @@ void FLIP_solveIncompressibility(FlipGrid_t *grid, int num_iters, float dt, floa
     }
 }
 
-Pair_t FLIP_transformGridToVerticies(FlipGrid_t *grid, Vertex_t *vertices, GLuint *indices, int show_sci, int show_air, int show_solids)
+Pair_t FLIP_transformGridToVerticies(FlipGrid_t *grid, Vertex_t *vertices, GLuint *indices,
+                                     int show_sci, int show_air, int show_solids)
 {
-    glm::vec3 cubeVertices[8] = {
-        glm::vec3(0.0f, 0.0f, 0.0f),
-        glm::vec3(1.0f, 0.0f, 0.0f),
-        glm::vec3(1.0f, 1.0f, 0.0f),
-        glm::vec3(0.0f, 1.0f, 0.0f),
-        glm::vec3(0.0f, 0.0f, 1.0f),
-        glm::vec3(1.0f, 0.0f, 1.0f),
-        glm::vec3(1.0f, 1.0f, 1.0f),
-        glm::vec3(0.0f, 1.0f, 1.0f)};
+    static glm::vec3 cubeVertices[8] = {
+        {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f, 1.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f, 1.0f}};
 
-    GLuint cubeIndices[36] = {
+    static GLuint cubeIndices[36] = {
         0, 1, 2, 2, 3, 0,
         4, 5, 6, 6, 7, 4,
         4, 0, 3, 3, 7, 4,
@@ -654,99 +648,86 @@ Pair_t FLIP_transformGridToVerticies(FlipGrid_t *grid, Vertex_t *vertices, GLuin
     size_t vert_index = 0;
     size_t ind_index = 0;
 
-    float minPressure = FLT_MAX;
-    float maxPressure = FLT_MIN;
-    float sumPressure = 0.0f;
+    // Przenieś obliczenia zakresów ciśnienia poza pętle
+    float minPressure = FLT_MAX, maxPressure = FLT_MIN, sumPressure = 0.0f;
     for (int i = 0; i < grid->f_num_cells; i++)
     {
         if (grid->cell_type[i] == FLUID)
         {
             float p = grid->p[i];
-            if (p < minPressure)
-                minPressure = p;
-            if (p > maxPressure)
-                maxPressure = p;
+            minPressure = fminf(minPressure, p);
+            maxPressure = fmaxf(maxPressure, p);
             sumPressure += p;
         }
     }
-    for (int z = 0; z < grid->f_num_z; z++)
+
+    // Uproszczenie logiki kolorów i pozycji
+    for (int cell_nr = 0; cell_nr < grid->f_num_cells; cell_nr++)
     {
-        for (int y = 0; y < grid->f_num_y; y++)
+
+        glm::vec3 cubePos = glm::vec3(cell_nr % grid->f_num_x,
+                                      (cell_nr / grid->f_num_x) % grid->f_num_y,
+                                      cell_nr / (grid->f_num_x * grid->f_num_y)) *
+                            grid->h;
+
+        float c[3] = {0.0f, 0.0f, 0.0f};
+        switch (grid->cell_type[cell_nr])
         {
-            for (int x = 0; x < grid->f_num_x; x++)
+        case FLUID:
+            if (show_sci)
+                getSciColor(grid->p[cell_nr], minPressure, maxPressure, c);
+            else
             {
-                int cell_nr = z * grid->f_num_x * grid->f_num_y + y * grid->f_num_x + x;
-                glm::vec3 cubePos = glm::vec3(x, y, z) * grid->h;
-                float c[3] = { 0.0f, 0.0f, 0.0f };
-                if (grid->cell_type[cell_nr] == FLUID)
-                {
-                    if (show_sci)
-                    {
-                        getSciColor(grid->p[cell_nr], minPressure, maxPressure, c);
-                    } else 
-                    {
-                        c[0] = 0.113f;
-                        c[1] = 0.353f;
-                        c[2] = 0.403f;
-                    }
-                }
-                else if (grid->cell_type[cell_nr] == SOLID)
-                {
-                    if (!show_solids)
-                        continue;
-                    c[0] = 1.0f;
-                    c[1] = 1.0f;
-                    c[2] = 1.0f;
-                }
-                else if (grid->cell_type[cell_nr] == AIR)
-                {
-                    if (!show_air)
-                        continue;
-                    c[0] = 0.53f;
-                    c[1] = 0.81f;
-                    c[2] = 0.94f;
-                }
-
-                for (int i = 0; i < 8; i++)
-                {
-                    vertices[vert_index].position = cubePos + cubeVertices[i] * grid->h;
-                    vertices[vert_index].color.x = c[0];
-                    vertices[vert_index].color.y = c[1];
-                    vertices[vert_index].color.z = c[2];
-                    vertices[vert_index].normal = glm::normalize(cubeVertices[i]);
-                    vert_index++;
-                }
-
-                size_t offset = vert_index - 8;
-                for (int i = 0; i < 36; i++)
-                {
-                    indices[ind_index++] = offset + cubeIndices[i];
-                }
+                c[0] = 0.113f;
+                c[1] = 0.353f;
+                c[2] = 0.403f;
             }
+            break;
+        case SOLID:
+            if (!show_solids)
+                continue;
+            c[0] = c[1] = c[2] = 1.0f;
+            break;
+        case AIR:
+            if (!show_air)
+                continue;
+            c[0] = 0.53f;
+            c[1] = 0.81f;
+            c[2] = 0.94f;
+            break;
+        }
+
+        for (int i = 0; i < 8; i++)
+        {
+            vertices[vert_index].position = cubePos + cubeVertices[i] * grid->h;
+            vertices[vert_index].color.x = c[0];
+            vertices[vert_index].color.y = c[1];
+            vertices[vert_index].color.z = c[2];
+            vertices[vert_index].normal = glm::normalize(cubeVertices[i]);
+            vert_index++;
+        }
+
+        size_t offset = vert_index - 8;
+        for (int i = 0; i < 36; i++)
+        {
+            indices[ind_index++] = offset + cubeIndices[i];
         }
     }
+
     return {.first = (int)vert_index, .second = (int)ind_index};
 }
 
-Pair_t FLIP_transformGridToVerticiesMarchingCubes(FlipGrid_t *grid, Vertex_t *vertices, GLuint *indices, int show_sci, int show_air, int show_solids)
+Pair_t FLIP_transformGridToVerticiesMarchingCubes(
+    FlipGrid_t *grid, Vertex_t *vertices, GLuint *indices,
+    int show_sci, int show_air, int show_solids)
 {
     size_t vert_index = 0;
     size_t ind_index = 0;
 
-    float minPressure = FLT_MAX;
-    float maxPressure = FLT_MIN;
-    float sumPressure = 0.0f;
+    float minPressure = FLT_MAX, maxPressure = FLT_MIN;
 
-    for (int i = 0; i < grid->f_num_cells; i++)
-    {
-        if (grid->cell_type[i] == FLUID)
-        {
-            float p = grid->p[i];
-            minPressure = std::min(minPressure, p);
-            maxPressure = std::max(maxPressure, p);
-            sumPressure += p;
-        }
-    }
+    glm::vec3 vertexList[12];
+    float cornerValues[8];
 
     for (int z = 0; z < grid->f_num_z; z++)
     {
@@ -755,26 +736,37 @@ Pair_t FLIP_transformGridToVerticiesMarchingCubes(FlipGrid_t *grid, Vertex_t *ve
             for (int x = 0; x < grid->f_num_x; x++)
             {
                 int cellNr = z * grid->f_num_x * grid->f_num_y + y * grid->f_num_x + x;
+
                 glm::vec3 cubePos = glm::vec3(x, y, z) * grid->h;
 
                 int cubeIndex = 0;
-                float cornerValues[8];
 
+                // Corner values & Cube Index Calculation
                 for (int i = 0; i < 8; i++)
                 {
                     int cornerCell = cellNr +
                                      (int)cornerOffsets[i].x +
                                      (int)cornerOffsets[i].y * grid->f_num_x +
                                      (int)cornerOffsets[i].z * grid->f_num_x * grid->f_num_y;
+
                     cornerValues[i] = grid->p[cornerCell];
+
                     if (cornerValues[i] <= 0.0f)
                         cubeIndex |= (1 << i);
+
+                    // Aktualizacja min/max ciśnienia
+                    if (grid->cell_type[cornerCell] == FLUID)
+                    {
+                        minPressure = std::min(minPressure, cornerValues[i]);
+                        maxPressure = std::max(maxPressure, cornerValues[i]);
+                    }
                 }
 
+                // Ominięcie zbędnego renderowania
                 if (cubeIndex == 0 || cubeIndex == 255)
                     continue;
 
-                glm::vec3 vertexList[12];
+                // Vertex Interpolation
                 for (int i = 0; i < 12; i++)
                 {
                     if (edgeTable[cubeIndex] & (1 << i))
@@ -785,40 +777,38 @@ Pair_t FLIP_transformGridToVerticiesMarchingCubes(FlipGrid_t *grid, Vertex_t *ve
                         float valA = cornerValues[idxA];
                         float valB = cornerValues[idxB];
 
-                        float t = (fabs(valB - valA) < 1e-6f) ? 0.5f : (0.0f - valA) / (valB - valA);
+                        float t = glm::clamp((0.0f - valA) / (valB - valA), 0.0f, 1.0f);
 
-                        glm::vec3 posNotClamped = cubePos +
-                                                  cornerOffsets[idxA] * grid->h * (1.0f - t) +
-                                                  cornerOffsets[idxB] * grid->h * t;
-                        float x = clampf(posNotClamped.x, 0.0f, (grid->f_num_x - 1) * grid->h);
-                        float y = clampf(posNotClamped.y, 0.0f, (grid->f_num_y - 1) * grid->h);
-                        float z = clampf(posNotClamped.z, 0.0f, (grid->f_num_z - 1) * grid->h);
-                        vertexList[i] = glm::vec3(x, y, z);
+                        vertexList[i] = glm::mix(
+                            cubePos + cornerOffsets[idxA] * grid->h,
+                            cubePos + cornerOffsets[idxB] * grid->h,
+                            t);
                     }
                 }
 
+                // Triangle Generation
                 for (int i = 0; triTable[cubeIndex][i] != -1; i += 3)
                 {
-
                     glm::vec3 v0 = vertexList[triTable[cubeIndex][i]];
                     glm::vec3 v1 = vertexList[triTable[cubeIndex][i + 1]];
                     glm::vec3 v2 = vertexList[triTable[cubeIndex][i + 2]];
 
-                    glm::vec3 edge1 = v1 - v0;
-                    glm::vec3 edge2 = v2 - v0;
+                    glm::vec3 normal = glm::normalize(glm::cross(v1 - v0, v2 - v0));
 
-                    glm::vec3 normal = glm::normalize(glm::cross(edge1, edge2));
                     for (int j = 0; j < 3; j++)
                     {
                         int vertID = triTable[cubeIndex][i + j];
                         float color[3] = {0.113f, 0.353f, 0.403f};
+
                         if (show_sci)
                         {
                             getSciColor(cornerValues[vertID], minPressure, maxPressure, color);
                         }
+
                         vertices[vert_index].position = vertexList[vertID];
                         vertices[vert_index].color = glm::vec3(color[0], color[1], color[2]);
                         vertices[vert_index].normal = normal;
+
                         indices[ind_index++] = vert_index++;
                     }
                 }
