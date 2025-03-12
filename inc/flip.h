@@ -81,7 +81,7 @@ extern "C"
     void FLIP_solveIncompressibility(FlipGrid_t *grid, int numIters, float dt, float overRelaxation);
     Pair_t FLIP_transformGridToVerticies(FlipGrid_t *grid, Vertex_t *vertices, GLuint *indices, int show_sci);
     Pair_t FLIP_transformGridToVerticiesMarchingCubes(FlipGrid_t *grid, Vertex_t *vertices, GLuint *indices, int show_sci);
-        Pair_t FLIP_transformMarkersToVertices(FlipGrid_t *grid, Vertex_t *markerVertices, GLuint *markerIndices);
+    Pair_t FLIP_transformMarkersToVertices(FlipGrid_t *grid, Vertex_t *markerVertices, GLuint *markerIndices);
     void FLIP_destroy(FlipGrid_t *grid);
 
 #ifdef __cplusplus

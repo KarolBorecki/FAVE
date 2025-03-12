@@ -747,6 +747,97 @@ void FLIP_solveIncompressibility(FlipGrid_t *grid, int num_iters, float dt, floa
     }
 }
 
+Pair_t FLIP_transformGridToVerticies(FlipGrid_t *grid, Vertex_t *vertices, GLuint *indices, int show_sci)
+{
+    glm::vec3 cubeVertices[8] = {
+        glm::vec3(0.0f, 0.0f, 0.0f),
+        glm::vec3(1.0f, 0.0f, 0.0f),
+        glm::vec3(1.0f, 1.0f, 0.0f),
+        glm::vec3(0.0f, 1.0f, 0.0f),
+        glm::vec3(0.0f, 0.0f, 1.0f),
+        glm::vec3(1.0f, 0.0f, 1.0f),
+        glm::vec3(1.0f, 1.0f, 1.0f),
+        glm::vec3(0.0f, 1.0f, 1.0f)};
+
+    GLuint cubeIndices[36] = {
+        0, 1, 2, 2, 3, 0,
+        4, 5, 6, 6, 7, 4,
+        4, 0, 3, 3, 7, 4,
+        1, 5, 6, 6, 2, 1,
+        3, 2, 6, 6, 7, 3,
+        4, 5, 1, 1, 0, 4};
+
+    size_t vert_index = 0;
+    size_t ind_index = 0;
+
+    float minPressure = FLT_MAX;
+    float maxPressure = FLT_MIN;
+    float sumPressure = 0.0f;
+    for (int i = 0; i < grid->f_num_cells; i++)
+    {
+        if (grid->cell_type[i] == FLUID)
+        {
+            float p = grid->p[i];
+            if (p < minPressure)
+                minPressure = p;
+            if (p > maxPressure)
+                maxPressure = p;
+            sumPressure += p;
+        }
+    }
+
+    for (int y = 0; y < grid->f_num_y; y++)
+    {
+        for (int x = 0; x < grid->f_num_x; x++)
+        {
+            for (int z = 0; z < grid->f_num_z; z++)
+            {
+                int cell_nr = z * grid->f_num_x * grid->f_num_y + y * grid->f_num_x + x;
+                glm::vec3 cubePos = glm::vec3(x, y, z) * grid->h;
+                float c[3] = {0.0f, 0.0f, 1.0f};
+                if (grid->cell_type[cell_nr] == FLUID)
+                {
+                    if (show_sci)
+                    {
+                        getSciColor(grid->p[cell_nr], minPressure, maxPressure, c);
+                    }
+                }
+                else if (grid->cell_type[cell_nr] == SOLID)
+                {
+                    c[0] = 1.0f;
+                    c[1] = 1.0f;
+                    c[2] = 1.0f;
+                    continue;
+                }
+                else if (grid->cell_type[cell_nr] == AIR)
+                {
+                    c[0] = 0.53f;
+                    c[1] = 0.81f;
+                    c[2] = 0.94f;
+                    continue;
+                }
+
+                for (int i = 0; i < 8; i++)
+                {
+                    vertices[vert_index].position = cubePos + cubeVertices[i] * grid->h;
+                    vertices[vert_index].color.x = c[0];
+                    vertices[vert_index].color.y = c[1];
+                    vertices[vert_index].color.z = c[2];
+                    vertices[vert_index].normal = glm::normalize(cubeVertices[i]);
+                    vert_index++;
+                }
+
+                size_t offset = vert_index - 8;
+                for (int i = 0; i < 36; i++)
+                {
+                    indices[ind_index++] = offset + cubeIndices[i];
+                }
+            }
+        }
+    }
+    return {.first = (int)vert_index, .second = (int)ind_index};
+}
+
 Pair_t FLIP_transformGridToVerticiesMarchingCubes(FlipGrid_t *grid, Vertex_t *vertices, GLuint *indices, int show_sci)
 {
     size_t vert_index = 0;

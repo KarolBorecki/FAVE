@@ -195,6 +195,7 @@ int main(int argc, char **argv)
     int show_markers = 0;
     int show_cubes = 1;
     int show_sci = 1;
+    int marching_cubes = 1;
     float gravity = -9.81f;
     float density = 1000.0f;
     float spacing = 0.06f;
@@ -212,6 +213,7 @@ int main(int argc, char **argv)
         parseArgument(argv[i], "particles_push_apart_steps", &particles_push_apart_steps, "int");
         parseArgument(argv[i], "show_markers", &show_markers, "int");
         parseArgument(argv[i], "show_cubes", &show_cubes, "int");
+        parseArgument(argv[i], "marching_cubes", &marching_cubes, "int");
         parseArgument(argv[i], "show_sci", &show_sci, "int");
         parseArgument(argv[i], "gravity", &gravity, "float");
         parseArgument(argv[i], "density", &density, "float");
@@ -270,7 +272,15 @@ int main(int argc, char **argv)
 
         if (show_cubes)
         {
-            Pair_t mac_grid_render_sizes = FLIP_transformGridToVerticies(&mac, fluid_vertices, fluid_indices, show_sci);
+            Pair_t mac_grid_render_sizes;
+            if (marching_cubes)
+            {
+                mac_grid_render_sizes = FLIP_transformGridToVerticies(&mac, fluid_vertices, fluid_indices, show_sci);
+            }
+            else
+            {
+                mac_grid_render_sizes = FLIP_transformGridToVerticiesMarchingCubes(&mac, fluid_vertices, fluid_indices, show_sci);
+            }
             render(window, camera, fluidShader, fluidVao, fluidVbo, fluidEbo, fluid_vertices, fluid_indices, mac_grid_render_sizes.first, mac_grid_render_sizes.second);
         }
 
