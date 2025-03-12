@@ -12,7 +12,42 @@ extern "C"
         int second;
     } Pair_t;
 
-        enum CellType : int
+    typedef struct CoreConfig
+    {
+        uint32_t window_width;
+        uint32_t window_height;
+
+        float gravity;
+        float density;
+
+        int show_markers;
+        int show_cubes;
+        int show_sci;
+        int show_air;
+        int show_solids;
+        int marching_cubes;
+        int use_2D;
+
+        int pressure_solver_steps;
+        int particles_push_apart_steps;
+        float flip_ratio;
+        float over_relaxation;
+        
+        float spacing;
+        float size_x, size_y, size_z;
+        float particle_radius;
+        int max_particles;
+
+        float cam_x, cam_y, cam_z;
+        float cam_rot_x, cam_rot_y, cam_rot_z;
+        float cam_speed;
+
+        float obstacle_radius;
+        float obstacle_push_coefficient;
+        float obstacle_speed;
+    } CoreConfig_t;
+
+    enum CellType : int
     {
         FLUID = 0,
         SOLID = 1,
@@ -41,7 +76,6 @@ extern "C"
         float *p;            // of size f_num_cells
         float *s;            // of size f_num_cells
         CellType *cell_type; // of size f_num_cells
-        float *cell_color;   // of size f_num_cells * 3
 
         int num_particles;
         float *particle_pos;     // of size max_particles * 3

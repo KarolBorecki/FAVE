@@ -1,12 +1,12 @@
 #include "camera.h"
 
-void Camera_init(Camera_t *camera, GLFWwindow *window, glm::vec3 postion, float speed, float fov, float near, float far)
+void Camera_init(Camera_t *camera, GLFWwindow *window, glm::vec3 postion, glm::vec3 rotation, float speed, float fov, float near, float far)
 {
     int window_width, window_height;
     glfwGetWindowSize(window, &window_width, &window_height);
 
     camera->position = postion;
-    camera->direction = glm::vec3(-0.65f, -0.5f, -0.65f);
+    camera->direction = rotation;
     camera->up = glm::vec3(0.0f, 1.0f, 0.0f);
 
     camera->fov = fov;

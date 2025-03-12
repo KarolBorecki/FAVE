@@ -5,6 +5,7 @@ void FLIP2D_init(FlipGrid_t *grid, float density, float size_x, float size_y, fl
     grid->density = density;
     grid->f_num_x = (int)(floorf(size_x / spacing) + 1.0f);
     grid->f_num_y = (int)(floorf(size_y / spacing) + 1.0f);
+    grid->f_num_z = 1;
     grid->h = maxf(size_x / grid->f_num_x, size_y / grid->f_num_y);
     grid->f_inv_spacing = 1.0f / grid->h;
     grid->f_num_cells = grid->f_num_x * grid->f_num_y * grid->f_num_z;
@@ -27,8 +28,6 @@ void FLIP2D_init(FlipGrid_t *grid, float density, float size_x, float size_y, fl
     ALLOC_CHECK(grid->s, "s");
     grid->cell_type = (CellType *)calloc(grid->f_num_cells, sizeof(CellType));
     ALLOC_CHECK(grid->cell_type, "cell_type");
-    grid->cell_color = (float *)calloc(grid->f_num_cells * 2, sizeof(float));
-    ALLOC_CHECK(grid->cell_color, "cell_color");
 
     grid->num_particles = num_particles;
     grid->particle_pos = (float *)calloc(grid->num_particles * 2, sizeof(float));
@@ -42,6 +41,7 @@ void FLIP2D_init(FlipGrid_t *grid, float density, float size_x, float size_y, fl
     grid->p_inv_spacing = 1.0f / (2.2f * grid->particle_radius);
     grid->p_num_x = (int)(floorf(size_x * grid->p_inv_spacing) + 1.0f);
     grid->p_num_y = (int)(floorf(size_y * grid->p_inv_spacing) + 1.0f);
+    grid->p_num_z = 1;
     grid->p_num_cells = grid->p_num_x * grid->p_num_y;
 
     grid->num_cell_particles = (int *)calloc(grid->p_num_cells, sizeof(int));
@@ -86,13 +86,6 @@ void FLIP2D_init(FlipGrid_t *grid, float density, float size_x, float size_y, fl
             grid->s[cell_nr] = (i == 0 || i == grid->f_num_x - 1 || j == 0) ? 0.0f : 1.0f;
         }
     }
-
-    printf("FLIP2D grid initialized successfully!\n");
-    printf("f_num_x = %d, f_num_y = %d, f_num_cells = %d\n", grid->f_num_x, grid->f_num_y, grid->f_num_cells);
-    printf("p_num_x = %d, p_num_y = %d, p_num_cells = %d\n", grid->p_num_x, grid->p_num_y, grid->p_num_cells);
-    printf("num_particles = %d, particle_radius = %.2f, p_inv_spacing = %.2f\n", grid->num_particles, grid->particle_radius, grid->p_inv_spacing);
-    printf("particle_rest_density = %.2f\n", grid->particle_rest_density);
-    printf("density = %.2f\n", grid->density);
 }
 
 void FLIP2D_integrateParticles(FlipGrid_t *grid, float dt, float gravity)
@@ -513,152 +506,4 @@ void FLIP2D_solveIncompressibility(FlipGrid_t *grid, int num_iters, float dt, fl
             }
         }
     }
-}
-
-Pair_t FLIP2D_transformGridToVerticies(FlipGrid_t *grid, Vertex_t *vertices, GLuint *indices, int show_sci)
-{
-    glm::vec3 cubeVertices[8] = {
-        glm::vec3(0.0f, 0.0f, 0.0f),
-        glm::vec3(1.0f, 0.0f, 0.0f),
-        glm::vec3(1.0f, 1.0f, 0.0f),
-        glm::vec3(0.0f, 1.0f, 0.0f),
-        glm::vec3(0.0f, 0.0f, 1.0f),
-        glm::vec3(1.0f, 0.0f, 1.0f),
-        glm::vec3(1.0f, 1.0f, 1.0f),
-        glm::vec3(0.0f, 1.0f, 1.0f)};
-
-    GLuint cubeIndices[36] = {
-        0, 1, 2, 2, 3, 0,
-        4, 5, 6, 6, 7, 4,
-        4, 0, 3, 3, 7, 4,
-        1, 5, 6, 6, 2, 1,
-        3, 2, 6, 6, 7, 3,
-        4, 5, 1, 1, 0, 4};
-
-    size_t vert_index = 0;
-    size_t ind_index = 0;
-
-    float minPressure = FLT_MAX;
-    float maxPressure = FLT_MIN;
-    float sumPressure = 0.0f;
-    for (int i = 0; i < grid->f_num_cells; i++)
-    {
-        if (grid->cell_type[i] == FLUID)
-        {
-            float p = grid->p[i];
-            if (p < minPressure)
-                minPressure = p;
-            if (p > maxPressure)
-                maxPressure = p;
-            sumPressure += p;
-        }
-    }
-
-    for (int y = 0; y < grid->f_num_y; y++)
-    {
-        for (int x = 0; x < grid->f_num_x; x++)
-        {
-            int cell_nr = y * grid->f_num_x + x;
-            glm::vec3 cubePos = glm::vec3(x, y, 0) * grid->h;
-            float c[3] = {0.0f, 0.0f, 1.0f};
-            if (grid->cell_type[cell_nr] == FLUID)
-            {
-                if (show_sci)
-                {
-                    getSciColor(grid->p[cell_nr], minPressure, maxPressure, c);
-                }
-            }
-            else if (grid->cell_type[cell_nr] == SOLID)
-            {
-                c[0] = 1.0f;
-                c[1] = 1.0f;
-                c[2] = 1.0f;
-            }
-            else if (grid->cell_type[cell_nr] == AIR)
-            {
-                c[0] = 0.53f;
-                c[1] = 0.81f;
-                c[2] = 0.94f;
-            }
-
-            for (int i = 0; i < 8; i++)
-            {
-                vertices[vert_index].position = cubePos + cubeVertices[i] * grid->h;
-                vertices[vert_index].color.x = c[0];
-                vertices[vert_index].color.y = c[1];
-                vertices[vert_index].color.z = c[2];
-                vertices[vert_index].normal = glm::normalize(cubeVertices[i]);
-                vert_index++;
-            }
-
-            size_t offset = vert_index - 8;
-            for (int i = 0; i < 36; i++)
-            {
-                indices[ind_index++] = offset + cubeIndices[i];
-            }
-        }
-    }
-    return {.first = (int)vert_index, .second = (int)ind_index};
-}
-
-#define SPHERE_LAT_SLICES 5
-#define SPHERE_LON_SLICES 5
-Pair_t FLIP2D_transformMarkersToVertices(FlipGrid_t *grid, Vertex_t *markerVertices, GLuint *markerIndices)
-{
-    int vertexOffset = 0;
-    int indexOffset = 0;
-
-    for (int m = 0; m < grid->num_particles; m++)
-    {
-        glm::vec3 markerPos = glm::vec3(grid->particle_pos[2 * m], grid->particle_pos[2 * m + 1], grid->h);
-        glm::vec3 markerColor = glm::vec3(1.0f, 0.0f, 0.0f);
-        float radius = grid->particle_radius;
-        for (int i = 0; i <= SPHERE_LAT_SLICES; i++)
-        {
-            float theta = (float)i / SPHERE_LAT_SLICES * M_PI;
-            float sinTheta = sinf(theta);
-            float cosTheta = cosf(theta);
-
-            for (int j = 0; j <= SPHERE_LON_SLICES; j++)
-            {
-                float phi = (float)j / SPHERE_LON_SLICES * 2.0f * M_PI;
-                float sinPhi = sinf(phi);
-                float cosPhi = cosf(phi);
-
-                glm::vec3 vertexPos;
-
-                vertexPos.x = markerPos.x + radius * sinTheta * cosPhi;
-                vertexPos.y = markerPos.y + radius * cosTheta;
-                vertexPos.z = markerPos.z + radius * sinTheta * sinPhi;
-
-                markerVertices[vertexOffset]
-                    .position = vertexPos;
-                markerVertices[vertexOffset].color = markerColor;
-                vertexOffset++;
-            }
-        }
-
-        for (int i = 0; i < SPHERE_LAT_SLICES; i++)
-        {
-            for (int j = 0; j < SPHERE_LON_SLICES; j++)
-            {
-                int first = vertexOffset - (SPHERE_LAT_SLICES + 1) * (SPHERE_LON_SLICES + 1) + i * (SPHERE_LON_SLICES + 1) + j;
-                int second = first + SPHERE_LON_SLICES + 1;
-
-                markerIndices[indexOffset++] = first;
-                markerIndices[indexOffset++] = second;
-                markerIndices[indexOffset++] = first + 1;
-
-                markerIndices[indexOffset++] = second;
-                markerIndices[indexOffset++] = second + 1;
-                markerIndices[indexOffset++] = first + 1;
-            }
-        }
-    }
-
-    return (Pair_t){.first = vertexOffset, .second = indexOffset};
-}
-
-void FLIP2D_destroy(FlipGrid_t *grid)
-{
 }

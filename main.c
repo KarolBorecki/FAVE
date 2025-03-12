@@ -27,13 +27,84 @@
 
 #include "inc/data.h"
 
-typedef struct CoreConfig
-{
-    uint32_t window_width;
-    uint32_t window_height;
-} CoreConfig_t;
-
 CoreConfig_t config;
+
+void load_config(const char *filename, CoreConfig_t &core_config)
+{
+    FILE *file = fopen(filename, "r");
+    if (!file)
+    {
+        perror("Nie można otworzyć pliku konfiguracyjnego");
+        exit(EXIT_FAILURE);
+    }
+
+    char key[64];
+    float value;
+
+    while (fscanf(file, "%63s = %f", key, &value) == 2)
+    {
+        if (strcmp(key, "flip_ratio") == 0)
+            core_config.flip_ratio = value;
+        else if (strcmp(key, "over_relaxation") == 0)
+            core_config.over_relaxation = value;
+        else if (strcmp(key, "pressure_solver_steps") == 0)
+            core_config.pressure_solver_steps = (int)value;
+        else if (strcmp(key, "particles_push_apart_steps") == 0)
+            core_config.particles_push_apart_steps = (int)value;
+        else if (strcmp(key, "show_markers") == 0)
+            core_config.show_markers = (int)value;
+        else if (strcmp(key, "show_cubes") == 0)
+            core_config.show_cubes = (int)value;
+        else if (strcmp(key, "show_sci") == 0)
+            core_config.show_sci = (int)value;
+        else if (strcmp(key, "show_air") == 0)
+            core_config.show_air = (int)value;
+        else if (strcmp(key, "show_solids") == 0)
+            core_config.show_solids = (int)value;
+        else if (strcmp(key, "marching_cubes") == 0)
+            core_config.marching_cubes = (int)value;
+        else if (strcmp(key, "use_2D") == 0)
+            core_config.use_2D = (int)value;
+        else if (strcmp(key, "gravity") == 0)
+            core_config.gravity = value;
+        else if (strcmp(key, "density") == 0)
+            core_config.density = value;
+        else if (strcmp(key, "spacing") == 0)
+            core_config.spacing = value;
+        else if (strcmp(key, "size_x") == 0)
+            core_config.size_x = value;
+        else if (strcmp(key, "size_y") == 0)
+            core_config.size_y = value;
+        else if (strcmp(key, "size_z") == 0)
+            core_config.size_z = value;
+        else if (strcmp(key, "particle_radius") == 0)
+            core_config.particle_radius = value;
+        else if (strcmp(key, "max_particles") == 0)
+            core_config.max_particles = (int)value;
+        else if (strcmp(key, "cam_x") == 0)
+            core_config.cam_x = value;
+        else if (strcmp(key, "cam_y") == 0)
+            core_config.cam_y = value;
+        else if (strcmp(key, "cam_z") == 0)
+            core_config.cam_z = value;
+        else if (strcmp(key, "cam_rot_x") == 0)
+            core_config.cam_rot_x = value;
+        else if (strcmp(key, "cam_rot_y") == 0)
+            core_config.cam_rot_y = value;
+        else if (strcmp(key, "cam_rot_z") == 0)
+            core_config.cam_rot_z = value;
+        else if (strcmp(key, "cam_speed") == 0)
+            core_config.cam_speed = value;
+        else if (strcmp(key, "obstacle_radius") == 0)
+            core_config.obstacle_radius = value;
+        else if (strcmp(key, "obstacle_push_coefficient") == 0)
+            core_config.obstacle_push_coefficient = value;
+        else if (strcmp(key, "obstacle_speed") == 0)
+            core_config.obstacle_speed = value;
+    }
+
+    fclose(file);
+}
 
 void framebufferSizeCallback(GLFWwindow *window, int width, int height)
 {
@@ -46,7 +117,7 @@ GLFWwindow *initializeWindow()
 {
     if (!glfwInit())
     {
-        fprintf(stderr, "Failed to initialize GLFW\n");
+        fprintf(stderr, "failed to initialize GLFW\n");
         return NULL;
     }
 
@@ -57,7 +128,7 @@ GLFWwindow *initializeWindow()
     GLFWwindow *window = glfwCreateWindow(config.window_width, config.window_height, "FLUID SIMULATION", NULL, NULL);
     if (!window)
     {
-        fprintf(stderr, "Failed to create GLFW window\n");
+        fprintf(stderr, "failed to create GLFW window\n");
         glfwTerminate();
         return NULL;
     }
@@ -67,14 +138,12 @@ GLFWwindow *initializeWindow()
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
-        fprintf(stderr, "Failed to initialize GLAD\n");
+        fprintf(stderr, "failed to initialize GLAD\n");
         glfwTerminate();
         return NULL;
     }
 
     glShadeModel(GL_FLAT);
-    // glEnable(GL_CULL_FACE);
-    // glCullFace(GL_BACK);
     glEnable(GL_DEPTH_TEST);
 
     return window;
@@ -110,9 +179,9 @@ void setupBuffers(VAO_t &vao, VBO_t &vbo, EBO_t &ebo, long verticies_size, long 
 
 void render(GLFWwindow *window, Camera_t &camera, Shader_t &shaderProgram, VAO_t &vao, VBO_t &vbo, EBO_t &ebo, Vertex_t *fluid_vertices, GLuint *fluid_indices, int verticies_size, int indicies_size)
 {
-    if (verticies_size > MAX_VERTICIES || indicies_size > MAX_INDICIES)
+    if (verticies_size <= 0 || indicies_size <= 0 || verticies_size > MAX_VERTICIES || indicies_size > MAX_INDICIES)
     {
-        fprintf(stderr, "Too many verticies or indicies to render\n");
+        fprintf(stderr, "icnorrect verticies/indicies sizes: verticies=%d, indicies=%d\n", verticies_size, indicies_size);
         return;
     }
 
@@ -139,61 +208,44 @@ void render(GLFWwindow *window, Camera_t &camera, Shader_t &shaderProgram, VAO_t
     EBO_unbind();
 }
 
-void parseArgument(const char *arg, const char *key, void *value, const char *type)
-{
-    size_t key_len = strlen(key);
-    if (strncmp(arg, key, key_len) == 0 && arg[key_len] == '=')
-    {
-        if (strcmp(type, "float") == 0)
-            *((float *)value) = strtof(arg + key_len + 1, NULL);
-        else if (strcmp(type, "int") == 0)
-            *((int *)value) = atoi(arg + key_len + 1);
-    }
-}
-
 int main(int argc, char **argv)
 {
+    if (argc < 2)
+    {
+        load_config("./config.txt", config);
+    }
+    else
+    {
+        load_config(argv[1], config);
+    }
+    printf("==============Config loaded successfully!==============\n\n");
+    printf("gravity = %.2f\n", config.gravity);
+    printf("density = %.2f\n\n", config.density);
+
+    printf("show_markers = %d\n", config.show_markers);
+    printf("show_cubes = %d\n", config.show_cubes);
+    printf("show_sci = %d\n", config.show_sci);
+    printf("marching_cubes = %d\n", config.marching_cubes);
+    printf("use_2D = %d\n\n", config.use_2D);
+
+    printf("pressure_solver_steps = %d\n", config.pressure_solver_steps);
+    printf("particles_push_apart_steps = %d\n", config.particles_push_apart_steps);
+    printf("flip_ratio = %.2f\n", config.flip_ratio);
+    printf("over_relaxation = %.2f\n\n", config.over_relaxation);
+
+    printf("spacing = %.2f\n", config.spacing);
+    printf("size_x = %.2f size_y = %.2f size_z = %.2f\n", config.size_x, config.size_y, config.size_z);
+    printf("particle_radius = %.2f\n", config.particle_radius);
+    printf("max_particles = %d\n", config.max_particles);
+    printf("cam_x = %.2f cam_y = %.2f cam_z = %.2f\n", config.cam_x, config.cam_y, config.cam_z);
+    printf("cam_rot_x = %.2f cam_rot_y = %.2f cam_rot_z = %.2f\n", config.cam_rot_x, config.cam_rot_y, config.cam_rot_z);
+    printf("cam_speed = %.2f\n", config.cam_speed);
+    printf("obstacle_radius = %.2f\n", config.obstacle_radius);
+    printf("obstacle_push_coefficient = %.2f\n", config.obstacle_push_coefficient);
+    printf("obstacle_speed = %.2f\n\n", config.obstacle_speed);
+
     config.window_width = 1400;
     config.window_height = 1200;
-
-    float flip_ratio = 0.85f;
-    float over_relaxation = 1.8f;
-    int pressure_solver_steps = 120;
-    int particles_push_apart_steps = 2;
-    int show_markers = 0;
-    int show_cubes = 1;
-    int show_sci = 1;
-    int marching_cubes = 1;
-    int use_2D = 0;
-    float gravity = -9.81f;
-    float density = 1000.0f;
-    float spacing = 0.05884615f;
-    float size_x = 1.53f;
-    float size_y = 1.53f;
-    float size_z = 1.53f;
-    float particle_radius = 0.020825f;
-    int max_particles = 20000;
-
-    for (int i = 1; i < argc; i++)
-    {
-        parseArgument(argv[i], "flip_ratio", &flip_ratio, "float");
-        parseArgument(argv[i], "relax", &over_relaxation, "float");
-        parseArgument(argv[i], "pressure_steps", &pressure_solver_steps, "int");
-        parseArgument(argv[i], "push_steps", &particles_push_apart_steps, "int");
-        parseArgument(argv[i], "show_markers", &show_markers, "int");
-        parseArgument(argv[i], "show_cubes", &show_cubes, "int");
-        parseArgument(argv[i], "marching_cubes", &marching_cubes, "int");
-        parseArgument(argv[i], "use_2D", &use_2D, "int");
-        parseArgument(argv[i], "show_sci", &show_sci, "int");
-        parseArgument(argv[i], "gravity", &gravity, "float");
-        parseArgument(argv[i], "density", &density, "float");
-        parseArgument(argv[i], "spacing", &spacing, "float");
-        parseArgument(argv[i], "size_x", &size_x, "float");
-        parseArgument(argv[i], "size_y", &size_y, "float");
-        parseArgument(argv[i], "size_z", &size_z, "float");
-        parseArgument(argv[i], "particle_r", &particle_radius, "float");
-        parseArgument(argv[i], "particles", &max_particles, "int");
-    }
 
     GLFWwindow *window = initializeWindow();
 
@@ -211,7 +263,7 @@ int main(int argc, char **argv)
 
     if (!fluid_vertices || !fluid_indices || !obstacle_vertices || !obstacle_indices || !marker_vertices || !marker_indices)
     {
-        fprintf(stderr, "Failed to allocate memory for vertices or indices\n");
+        fprintf(stderr, "failed to allocate memory for vertices or indices\n");
         return -1;
     }
 
@@ -229,21 +281,27 @@ int main(int argc, char **argv)
     setupBuffers(markerVao, markerVbo, markerEbo, PARTICLES_VERTICIES_SIZE, PARTICLES_INDICIES_SIZE);
 
     FlipGrid_t mac;
-    
-    if(!use_2D)
+    if (!config.use_2D)
     {
-        FLIP_init(&mac, density, size_x, size_y, size_z, spacing, particle_radius, max_particles);
-    } 
-    else 
+        FLIP_init(&mac, config.density, config.size_x, config.size_y, config.size_z, config.spacing, config.particle_radius, config.max_particles);
+    }
+    else
     {
-        FLIP2D_init(&mac, density, size_x, size_y, spacing, particle_radius, max_particles);
+        FLIP2D_init(&mac, config.density, config.size_x, config.size_y, config.spacing, config.particle_radius, config.max_particles);
     }
 
+    printf("==============FLIP grid initialized successfully!==============\n\n");
+    printf("f_num_x = %d, f_num_y = %d, f_num_z = %d, f_num_cells = %d\n", mac.f_num_x, mac.f_num_y, mac.f_num_z, mac.f_num_cells);
+    printf("p_num_x = %d, p_num_y = %d, p_num_z = %d, p_num_cells = %d\n", mac.p_num_x, mac.p_num_y, mac.p_num_z, mac.p_num_cells);
+    printf("num_particles = %d, particle_radius = %.2f, p_inv_spacing = %.2f\n", mac.num_particles, mac.particle_radius, mac.p_inv_spacing);
+    printf("particle_rest_density = %.2f\n", mac.particle_rest_density);
+    printf("density = %.2f\n\n", mac.density);
+
     Camera_t camera;
-    Camera_init(&camera, window, glm::vec3(2.75f, 2.0f, 2.74f), 0.3f, 45.0f, 0.1f, 1000.0f);
+    Camera_init(&camera, window, glm::vec3(config.cam_x, config.cam_y, config.cam_z), glm ::vec3(config.cam_rot_x, config.cam_rot_y, config.cam_rot_z), config.cam_speed, 45.0f, 0.1f, 1000.0f);
 
     Obstacle_t obstacle;
-    Obstacle_init(&obstacle, size_x / 2.0f, size_y, size_z / 2.0f, 0.08f, 0.2f, 15.0f);
+    Obstacle_init(&obstacle, config.size_x / 2.0f, config.size_y, config.size_z / 2.0f, config.obstacle_radius, config.obstacle_speed, config.obstacle_push_coefficient);
 
     clock_t previousTime = clock();
     float dt = 1.0f / 60.0f;
@@ -262,46 +320,46 @@ int main(int argc, char **argv)
 
         if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS)
         {
-            Obstacle_integrate(&obstacle, gravity, 0.0f, dt);
+            Obstacle_integrate(&obstacle, config.gravity, 0.0f, dt);
         }
         Obstacle_processInput(&obstacle, window);
 
-        if (!use_2D)
+        if (!config.use_2D)
         {
-            FLIP_integrateParticles(&mac, dt, gravity);
-            FLIP_pushParticlesApart(&mac, particles_push_apart_steps, dt);
+            FLIP_integrateParticles(&mac, dt, config.gravity);
+            FLIP_pushParticlesApart(&mac, config.particles_push_apart_steps, dt);
             FLIP_handleObstacle(&mac, &obstacle, dt);
-            FLIP_transferVelocities(&mac, 1, flip_ratio);
+            FLIP_transferVelocities(&mac, 1, config.flip_ratio);
             FLIP_updateParticleDensity(&mac);
-            FLIP_solveIncompressibility(&mac, pressure_solver_steps, dt, over_relaxation);
-            FLIP_transferVelocities(&mac, 0, flip_ratio);
+            FLIP_solveIncompressibility(&mac, config.pressure_solver_steps, dt, config.over_relaxation);
+            FLIP_transferVelocities(&mac, 0, config.flip_ratio);
         }
-        else 
+        else
         {
-            FLIP2D_integrateParticles(&mac, dt, gravity);
-            FLIP2D_pushParticlesApart(&mac, particles_push_apart_steps, dt);
+            FLIP2D_integrateParticles(&mac, dt, config.gravity);
+            FLIP2D_pushParticlesApart(&mac, config.particles_push_apart_steps, dt);
             FLIP2D_handleObstacle(&mac, &obstacle, dt);
-            FLIP2D_transferVelocities(&mac, 1, flip_ratio);
+            FLIP2D_transferVelocities(&mac, 1, config.flip_ratio);
             FLIP2D_updateParticleDensity(&mac);
-            FLIP2D_solveIncompressibility(&mac, pressure_solver_steps, dt, over_relaxation);
-            FLIP2D_transferVelocities(&mac, 0, flip_ratio);
+            FLIP2D_solveIncompressibility(&mac, config.pressure_solver_steps, dt, config.over_relaxation);
+            FLIP2D_transferVelocities(&mac, 0, config.flip_ratio);
         }
 
-        if (show_cubes)
+        if (config.show_cubes)
         {
             Pair_t mac_grid_render_sizes;
-            if (marching_cubes)
+            if (config.marching_cubes)
             {
-                mac_grid_render_sizes = FLIP_transformGridToVerticiesMarchingCubes(&mac, fluid_vertices, fluid_indices, show_sci);
+                mac_grid_render_sizes = FLIP_transformGridToVerticiesMarchingCubes(&mac, fluid_vertices, fluid_indices, config.show_sci, config.show_air, config.show_solids);
             }
             else
             {
-                mac_grid_render_sizes = FLIP_transformGridToVerticies(&mac, fluid_vertices, fluid_indices, show_sci);
+                mac_grid_render_sizes = FLIP_transformGridToVerticies(&mac, fluid_vertices, fluid_indices, config.show_sci, config.show_air, config.show_solids);
             }
             render(window, camera, fluidShader, fluidVao, fluidVbo, fluidEbo, fluid_vertices, fluid_indices, mac_grid_render_sizes.first, mac_grid_render_sizes.second);
         }
 
-        if (show_markers)
+        if (config.show_markers)
         {
             Pair_t mac_markers_render_sizes = FLIP_transformMarkersToVertices(&mac, marker_vertices, marker_indices);
             render(window, camera, markerShader, markerVao, markerVbo, markerEbo, marker_vertices, marker_indices, mac_markers_render_sizes.first, mac_markers_render_sizes.second);
@@ -316,26 +374,29 @@ int main(int argc, char **argv)
 
     Obstacle_destroy(&obstacle);
     FLIP_destroy(&mac);
+
     VAO_destroy(&fluidVao);
     VBO_destroy(&fluidVbo);
     EBO_destroy(&fluidEbo);
     VAO_destroy(&obstacleVao);
     VBO_destroy(&obstacleVbo);
     EBO_destroy(&obstacleEbo);
+    VAO_destroy(&markerVao);
+    VBO_destroy(&markerVbo);
+    EBO_destroy(&markerEbo);
     Shader_destroy(&fluidShader);
     Shader_destroy(&obstacleShader);
+    Shader_destroy(&markerShader);
+
     Camera_destroy(&camera);
+
     free(fluid_vertices);
     free(fluid_indices);
     free(obstacle_vertices);
     free(obstacle_indices);
-
     free(marker_vertices);
     free(marker_indices);
-    Shader_destroy(&markerShader);
-    VAO_destroy(&markerVao);
-    VBO_destroy(&markerVbo);
-    EBO_destroy(&markerEbo);
+
     glfwDestroyWindow(window);
     glfwTerminate();
     return 0;

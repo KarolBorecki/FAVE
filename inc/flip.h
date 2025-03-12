@@ -26,8 +26,8 @@ extern "C"
     void FLIP_transferVelocities(FlipGrid_t *grid, int toGrid, float flipRatio);
     void FLIP_updateParticleDensity(FlipGrid_t *grid);
     void FLIP_solveIncompressibility(FlipGrid_t *grid, int numIters, float dt, float overRelaxation);
-    Pair_t FLIP_transformGridToVerticies(FlipGrid_t *grid, Vertex_t *vertices, GLuint *indices, int show_sci);
-    Pair_t FLIP_transformGridToVerticiesMarchingCubes(FlipGrid_t *grid, Vertex_t *vertices, GLuint *indices, int show_sci);
+    Pair_t FLIP_transformGridToVerticies(FlipGrid_t *grid, Vertex_t *vertices, GLuint *indices, int show_sci, int show_air, int show_solids);
+    Pair_t FLIP_transformGridToVerticiesMarchingCubes(FlipGrid_t *grid, Vertex_t *vertices, GLuint *indices, int show_sci, int show_air, int show_solids);
     Pair_t FLIP_transformMarkersToVertices(FlipGrid_t *grid, Vertex_t *markerVertices, GLuint *markerIndices);
     void FLIP_destroy(FlipGrid_t *grid);
 

@@ -36,8 +36,6 @@ void FLIP_init(FlipGrid_t *grid, float density, float size_x, float size_y, floa
     ALLOC_CHECK(grid->s, "s");
     grid->cell_type = (CellType *)calloc(grid->f_num_cells, sizeof(CellType));
     ALLOC_CHECK(grid->cell_type, "cell_type");
-    grid->cell_color = (float *)calloc(grid->f_num_cells * 3, sizeof(float));
-    ALLOC_CHECK(grid->cell_color, "cell_color");
 
     grid->num_particles = num_particles;
     grid->particle_pos = (float *)calloc(grid->num_particles * 3, sizeof(float));
@@ -109,13 +107,6 @@ void FLIP_init(FlipGrid_t *grid, float density, float size_x, float size_y, floa
             }
         }
     }
-
-    printf("FLIP grid initialized successfully!\n");
-    printf("f_num_x = %d, f_num_y = %d, f_num_z = %d, f_num_cells = %d\n", grid->f_num_x, grid->f_num_y, grid->f_num_z, grid->f_num_cells);
-    printf("p_num_x = %d, p_num_y = %d, p_num_z = %d, p_num_cells = %d\n", grid->p_num_x, grid->p_num_y, grid->p_num_z, grid->p_num_cells);
-    printf("num_particles = %d, particle_radius = %.2f, p_inv_spacing = %.2f\n", grid->num_particles, grid->particle_radius, grid->p_inv_spacing);
-    printf("particle_rest_density = %.2f\n", grid->particle_rest_density);
-    printf("density = %.2f\n", grid->density);
 }
 
 void FLIP_integrateParticles(FlipGrid_t *grid, float dt, float gravity)
@@ -642,7 +633,7 @@ void FLIP_solveIncompressibility(FlipGrid_t *grid, int num_iters, float dt, floa
     }
 }
 
-Pair_t FLIP_transformGridToVerticies(FlipGrid_t *grid, Vertex_t *vertices, GLuint *indices, int show_sci)
+Pair_t FLIP_transformGridToVerticies(FlipGrid_t *grid, Vertex_t *vertices, GLuint *indices, int show_sci, int show_air, int show_solids)
 {
     glm::vec3 cubeVertices[8] = {
         glm::vec3(0.0f, 0.0f, 0.0f),
@@ -699,17 +690,19 @@ Pair_t FLIP_transformGridToVerticies(FlipGrid_t *grid, Vertex_t *vertices, GLuin
                 }
                 else if (grid->cell_type[cell_nr] == SOLID)
                 {
+                    if (!show_solids)
+                        continue;
                     c[0] = 1.0f;
                     c[1] = 1.0f;
                     c[2] = 1.0f;
-                    continue;
                 }
                 else if (grid->cell_type[cell_nr] == AIR)
                 {
+                    if (!show_air)
+                        continue;
                     c[0] = 0.53f;
                     c[1] = 0.81f;
                     c[2] = 0.94f;
-                    continue;
                 }
 
                 for (int i = 0; i < 8; i++)
@@ -733,7 +726,7 @@ Pair_t FLIP_transformGridToVerticies(FlipGrid_t *grid, Vertex_t *vertices, GLuin
     return {.first = (int)vert_index, .second = (int)ind_index};
 }
 
-Pair_t FLIP_transformGridToVerticiesMarchingCubes(FlipGrid_t *grid, Vertex_t *vertices, GLuint *indices, int show_sci)
+Pair_t FLIP_transformGridToVerticiesMarchingCubes(FlipGrid_t *grid, Vertex_t *vertices, GLuint *indices, int show_sci, int show_air, int show_solids)
 {
     size_t vert_index = 0;
     size_t ind_index = 0;
@@ -921,4 +914,22 @@ Pair_t FLIP_transformMarkersToVertices(FlipGrid_t *grid, Vertex_t *markerVertice
 
 void FLIP_destroy(FlipGrid_t *grid)
 {
+    // free(grid->u);
+    // free(grid->v);
+    // free(grid->w);
+    // free(grid->du);
+    // free(grid->dv);
+    // free(grid->dw);
+    // free(grid->prev_u);
+    // free(grid->prev_v);
+    // free(grid->prev_w);
+    // free(grid->p);
+    // free(grid->s);
+    // free(grid->cell_type);
+    // free(grid->particle_pos);
+    // free(grid->particle_vel);
+    // free(grid->particle_density);
+    // free(grid->num_cell_particles);
+    // free(grid->first_cell_particle);
+    // free(grid->cell_particle_ids);
 }
