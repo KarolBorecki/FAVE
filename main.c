@@ -308,7 +308,7 @@ int main(int argc, char **argv)
     while (!glfwWindowShouldClose(window))
     {
         clock_t currentTime = clock();
-        dt = (float)(currentTime - previousTime) / CLOCKS_PER_SEC;
+        // dt = (float)(currentTime - previousTime) / CLOCKS_PER_SEC;
         previousTime = currentTime;
 
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
