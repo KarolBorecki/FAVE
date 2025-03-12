@@ -1,6 +1,6 @@
-#include "flip.h"
+#include "flip_2D.h"
 
-void FLIP2D_init(FlipGrid_t *grid, float density, float size_x, float size_y, float size_z, float spacing, float particle_radius, int num_particles)
+void FLIP2D_init(FlipGrid_t *grid, float density, float size_x, float size_y, float spacing, float particle_radius, int num_particles)
 {
     grid->density = density;
     grid->f_num_x = (int)(floorf(size_x / spacing) + 1.0f);

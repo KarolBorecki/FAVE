@@ -17,6 +17,7 @@
 #include "inc/camera.h"
 
 #include "inc/flip.h"
+#include "inc/flip_2D.h"
 #include "inc/obstacle.h"
 
 #include "inc/buffers/shader.h"
@@ -155,6 +156,45 @@ int main(int argc, char **argv)
     config.window_width = 1400;
     config.window_height = 1200;
 
+    float flip_ratio = 0.85f;
+    float over_relaxation = 1.8f;
+    int pressure_solver_steps = 120;
+    int particles_push_apart_steps = 2;
+    int show_markers = 0;
+    int show_cubes = 1;
+    int show_sci = 1;
+    int marching_cubes = 1;
+    int use_2D = 0;
+    float gravity = -9.81f;
+    float density = 1000.0f;
+    float spacing = 0.05884615f;
+    float size_x = 1.53f;
+    float size_y = 1.53f;
+    float size_z = 1.53f;
+    float particle_radius = 0.020825f;
+    int max_particles = 20000;
+
+    for (int i = 1; i < argc; i++)
+    {
+        parseArgument(argv[i], "flip_ratio", &flip_ratio, "float");
+        parseArgument(argv[i], "relax", &over_relaxation, "float");
+        parseArgument(argv[i], "pressure_steps", &pressure_solver_steps, "int");
+        parseArgument(argv[i], "push_steps", &particles_push_apart_steps, "int");
+        parseArgument(argv[i], "show_markers", &show_markers, "int");
+        parseArgument(argv[i], "show_cubes", &show_cubes, "int");
+        parseArgument(argv[i], "marching_cubes", &marching_cubes, "int");
+        parseArgument(argv[i], "use_2D", &use_2D, "int");
+        parseArgument(argv[i], "show_sci", &show_sci, "int");
+        parseArgument(argv[i], "gravity", &gravity, "float");
+        parseArgument(argv[i], "density", &density, "float");
+        parseArgument(argv[i], "spacing", &spacing, "float");
+        parseArgument(argv[i], "size_x", &size_x, "float");
+        parseArgument(argv[i], "size_y", &size_y, "float");
+        parseArgument(argv[i], "size_z", &size_z, "float");
+        parseArgument(argv[i], "particle_r", &particle_radius, "float");
+        parseArgument(argv[i], "particles", &max_particles, "int");
+    }
+
     GLFWwindow *window = initializeWindow();
 
     if (!window)
@@ -171,13 +211,13 @@ int main(int argc, char **argv)
 
     if (!fluid_vertices || !fluid_indices || !obstacle_vertices || !obstacle_indices || !marker_vertices || !marker_indices)
     {
-        fprintf(stderr, "Failed to allocate memory for fluid_vertices and fluid_indices\n");
+        fprintf(stderr, "Failed to allocate memory for vertices or indices\n");
         return -1;
     }
 
     Shader_t fluidShader, obstacleShader, markerShader;
     Shader_init(&fluidShader, "shaders/default.vert", "shaders/default.frag");
-    Shader_init(&obstacleShader, "shaders/obstacle.vert", "shaders/obstacle.frag");
+    Shader_init(&obstacleShader, "shaders/default.vert", "shaders/default.frag");
     Shader_init(&markerShader, "shaders/default.vert", "shaders/default.frag");
 
     VAO_t fluidVao, obstacleVao, markerVao;
@@ -188,70 +228,29 @@ int main(int argc, char **argv)
     setupBuffers(obstacleVao, obstacleVbo, obstacleEbo, OBSTACLE_VERTICIES_SIZE, OBSTACLE_INDICIES_SIZE);
     setupBuffers(markerVao, markerVbo, markerEbo, PARTICLES_VERTICIES_SIZE, PARTICLES_INDICIES_SIZE);
 
-    float flip_ratio = 0.85f;
-    float over_relaxation = 1.8f;
-    int pressure_solver_steps = 120;
-    int particles_push_apart_steps = 2;
-    int show_markers = 0;
-    int show_cubes = 1;
-    int show_sci = 1;
-    int marching_cubes = 1;
-    float gravity = -9.81f;
-    float density = 1000.0f;
-    float spacing = 0.05884615f;
-    float size_x = 1.53f;
-    float size_y = 1.53f;
-    float size_z = 1.53f;
-    float particle_radius = 0.020825f;
-    int max_particles = 20000;
-
-    for (int i = 1; i < argc; i++)
+    FlipGrid_t mac;
+    
+    if(!use_2D)
     {
-        parseArgument(argv[i], "flip_ratio", &flip_ratio, "float");
-        parseArgument(argv[i], "over_relaxation", &over_relaxation, "float");
-        parseArgument(argv[i], "pressure_solver_steps", &pressure_solver_steps, "int");
-        parseArgument(argv[i], "particles_push_apart_steps", &particles_push_apart_steps, "int");
-        parseArgument(argv[i], "show_markers", &show_markers, "int");
-        parseArgument(argv[i], "show_cubes", &show_cubes, "int");
-        parseArgument(argv[i], "marching_cubes", &marching_cubes, "int");
-        parseArgument(argv[i], "show_sci", &show_sci, "int");
-        parseArgument(argv[i], "gravity", &gravity, "float");
-        parseArgument(argv[i], "density", &density, "float");
-        parseArgument(argv[i], "spacing", &spacing, "float");
-        parseArgument(argv[i], "size_x", &size_x, "float");
-        parseArgument(argv[i], "size_y", &size_y, "float");
-        parseArgument(argv[i], "size_z", &size_z, "float");
-        parseArgument(argv[i], "particle_radius", &particle_radius, "float");
-        parseArgument(argv[i], "max_particles", &max_particles, "int");
+        FLIP_init(&mac, density, size_x, size_y, size_z, spacing, particle_radius, max_particles);
+    } 
+    else 
+    {
+        FLIP2D_init(&mac, density, size_x, size_y, spacing, particle_radius, max_particles);
     }
 
-    float camera_speed = 0.1f;
-
-    float obstacle_speed = 0.09f;
-    float obstacle_radius = 0.3f;
-    float obstacle_push = 20.0f;
-
-    FlipGrid_t mac;
-    FLIP_init(&mac, density, size_x, size_y, size_z, spacing, particle_radius, max_particles);
-
     Camera_t camera;
-    camera_speed = mac.h * 1.5f;
-    // camera, window, postion, speed, fov, near, far
-    Camera_init(&camera, window, glm::vec3(2.75f, 2.0f, 2.74f), camera_speed, 45.0f, 0.1f, 1000.0f);
+    Camera_init(&camera, window, glm::vec3(2.75f, 2.0f, 2.74f), 0.3f, 45.0f, 0.1f, 1000.0f);
 
     Obstacle_t obstacle;
-    obstacle_radius = mac.h * 4.0f;
-    obstacle_speed = obstacle_speed * 2.0f;
-    // obstacle, x, y, z, radius, speed
-    Obstacle_init(&obstacle, size_x / 2.0f, size_y + obstacle_radius * 2, obstacle_radius/2.0f, obstacle_radius, obstacle_speed, obstacle_push);
+    Obstacle_init(&obstacle, size_x / 2.0f, size_y, size_z / 2.0f, 0.08f, 0.2f, 15.0f);
 
     clock_t previousTime = clock();
-    float dt = 1.0f / 60.0f; // TODO it should be calculated based on the time between frames or more sophisticated way
+    float dt = 1.0f / 60.0f;
     while (!glfwWindowShouldClose(window))
     {
         clock_t currentTime = clock();
         dt = (float)(currentTime - previousTime) / CLOCKS_PER_SEC;
-        // dt = 1.0f / 120.0f;
         previousTime = currentTime;
 
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
@@ -267,13 +266,26 @@ int main(int argc, char **argv)
         }
         Obstacle_processInput(&obstacle, window);
 
-        FLIP_integrateParticles(&mac, dt, gravity);
-        FLIP_pushParticlesApart(&mac, particles_push_apart_steps, dt);
-        FLIP_handleObstacle(&mac, &obstacle, dt);
-        FLIP_transferVelocities(&mac, 1, flip_ratio);
-        FLIP_updateParticleDensity(&mac);
-        FLIP_solveIncompressibility(&mac, pressure_solver_steps, dt, over_relaxation);
-        FLIP_transferVelocities(&mac, 0, flip_ratio);
+        if (!use_2D)
+        {
+            FLIP_integrateParticles(&mac, dt, gravity);
+            FLIP_pushParticlesApart(&mac, particles_push_apart_steps, dt);
+            FLIP_handleObstacle(&mac, &obstacle, dt);
+            FLIP_transferVelocities(&mac, 1, flip_ratio);
+            FLIP_updateParticleDensity(&mac);
+            FLIP_solveIncompressibility(&mac, pressure_solver_steps, dt, over_relaxation);
+            FLIP_transferVelocities(&mac, 0, flip_ratio);
+        }
+        else 
+        {
+            FLIP2D_integrateParticles(&mac, dt, gravity);
+            FLIP2D_pushParticlesApart(&mac, particles_push_apart_steps, dt);
+            FLIP2D_handleObstacle(&mac, &obstacle, dt);
+            FLIP2D_transferVelocities(&mac, 1, flip_ratio);
+            FLIP2D_updateParticleDensity(&mac);
+            FLIP2D_solveIncompressibility(&mac, pressure_solver_steps, dt, over_relaxation);
+            FLIP2D_transferVelocities(&mac, 0, flip_ratio);
+        }
 
         if (show_cubes)
         {
