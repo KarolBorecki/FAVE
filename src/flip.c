@@ -635,7 +635,10 @@ Pair_t FLIP_transformGridToVerticies(FlipGrid_t *grid, Vertex_t *vertices, GLuin
                                      int show_sci, int show_air, int show_solids)
 {
     static glm::vec3 cubeVertices[8] = {
-        {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f, 1.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f, 1.0f}};
+        {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, 
+        {1.0f, 1.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, 
+        {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f, 1.0f}, 
+        {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f, 1.0f}};
 
     static GLuint cubeIndices[36] = {
         0, 1, 2, 2, 3, 0,
@@ -648,7 +651,6 @@ Pair_t FLIP_transformGridToVerticies(FlipGrid_t *grid, Vertex_t *vertices, GLuin
     size_t vert_index = 0;
     size_t ind_index = 0;
 
-    // Przenieś obliczenia zakresów ciśnienia poza pętle
     float minPressure = FLT_MAX, maxPressure = FLT_MIN, sumPressure = 0.0f;
     for (int i = 0; i < grid->f_num_cells; i++)
     {
@@ -661,7 +663,6 @@ Pair_t FLIP_transformGridToVerticies(FlipGrid_t *grid, Vertex_t *vertices, GLuin
         }
     }
 
-    // Uproszczenie logiki kolorów i pozycji
     for (int cell_nr = 0; cell_nr < grid->f_num_cells; cell_nr++)
     {
 

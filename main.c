@@ -189,13 +189,11 @@ void render(GLFWwindow *window, Camera_t &camera, Shader_t &shaderProgram, VAO_t
 {
     if (verticies_size <= 0 || indicies_size <= 0 || verticies_size > MAX_VERTICIES || indicies_size > MAX_INDICIES)
     {
-        fprintf(stderr, "incorrect verticies/indicies sizes: verticies=%d, indicies=%d\n",
-                verticies_size, indicies_size);
+        fprintf(stderr, "incorrect verticies/indicies sizes: verticies=%d, indicies=%d\n", verticies_size, indicies_size);
         return;
     }
 
     Shader_use(&shaderProgram);
-    checkGLError("Shader_use");
     Shader_setMatrix4f(&shaderProgram, "camMatrix", glm::value_ptr(camera.cam_mat));
 
     VBO_bind(&vbo);
@@ -206,7 +204,6 @@ void render(GLFWwindow *window, Camera_t &camera, Shader_t &shaderProgram, VAO_t
 
     VAO_bind(&vao);
     glDrawElements(GL_TRIANGLES, indicies_size, GL_UNSIGNED_INT, 0);
-    checkGLError("glDrawElements");
 
     VAO_unbind();
     VBO_unbind();
