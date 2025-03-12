@@ -243,7 +243,7 @@ int main(int argc, char **argv)
     obstacle_radius = mac.h * 4.0f;
     obstacle_speed = obstacle_speed * 2.0f;
     // obstacle, x, y, z, radius, speed
-    Obstacle_init(&obstacle, size_x / 2.0f, size_y + obstacle_radius * 2, obstacle_radius, obstacle_radius, obstacle_speed, obstacle_push);
+    Obstacle_init(&obstacle, size_x / 2.0f, size_y + obstacle_radius * 2, obstacle_radius/2.0f, obstacle_radius, obstacle_speed, obstacle_push);
 
     clock_t previousTime = clock();
     float dt = 1.0f / 60.0f; // TODO it should be calculated based on the time between frames or more sophisticated way
@@ -251,7 +251,7 @@ int main(int argc, char **argv)
     {
         clock_t currentTime = clock();
         dt = (float)(currentTime - previousTime) / CLOCKS_PER_SEC;
-        // dt = 1.0f / 60.0f;
+        // dt = 1.0f / 120.0f;
         previousTime = currentTime;
 
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
@@ -260,6 +260,11 @@ int main(int argc, char **argv)
         processInput(window);
 
         Camera_processInput(&camera, window);
+
+        if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS)
+        {
+            Obstacle_integrate(&obstacle, gravity, 0.0f, dt);
+        }
         Obstacle_processInput(&obstacle, window);
 
         FLIP_integrateParticles(&mac, dt, gravity);
@@ -275,11 +280,11 @@ int main(int argc, char **argv)
             Pair_t mac_grid_render_sizes;
             if (marching_cubes)
             {
-                mac_grid_render_sizes = FLIP_transformGridToVerticies(&mac, fluid_vertices, fluid_indices, show_sci);
+                mac_grid_render_sizes = FLIP_transformGridToVerticiesMarchingCubes(&mac, fluid_vertices, fluid_indices, show_sci);
             }
             else
             {
-                mac_grid_render_sizes = FLIP_transformGridToVerticiesMarchingCubes(&mac, fluid_vertices, fluid_indices, show_sci);
+                mac_grid_render_sizes = FLIP_transformGridToVerticies(&mac, fluid_vertices, fluid_indices, show_sci);
             }
             render(window, camera, fluidShader, fluidVao, fluidVbo, fluidEbo, fluid_vertices, fluid_indices, mac_grid_render_sizes.first, mac_grid_render_sizes.second);
         }

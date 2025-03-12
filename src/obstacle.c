@@ -28,6 +28,18 @@ float Obstacle_getZVelocity(Obstacle_t *obstacle, float dt)
     return (obstacle->z - obstacle->last_z) * obstacle->speed / dt;
 }
 
+void Obstacle_integrate(Obstacle_t *obstacle, float gravity, float min_y, float dt)
+{
+    if (obstacle->y > min_y)
+    {
+        obstacle->y += gravity * dt;
+    }
+    else
+    {
+        obstacle->y = min_y;
+    }
+}
+
 void Obstacle_processInput(Obstacle_t *obstacle, GLFWwindow *window)
 {
 
@@ -57,6 +69,41 @@ void Obstacle_processInput(Obstacle_t *obstacle, GLFWwindow *window)
     if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS)
     {
         obstacle->z += 1.0f * obstacle->speed;
+    }
+    if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS)
+    {
+        obstacle->x = 0.75f;
+        obstacle->y = 0.2f;
+        obstacle->z = 2.3f;
+        printf("PRESS U TO MOVE\n");
+    }
+    if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS)
+    {
+        obstacle->x = 2.0f;
+        obstacle->y = 0.2f;
+        obstacle->z = 0.65f;
+        printf("PRESS J TO MOVE\n");
+    }
+    if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS)
+    {
+        obstacle->x = 2.0f;
+        obstacle->y = 0.0f;
+        obstacle->z = 2.0f;
+        printf("PRESS U + J TO MOVE\n");
+    }
+    if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS)
+    {
+        obstacle->x = 0.75f;
+        obstacle->y = -1.0f;
+        obstacle->z = 0.75f;
+        printf("PRESS I TO MOVE\n");
+    }
+    if (glfwGetKey(window, GLFW_KEY_5) == GLFW_PRESS)
+    {
+        obstacle->x = 2.0f;
+        obstacle->y = 1.44f;
+        obstacle->z = 0.65f;
+        printf("PRESS J + K TO MOVE\n");
     }
 }
 
