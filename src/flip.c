@@ -942,7 +942,14 @@ Pair_t FLIP_transformGridToVerticies(FlipGrid_t *grid, Vertex_t *vertices, GLuin
                         float valA = cornerValues[idxA];
                         float valB = cornerValues[idxB];
 
-                        float t = (0.0f - valA) / (valB - valA);
+                        float t;
+
+                        float epsilon = 1e-6f;
+                        if (fabs(valB - valA) < epsilon)
+                            t = 0.5f; // Środek krawędzi jako bezpieczny punkt
+                        else
+                            t = (0.0f - valA) / ((valB - valA) + epsilon);
+
                         vertexList[i] = cubePos +
                                         cornerOffsets[idxA] * grid->h * (1.0f - t) +
                                         cornerOffsets[idxB] * grid->h * t;

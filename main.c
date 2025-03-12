@@ -71,11 +71,10 @@ GLFWwindow *initializeWindow()
         return NULL;
     }
 
+    glShadeModel(GL_FLAT);
+    // glEnable(GL_CULL_FACE);
+    // glCullFace(GL_BACK);
     glEnable(GL_DEPTH_TEST);
-
-    // FOR DEBUGGING
-    // glEnable(GL_DEBUG_OUTPUT);
-    // glDebugMessageCallback(GLDebugMessageCallback, 0);
 
     return window;
 }
