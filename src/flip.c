@@ -214,7 +214,7 @@ void FLIP_pushParticlesApart(FlipGrid_t *grid, int numIters, float dt)
         grid->cell_particle_ids[grid->first_cell_particle[cell_nr]] = i;
     }
 
-    float minDist = 2.0f * grid->particle_radius;
+    float minDist = 2.07f * grid->particle_radius;
     float minDist2 = minDist * minDist;
 
     for (int iter = 0; iter < numIters; iter++)
@@ -264,11 +264,15 @@ void FLIP_pushParticlesApart(FlipGrid_t *grid, int numIters, float dt)
                             float dz = qz - pz;
 
                             float d2 = dx * dx + dy * dy + dz * dz; // Fixed 3D distance calculation
-                            if (d2 > minDist2 || d2 == 0.0f)
+                            if (d2 > minDist2 || d2 < 1e-8f)
                                 continue;
+                                
 
                             float d = sqrtf(d2);
+                            if (d < 1e-5f)
+                                d = 1e-5f;
                             float s = 0.5f * (minDist - d) / d;
+                            // s = clampf(s, -0.5f, 0.5f);
 
                             dx *= s;
                             dy *= s;

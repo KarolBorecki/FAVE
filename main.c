@@ -188,8 +188,8 @@ int main(int argc, char **argv)
     setupBuffers(obstacleVao, obstacleVbo, obstacleEbo, OBSTACLE_VERTICIES_SIZE, OBSTACLE_INDICIES_SIZE);
     setupBuffers(markerVao, markerVbo, markerEbo, PARTICLES_VERTICIES_SIZE, PARTICLES_INDICIES_SIZE);
 
-    float flip_ratio = 0.9f;
-    float over_relaxation = 1.84f;
+    float flip_ratio = 0.85f;
+    float over_relaxation = 1.8f;
     int pressure_solver_steps = 120;
     int particles_push_apart_steps = 2;
     int show_markers = 0;
@@ -198,11 +198,11 @@ int main(int argc, char **argv)
     int marching_cubes = 1;
     float gravity = -9.81f;
     float density = 1000.0f;
-    float spacing = 0.06f;
-    float size_x = 1.5f;
-    float size_y = 1.5f;
-    float size_z = 1.5f;
-    float particle_radius = 0.021f;
+    float spacing = 0.05884615f;
+    float size_x = 1.53f;
+    float size_y = 1.53f;
+    float size_z = 1.53f;
+    float particle_radius = 0.020825f;
     int max_particles = 20000;
 
     for (int i = 1; i < argc; i++)
