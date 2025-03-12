@@ -143,9 +143,9 @@ Pair_t Obstacle_transformToVertices(Obstacle_t *obstacle, Vertex_t *vertices, GL
             vertices[vertexIndex].normal.x = nx;
             vertices[vertexIndex].normal.y = ny;
             vertices[vertexIndex].normal.z = nz;
-            vertices[vertexIndex].color.x = 1.0f;
-            vertices[vertexIndex].color.y = 0.0f;
-            vertices[vertexIndex].color.z = 0.0f;
+            vertices[vertexIndex].color.x = 0.925f;
+            vertices[vertexIndex].color.y = 0.306f;
+            vertices[vertexIndex].color.z = 0.125f;
 
             vertexIndex++;
         }

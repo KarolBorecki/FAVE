@@ -2,8 +2,6 @@
 
 void FLIP_init(FlipGrid_t *grid, float density, float size_x, float size_y, float size_z, float spacing, float particle_radius, int num_particles)
 {
-    printf("Initializing FLIP grid...\n");
-
     grid->density = density;
     grid->f_num_x = (int)(floorf(size_x / spacing) + 1.0f);
     grid->f_num_y = (int)(floorf(size_y / spacing) + 1.0f);
@@ -671,21 +669,25 @@ Pair_t FLIP_transformGridToVerticies(FlipGrid_t *grid, Vertex_t *vertices, GLuin
             sumPressure += p;
         }
     }
-
-    for (int y = 0; y < grid->f_num_y; y++)
+    for (int z = 0; z < grid->f_num_z; z++)
     {
-        for (int x = 0; x < grid->f_num_x; x++)
+        for (int y = 0; y < grid->f_num_y; y++)
         {
-            for (int z = 0; z < grid->f_num_z; z++)
+            for (int x = 0; x < grid->f_num_x; x++)
             {
                 int cell_nr = z * grid->f_num_x * grid->f_num_y + y * grid->f_num_x + x;
                 glm::vec3 cubePos = glm::vec3(x, y, z) * grid->h;
-                float c[3] = {0.0f, 0.0f, 1.0f};
+                float c[3] = { 0.0f, 0.0f, 0.0f };
                 if (grid->cell_type[cell_nr] == FLUID)
                 {
                     if (show_sci)
                     {
                         getSciColor(grid->p[cell_nr], minPressure, maxPressure, c);
+                    } else 
+                    {
+                        c[0] = 0.113f;
+                        c[1] = 0.353f;
+                        c[2] = 0.403f;
                     }
                 }
                 else if (grid->cell_type[cell_nr] == SOLID)
@@ -831,7 +833,7 @@ Pair_t FLIP_transformMarkersToVertices(FlipGrid_t *grid, Vertex_t *markerVertice
 {
     int sphere_lat_slices = 3;
     int sphere_lon_slices = 3;
-    
+
     int indexOffset = 0;
     int vertexOffset = 0;
 
