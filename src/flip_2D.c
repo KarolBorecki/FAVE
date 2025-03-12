@@ -564,7 +564,7 @@ Pair_t FLIP2D_transformGridToVerticiesMarchingSquares(
 
             for (int i = 0; i < 4; i++)
             {
-                vertexList[i] = glm::vec3(0.0f); // Inicjalizacja vertexList[]
+                vertexList[i] = glm::vec3(0.0f);
             }
 
             for (int i = 0; i < 4; i++)
