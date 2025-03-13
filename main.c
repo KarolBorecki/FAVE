@@ -214,7 +214,7 @@ int main(int argc, char **argv)
 {
     if (argc < 2)
     {
-        load_config("./config.txt", config);
+        load_config("./configs/config", config);
     }
     else
     {
@@ -313,7 +313,7 @@ int main(int argc, char **argv)
         dt = (float)(currentTime - previousTime) / CLOCKS_PER_SEC;
         previousTime = currentTime;
 
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        glClearColor(0.823529411765f, 0.8f, 0.752941176471f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         processInput(window);

@@ -687,7 +687,9 @@ Pair_t FLIP_transformGridToVerticies(FlipGrid_t *grid, Vertex_t *vertices, GLuin
         case SOLID:
             if (!show_solids)
                 continue;
-            c[0] = c[1] = c[2] = 1.0f;
+            c[0] = 1.0;
+            c[1] = 0.583;
+            c[2] = 0.019f;
             break;
         case AIR:
             if (!show_air)

@@ -25,5 +25,5 @@ cam_rot_y = 0.0
 cam_rot_z = -1.0
 cam_speed = 0.05
 obstacle_radius = 0.2
-obstacle_push_coefficient = 5.0
-obstacle_speed = 0.07
+obstacle_push_coefficient = 15.0
+obstacle_speed = 0.04

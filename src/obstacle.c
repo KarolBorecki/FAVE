@@ -87,7 +87,7 @@ void Obstacle_processInput(Obstacle_t *obstacle, GLFWwindow *window)
     if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS)
     {
         obstacle->x = 2.0f;
-        obstacle->y = 0.0f;
+        obstacle->y = 0.2f;
         obstacle->z = 2.0f;
         printf("PRESS U + J TO MOVE\n");
     }
