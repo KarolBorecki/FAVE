@@ -161,7 +161,7 @@ void FLIP_pushParticlesApart(FlipGrid_t *grid, int numIters, float dt)
         grid->cell_particle_ids[grid->first_cell_particle[cell_nr]] = i;
     }
 
-    float minDist = 2.07f * grid->particle_radius;
+    float minDist = 2.0f * grid->particle_radius;
     float minDist2 = minDist * minDist;
 
     for (int iter = 0; iter < numIters; iter++)
@@ -497,7 +497,7 @@ void FLIP_transferVelocities(FlipGrid_t *grid, int toGrid, float FLIPRatio)
                 float d_v = 0.0f;
                 for (int j = 0; j < 8; j++)
                 {
-                    d_v += valid[j];
+                    d_v += valid[j] * d_p[j];
                 }
 
                 if (d_v > 0.0f)
@@ -505,14 +505,14 @@ void FLIP_transferVelocities(FlipGrid_t *grid, int toGrid, float FLIPRatio)
                     float pic_vel = 0.0f;
                     for (int j = 0; j < 8; j++)
                     {
-                        pic_vel += valid[j] * f[nr[j]];
+                        pic_vel += valid[j] * f[nr[j]] * d_p[j];
                     }
                     pic_vel /= d_v;
 
                     float corr = 0.0f;
                     for (int j = 0; j < 8; j++)
                     {
-                        corr += valid[j] * (f[nr[j]] - prev_f[nr[j]]);
+                        corr += valid[j] * d_p[j] * (f[nr[j]] - prev_f[nr[j]]);
                     }
                     corr /= d_v;
 
