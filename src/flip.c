@@ -536,7 +536,7 @@ void FLIP_transferVelocities(FlipGrid_t *grid, int toGrid, float FLIPRatio)
                 for (int j = 0; j < grid->f_num_y; j++)
                 {
                     for (int k = 0; k < grid->f_num_z; k++)
-                    {
+                    {// TODO: try changing this part
                         int solid = grid->cell_type[k * grid->f_num_x * grid->f_num_y + j * grid->f_num_x + i] == SOLID ? 1 : 0;
                         if (solid || (i > 0 && grid->cell_type[k * grid->f_num_x * grid->f_num_y + j * grid->f_num_x + i - 1] == SOLID))
                         {
