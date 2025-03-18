@@ -387,9 +387,9 @@ void FLIP_updateParticleDensity(FlipGrid_t *grid)
     }
 }
 
-void FLIP_transferVelocities(FlipGrid_t *grid, int toGrid, float FLIPRatio)
+void FLIP_transferVelocities(FlipGrid_t *grid, int to_grid, float flip_ratio)
 {
-    if (toGrid)
+    if (to_grid)
     {
         for (int i = 0; i < grid->f_num_cells; i++)
         {
@@ -447,13 +447,13 @@ void FLIP_transferVelocities(FlipGrid_t *grid, int toGrid, float FLIPRatio)
             int y1 = min(y0 + 1, grid->f_num_y - 1);
             int z1 = min(z0 + 1, grid->f_num_z - 1);
 
-            float tx = (x - shift_x - x0 * grid->h) * grid->f_inv_spacing; // w0
-            float ty = (y - shift_y - y0 * grid->h) * grid->f_inv_spacing; // w1
-            float tz = (z - shift_z - z0 * grid->h) * grid->f_inv_spacing; // w2
+            float w0 = (x - shift_x - x0 * grid->h) * grid->f_inv_spacing;
+            float w1 = (y - shift_y - y0 * grid->h) * grid->f_inv_spacing;
+            float w3 = (z - shift_z - z0 * grid->h) * grid->f_inv_spacing;
 
-            float sx = 1.0f - tx; // (1 - w0)
-            float sy = 1.0f - ty; // (1 - w1)
-            float sz = 1.0f - tz; // (1 - w2)
+            float w0_q = 1.0f - w0;
+            float w1_q = 1.0f - w1;
+            float w2_q = 1.0f - w3;
 
             int nr[8] = {
                 z0 * grid->f_num_x * grid->f_num_y + y0 * grid->f_num_x + x0,
@@ -465,18 +465,18 @@ void FLIP_transferVelocities(FlipGrid_t *grid, int toGrid, float FLIPRatio)
                 z1 * grid->f_num_x * grid->f_num_y + y1 * grid->f_num_x + x0,
                 z1 * grid->f_num_x * grid->f_num_y + y1 * grid->f_num_x + x1};
 
-            float d0 = sx * sy * sz;
-            float d1 = tx * sy * sz;
-            float d2 = tx * ty * sz;
-            float d3 = sx * ty * sz;
-            float d4 = sx * sy * tz;
-            float d5 = tx * sy * tz;
-            float d6 = tx * ty * tz;
-            float d7 = sx * ty * tz;
+            float d0 = w0_q * w1_q * w2_q;
+            float d1 = w0 * w1_q * w2_q;
+            float d2 = w0 * w1 * w2_q;
+            float d3 = w0_q * w1 * w2_q;
+            float d4 = w0_q * w1_q * w3;
+            float d5 = w0 * w1_q * w3;
+            float d6 = w0 * w1 * w3;
+            float d7 = w0_q * w1 * w3;
 
             float d_p[8] = {d0, d1, d2, d3, d4, d5, d6, d7};
 
-            if (toGrid)
+            if (to_grid)
             {
                 float particle_vel = grid->particle_vel[3 * i + component];
                 for (int j = 0; j < 8; j++)
@@ -516,12 +516,12 @@ void FLIP_transferVelocities(FlipGrid_t *grid, int toGrid, float FLIPRatio)
                     }
                     corr /= d_v;
 
-                    grid->particle_vel[3 * i + component] = FLIPRatio * pic_vel + (1.0f - FLIPRatio) * (velocity + corr);
+                    grid->particle_vel[3 * i + component] = flip_ratio * pic_vel + (1.0f - flip_ratio) * (velocity + corr);
                 }
             }
         }
 
-        if (toGrid)
+        if (to_grid)
         {
             for (int i = 0; i < grid->f_num_cells; i++)
             {

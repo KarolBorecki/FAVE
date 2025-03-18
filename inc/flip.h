@@ -23,7 +23,7 @@ extern "C"
     void FLIP_handleObstacle(FlipGrid_t *grid, Obstacle_t *obstacle, float dt);
     void FLIP_integrateParticles(FlipGrid_t *grid, float dt, float gravity);
     void FLIP_pushParticlesApart(FlipGrid_t *grid, int numIters, float dt);
-    void FLIP_transferVelocities(FlipGrid_t *grid, int toGrid, float flipRatio);
+    void FLIP_transferVelocities(FlipGrid_t *grid, int to_grid, float flip_ratio);
     void FLIP_updateParticleDensity(FlipGrid_t *grid);
     void FLIP_solveIncompressibility(FlipGrid_t *grid, int numIters, float dt, float overRelaxation);
     Pair_t FLIP_transformGridToVerticies(FlipGrid_t *grid, Vertex_t *vertices, GLuint *indices, int show_sci, int show_air, int show_solids);
