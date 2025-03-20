@@ -58,12 +58,12 @@ void FLIP_init(FlipGrid_t *grid, float density, float size_x, float size_y, floa
     ALLOC_CHECK(grid->cell_particle_ids, "cell_particle_ids");
 
     grid->num_particles = minf(grid->num_particles, grid->p_num_x * grid->p_num_y * grid->p_num_z);
-    float min_x = grid->h + grid->particle_radius;
-    float max_x = (grid->f_num_x - 1) * grid->h - grid->particle_radius;
-    float min_y = grid->h + grid->particle_radius;
-    float max_y = (grid->f_num_y - 1) * grid->h - grid->particle_radius;
-    float min_z = grid->h + grid->particle_radius;
-    float max_z = (grid->f_num_z - 1) * grid->h - grid->particle_radius;
+    float min_x = grid->h + grid->particle_radius * 2;
+    float max_x = (grid->f_num_x - 1) * grid->h - grid->particle_radius * 2;
+    float min_y = grid->h + grid->particle_radius * 2;
+    float max_y = (grid->f_num_y - 1) * grid->h - grid->particle_radius * 4;
+    float min_z = grid->h + grid->particle_radius * 2;
+    float max_z = (grid->f_num_z - 1) * grid->h - grid->particle_radius * 2;
 
     float x = min_x;
     float y = min_y;
@@ -538,17 +538,9 @@ void FLIP_transferVelocities(FlipGrid_t *grid, int to_grid, float flip_ratio)
                     for (int k = 0; k < grid->f_num_z; k++)
                     {// TODO: try changing this part
                         int solid = grid->cell_type[k * grid->f_num_x * grid->f_num_y + j * grid->f_num_x + i] == SOLID ? 1 : 0;
-                        if (solid || (i > 0 && grid->cell_type[k * grid->f_num_x * grid->f_num_y + j * grid->f_num_x + i - 1] == SOLID))
+                        if (solid)
                         {
                             f[k * grid->f_num_x * grid->f_num_y + j * grid->f_num_x + i] = grid->prev_u[k * grid->f_num_x * grid->f_num_y + j * grid->f_num_x + i];
-                        }
-                        if (solid || (j > 0 && grid->cell_type[k * grid->f_num_x * grid->f_num_y + (j - 1) * grid->f_num_x + i] == SOLID))
-                        {
-                            f[k * grid->f_num_x * grid->f_num_y + j * grid->f_num_x + i] = grid->prev_v[k * grid->f_num_x * grid->f_num_y + j * grid->f_num_x + i];
-                        }
-                        if (solid || (k > 0 && grid->cell_type[(k - 1) * grid->f_num_x * grid->f_num_y + j * grid->f_num_x + i] == SOLID))
-                        {
-                            f[k * grid->f_num_x * grid->f_num_y + j * grid->f_num_x + i] = grid->prev_w[k * grid->f_num_x * grid->f_num_y + j * grid->f_num_x + i];
                         }
                     }
                 }
