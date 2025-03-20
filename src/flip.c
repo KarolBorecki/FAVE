@@ -536,7 +536,7 @@ void FLIP_transferVelocities(FlipGrid_t *grid, int to_grid, float flip_ratio)
                 for (int j = 0; j < grid->f_num_y; j++)
                 {
                     for (int k = 0; k < grid->f_num_z; k++)
-                    {// TODO: try changing this part
+                    { // TODO: try changing this part
                         int solid = grid->cell_type[k * grid->f_num_x * grid->f_num_y + j * grid->f_num_x + i] == SOLID ? 1 : 0;
                         if (solid)
                         {
@@ -627,10 +627,7 @@ Pair_t FLIP_transformGridToVerticies(FlipGrid_t *grid, Vertex_t *vertices, GLuin
                                      int show_sci, int show_air, int show_solids)
 {
     static glm::vec3 cubeVertices[8] = {
-        {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, 
-        {1.0f, 1.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, 
-        {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f, 1.0f}, 
-        {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f, 1.0f}};
+        {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f, 1.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f, 1.0f}};
 
     static GLuint cubeIndices[36] = {
         0, 1, 2, 2, 3, 0,
@@ -783,7 +780,7 @@ Pair_t FLIP_transformGridToVerticiesMarchingCubes(
                     glm::vec3 v1 = vertexList[triTable[cubeIndex][i + 1]];
                     glm::vec3 v2 = vertexList[triTable[cubeIndex][i + 2]];
 
-                    glm::vec3 normal = glm::normalize(glm::cross(v1 - v0, v2 - v0));
+                    glm::vec3 normal = glm::normalize(glm::cross(v0 - v1, v0 - v2));
 
                     for (int j = 0; j < 3; j++)
                     {
