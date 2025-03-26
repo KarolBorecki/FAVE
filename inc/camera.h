@@ -6,9 +6,10 @@
 #include <cstdio>
 
 #include <GLFW/glfw3.h>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
+#include <cglm/cglm.h>
+#include <cglm/struct.h>
+#include <GLFW/glfw3.h>
+#include <math.h>
 
 #ifdef __cplusplus
 extern "C"
@@ -16,9 +17,9 @@ extern "C"
 #endif
     typedef struct Camera
     {
-        glm::vec3 position;
-        glm::vec3 direction;
-        glm::vec3 up;
+        vec3s position;
+        vec3s direction;
+        vec3s up;
 
         float fov;
         float near_plane;
@@ -28,12 +29,12 @@ extern "C"
 
         int first_input_click;
 
-        glm::mat4 view_mat;
-        glm::mat4 projection_mat;
-        glm::mat4 cam_mat;
+        mat4s view_mat;
+        mat4s projection_mat;
+        mat4s cam_mat;
     } Camera_t;
 
-    void Camera_init(Camera_t *camera, GLFWwindow *window, glm::vec3 postion, glm::vec3 rotation, float speed, float fov, float near_plane, float far_plane);
+    void Camera_init(Camera_t *camera, GLFWwindow *window, vec3s position, vec3s rotation, float speed, float fov, float near, float far);
     // Note: This function opropable needs dt
     void Camera_processInput(Camera_t *camera, GLFWwindow *window);
     void Camera_destroy(Camera_t *camera);

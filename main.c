@@ -194,7 +194,7 @@ void render(GLFWwindow *window, Camera_t &camera, Shader_t &shaderProgram, VAO_t
     }
 
     Shader_use(&shaderProgram);
-    Shader_setMatrix4f(&shaderProgram, "camMatrix", glm::value_ptr(camera.cam_mat));
+    Shader_setMatrix4f(&shaderProgram, "camMatrix", (float *)camera.cam_mat.raw);
 
     VBO_bind(&vbo);
     VBO_update(&vbo, fluid_vertices, verticies_size);
@@ -300,7 +300,7 @@ int main(int argc, char **argv)
     printf("density = %.2f\n\n", mac.density);
 
     Camera_t camera;
-    Camera_init(&camera, window, glm::vec3(config.cam_x, config.cam_y, config.cam_z), glm ::vec3(config.cam_rot_x, config.cam_rot_y, config.cam_rot_z), config.cam_speed, 45.0f, 0.1f, 1000.0f);
+    Camera_init(&camera, window, {{config.cam_x, config.cam_y, config.cam_z}}, {{config.cam_rot_x, config.cam_rot_y, config.cam_rot_z}}, config.cam_speed, 45.0f, 0.1f, 1000.0f);
 
     Obstacle_t obstacle;
     Obstacle_init(&obstacle, config.size_x / 2.0f, config.size_y, config.size_z / 2.0f, config.obstacle_radius, config.obstacle_speed, config.obstacle_push_coefficient);
@@ -357,7 +357,7 @@ int main(int argc, char **argv)
             else
             {
                 // if (!config.use_2D)
-                    mac_grid_render_sizes = FLIP_transformGridToVerticiesMarchingCubes(&mac, fluid_vertices, fluid_indices, config.show_sci, config.show_air, config.show_solids);
+                mac_grid_render_sizes = FLIP_transformGridToVerticiesMarchingCubes(&mac, fluid_vertices, fluid_indices, config.show_sci, config.show_air, config.show_solids);
                 // else
                 //     mac_grid_render_sizes = FLIP2D_transformGridToVerticiesMarchingSquares(&mac, fluid_vertices, fluid_indices, config.show_sci, config.show_air, config.show_solids);
             }
