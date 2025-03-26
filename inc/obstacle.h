@@ -1,7 +1,7 @@
 #ifndef FAVE_OBSTACLE_H
 #define FAVE_OBSTACLE_H
 
-#include <cstdio>
+#include <stdio.h>
 #include <math.h>
 #include <string.h>
 #include <stdint.h>
@@ -9,7 +9,7 @@
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include <glm/glm.hpp>
+#include <cglm/struct.h>
 
 #include "types.h"
 #include "buffers/vbo.h"
@@ -20,8 +20,8 @@ extern "C"
 #endif
     typedef struct Obstacle
     {
-        glm::vec3 position;
-        glm::vec3 last_position;
+        vec3s position;
+        vec3s last_position;
         float x;
         float y;
         float z;

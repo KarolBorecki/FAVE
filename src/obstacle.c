@@ -2,12 +2,8 @@
 
 void Obstacle_init(Obstacle_t *obstacle, float x, float y, float z, float radius, float speed, float push_coefficient)
 {
-    obstacle->x = x;
-    obstacle->last_x = x;
-    obstacle->y = y;
-    obstacle->last_y = y;
-    obstacle->z = z;
-    obstacle->last_z = z;
+    obstacle->position = (vec3s){{x, y, z}};
+    obstacle->last_position = (vec3s){{x, y, z}};
     obstacle->radius = radius;
     obstacle->speed = speed;
     obstacle->push_coefficient = push_coefficient;
@@ -15,94 +11,76 @@ void Obstacle_init(Obstacle_t *obstacle, float x, float y, float z, float radius
 
 float Obstacle_getXVelocity(Obstacle_t *obstacle, float dt)
 {
-    return (obstacle->x - obstacle->last_x) * obstacle->speed / dt;
+    return (obstacle->position.raw[0] - obstacle->last_position.raw[0]) * obstacle->speed / dt;
 }
 
 float Obstacle_getYVelocity(Obstacle_t *obstacle, float dt)
 {
-    return (obstacle->y - obstacle->last_y) * obstacle->speed / dt;
+    return (obstacle->position.raw[1] - obstacle->last_position.raw[1]) * obstacle->speed / dt;
 }
 
 float Obstacle_getZVelocity(Obstacle_t *obstacle, float dt)
 {
-    return (obstacle->z - obstacle->last_z) * obstacle->speed / dt;
+    return (obstacle->position.raw[2] - obstacle->last_position.raw[2]) * obstacle->speed / dt;
 }
 
 void Obstacle_integrate(Obstacle_t *obstacle, float gravity, float min_y, float dt)
 {
-    if (obstacle->y > min_y)
+    if (obstacle->position.raw[1] > min_y)
     {
-        obstacle->y += gravity * dt;
+        obstacle->position.raw[1] += gravity * dt;
     }
     else
     {
-        obstacle->y = min_y;
+        obstacle->position.raw[1] = min_y;
     }
 }
 
 void Obstacle_processInput(Obstacle_t *obstacle, GLFWwindow *window)
 {
+    obstacle->last_position = obstacle->position;
 
-    obstacle->last_x = obstacle->x;
-    obstacle->last_y = obstacle->y;
-    obstacle->last_z = obstacle->z;
     if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS)
-    {
-        obstacle->x += -1.0f * obstacle->speed;
-    }
+        obstacle->position.raw[0] -= obstacle->speed;
+
     if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS)
-    {
-        obstacle->x += 1.0f * obstacle->speed;
-    }
+        obstacle->position.raw[0] += obstacle->speed;
+
     if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS)
-    {
-        obstacle->y += 1.0f * obstacle->speed;
-    }
+        obstacle->position.raw[1] += obstacle->speed;
+
     if (glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS)
-    {
-        obstacle->y += -1.0f * obstacle->speed;
-    }
+        obstacle->position.raw[1] -= obstacle->speed;
+
     if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS)
-    {
-        obstacle->z += -1.0f * obstacle->speed;
-    }
+        obstacle->position.raw[2] -= obstacle->speed;
+
     if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS)
-    {
-        obstacle->z += 1.0f * obstacle->speed;
-    }
+        obstacle->position.raw[2] += obstacle->speed;
+
     if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS)
     {
-        obstacle->x = 0.75f;
-        obstacle->y = 0.2f;
-        obstacle->z = 2.3f;
+        obstacle->position = (vec3s){{0.75f, 0.2f, 2.3f}};
         printf("PRESS U TO MOVE\n");
     }
     if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS)
     {
-        obstacle->x = 2.0f;
-        obstacle->y = 0.2f;
-        obstacle->z = 0.65f;
+        obstacle->position = (vec3s){{2.0f, 0.2f, 0.65f}};
         printf("PRESS J TO MOVE\n");
     }
     if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS)
     {
-        obstacle->x = 2.0f;
-        obstacle->y = 0.2f;
-        obstacle->z = 2.0f;
+        obstacle->position = (vec3s){{2.0f, 0.2f, 2.0f}};
         printf("PRESS U + J TO MOVE\n");
     }
     if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS)
     {
-        obstacle->x = 0.75f;
-        obstacle->y = -1.0f;
-        obstacle->z = 0.75f;
+        obstacle->position = (vec3s){{0.75f, -1.0f, 0.75f}};
         printf("PRESS I TO MOVE\n");
     }
     if (glfwGetKey(window, GLFW_KEY_5) == GLFW_PRESS)
     {
-        obstacle->x = 2.0f;
-        obstacle->y = 1.44f;
-        obstacle->z = 0.65f;
+        obstacle->position = (vec3s){{2.0f, 1.44f, 0.65f}};
         printf("PRESS J + K TO MOVE\n");
     }
 }
@@ -116,9 +94,9 @@ Pair_t Obstacle_transformToVertices(Obstacle_t *obstacle, Vertex_t *vertices, GL
     int indexIndex = 0;
 
     float radius = obstacle->radius;
-    float centerX = obstacle->x;
-    float centerY = obstacle->y;
-    float centerZ = obstacle->z;
+    float centerX = obstacle->position.raw[0];
+    float centerY = obstacle->position.raw[1];
+    float centerZ = obstacle->position.raw[2];
 
     for (int i = 0; i <= stackCount; ++i)
     {
@@ -137,18 +115,9 @@ Pair_t Obstacle_transformToVertices(Obstacle_t *obstacle, Vertex_t *vertices, GL
             float ny = y / radius;
             float nz = z / radius;
 
-            vertices[vertexIndex].position.x = x + centerX;
-            vertices[vertexIndex].position.y = y + centerY;
-            vertices[vertexIndex].position.z = z + centerZ;
-            vertices[vertexIndex].normal.x = nx;
-            vertices[vertexIndex].normal.y = ny;
-            vertices[vertexIndex].normal.z = nz;
-            vertices[vertexIndex].color.x = 0.925f;
-            vertices[vertexIndex].color.y = 0.306f;
-            vertices[vertexIndex].color.z = 0.125f;
-            // vertices[vertexIndex].color.x = 1.0f;
-            // vertices[vertexIndex].color.y = 0.583f;
-            // vertices[vertexIndex].color.z = 0.019f;
+            vertices[vertexIndex].position = (vec3s){{x + centerX, y + centerY, z + centerZ}};
+            vertices[vertexIndex].normal = (vec3s){{nx, ny, nz}};
+            vertices[vertexIndex].color = (vec3s){{0.925f, 0.306f, 0.125f}};
 
             vertexIndex++;
         }
@@ -177,7 +146,7 @@ Pair_t Obstacle_transformToVertices(Obstacle_t *obstacle, Vertex_t *vertices, GL
         }
     }
 
-    return {.first = vertexIndex, .second = indexIndex};
+    return (Pair_t){.first = vertexIndex, .second = indexIndex};
 }
 
 void Obstacle_destroy(Obstacle_t *obstacle)

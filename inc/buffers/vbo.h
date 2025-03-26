@@ -2,12 +2,13 @@
 #define FAVE_VBO_H
 
 #include <glad/glad.h>
-#include <glm/glm.hpp>
+#include <cglm/struct.h>
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
+
 	typedef struct VBO
 	{
 		GLuint ID;
@@ -15,10 +16,10 @@ extern "C"
 
 	typedef struct Vertex
 	{
-		glm::vec3 position;
-		glm::vec3 normal;
-		glm::vec3 color;
-		glm::vec2 texUV;
+		vec3s position;
+		vec3s normal;
+		vec3s color;
+		vec2s texUV;
 	} Vertex_t;
 
 	void VBO_init(VBO_t *vbo, size_t size);
