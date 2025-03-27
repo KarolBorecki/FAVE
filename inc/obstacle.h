@@ -20,14 +20,14 @@ extern "C"
 #endif
     typedef struct Obstacle
     {
-        vec3s position;
-        vec3s last_position;
         float x;
         float y;
         float z;
+        
         float last_x;
         float last_y;
         float last_z;
+
         float radius;
         float speed;
         float push_coefficient;

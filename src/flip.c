@@ -273,6 +273,7 @@ void FLIP_handleObstacle(FlipGrid_t *grid, Obstacle_t *obstacle, float dt)
             grid->particle_vel[3 * i] = Obstacle_getXVelocity(obstacle, dt) * obstacle->push_coefficient;
             grid->particle_vel[3 * i + 1] = Obstacle_getYVelocity(obstacle, dt) * obstacle->push_coefficient;
             grid->particle_vel[3 * i + 2] = Obstacle_getZVelocity(obstacle, dt) * obstacle->push_coefficient;
+            // printf("%d %d %d\n", grid->particle_vel[3 * i], grid->particle_vel[3 * i + 1], grid->particle_vel[3 * i + 2]);
         }
 
         if (grid->particle_pos[3 * i] < min_x)
@@ -626,8 +627,15 @@ void FLIP_solveIncompressibility(FlipGrid_t *grid, int num_iters, float dt, floa
 Pair_t FLIP_transformGridToVerticies(FlipGrid_t *grid, Vertex_t *vertices, GLuint *indices,
                                      int show_sci, int show_air, int show_solids)
 {
-    static glm::vec3 cubeVertices[8] = {
-        {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f, 1.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f, 1.0f}};
+    static vec3s cubeVertices[8] = {
+        {{0.0f, 0.0f, 0.0f}},
+        {{1.0f, 0.0f, 0.0f}},
+        {{1.0f, 1.0f, 0.0f}},
+        {{0.0f, 1.0f, 0.0f}},
+        {{0.0f, 0.0f, 1.0f}},
+        {{1.0f, 0.0f, 1.0f}},
+        {{1.0f, 1.0f, 1.0f}},
+        {{0.0f, 1.0f, 1.0f}}};
 
     static GLuint cubeIndices[36] = {
         0, 1, 2, 2, 3, 0,
@@ -655,47 +663,39 @@ Pair_t FLIP_transformGridToVerticies(FlipGrid_t *grid, Vertex_t *vertices, GLuin
     for (int cell_nr = 0; cell_nr < grid->f_num_cells; cell_nr++)
     {
 
-        glm::vec3 cubePos = glm::vec3(cell_nr % grid->f_num_x,
-                                      (cell_nr / grid->f_num_x) % grid->f_num_y,
-                                      cell_nr / (grid->f_num_x * grid->f_num_y)) *
-                            grid->h;
+        vec3s cubePos = glms_vec3_scale((vec3s){{(float)(cell_nr % grid->f_num_x),
+                                                 (float)((cell_nr / grid->f_num_x) % grid->f_num_y),
+                                                 (float)(cell_nr / (grid->f_num_x * grid->f_num_y))}},
+                                        grid->h);
 
-        float c[3] = {0.0f, 0.0f, 0.0f};
+        vec3s c = {{0.0f, 0.0f, 0.0f}};
         switch (grid->cell_type[cell_nr])
         {
         case FLUID:
             if (show_sci)
-                getSciColor(grid->p[cell_nr], minPressure, maxPressure, c);
+                getSciColor(grid->p[cell_nr], minPressure, maxPressure, c.raw);
             else
             {
-                c[0] = 0.113f;
-                c[1] = 0.353f;
-                c[2] = 0.403f;
+                c = {{0.113f, 0.353f, 0.403f}};
             }
             break;
         case SOLID:
             if (!show_solids)
                 continue;
-            c[0] = 1.0;
-            c[1] = 0.583;
-            c[2] = 0.019f;
+            c = {{1.0f, 0.583, 0.019f}};
             break;
         case AIR:
             if (!show_air)
                 continue;
-            c[0] = 0.53f;
-            c[1] = 0.81f;
-            c[2] = 0.94f;
+            c = {{0.53f, 0.81f, 0.94f}};
             break;
         }
 
         for (int i = 0; i < 8; i++)
         {
-            vertices[vert_index].position = cubePos + cubeVertices[i] * grid->h;
-            vertices[vert_index].color.x = c[0];
-            vertices[vert_index].color.y = c[1];
-            vertices[vert_index].color.z = c[2];
-            vertices[vert_index].normal = glm::normalize(cubeVertices[i]);
+            vertices[vert_index].position = glms_vec3_add(cubePos, glms_vec3_scale(cubeVertices[i], grid->h));
+            vertices[vert_index].color = c;
+            vertices[vert_index].normal = glms_vec3_normalize(cubeVertices[i]);
             vert_index++;
         }
 
@@ -718,7 +718,7 @@ Pair_t FLIP_transformGridToVerticiesMarchingCubes(
 
     float minPressure = FLT_MAX, maxPressure = FLT_MIN;
 
-    glm::vec3 vertexList[12];
+    vec3s vertexList[12];
     float cornerValues[8];
 
     for (int z = 0; z < grid->f_num_z; z++)
@@ -729,16 +729,16 @@ Pair_t FLIP_transformGridToVerticiesMarchingCubes(
             {
                 int cellNr = z * grid->f_num_x * grid->f_num_y + y * grid->f_num_x + x;
 
-                glm::vec3 cubePos = glm::vec3(x, y, z) * grid->h;
+                vec3s cubePos = glms_vec3_scale((vec3s){{(float)x, (float)y, (float)z}}, grid->h);
 
                 int cubeIndex = 0;
 
                 for (int i = 0; i < 8; i++)
                 {
                     int cornerCell = cellNr +
-                                     (int)cornerOffsets[i].x +
-                                     (int)cornerOffsets[i].y * grid->f_num_x +
-                                     (int)cornerOffsets[i].z * grid->f_num_x * grid->f_num_y;
+                                     (int)cornerOffsets[i].raw[0] +
+                                     (int)cornerOffsets[i].raw[1] * grid->f_num_x +
+                                     (int)cornerOffsets[i].raw[2] * grid->f_num_x * grid->f_num_y;
 
                     cornerValues[i] = grid->p[cornerCell];
 
@@ -747,8 +747,8 @@ Pair_t FLIP_transformGridToVerticiesMarchingCubes(
 
                     if (grid->cell_type[cornerCell] == FLUID)
                     {
-                        minPressure = std::min(minPressure, cornerValues[i]);
-                        maxPressure = std::max(maxPressure, cornerValues[i]);
+                        minPressure = minf(minPressure, cornerValues[i]);
+                        maxPressure = maxf(maxPressure, cornerValues[i]);
                     }
                 }
 
@@ -765,35 +765,35 @@ Pair_t FLIP_transformGridToVerticiesMarchingCubes(
                         float valA = cornerValues[idxA];
                         float valB = cornerValues[idxB];
 
-                        float t = glm::clamp((0.0f - valA) / (valB - valA), 0.0f, 1.0f);
+                        float t = clampf((0.0f - valA) / (valB - valA), 0.0f, 1.0f);
 
-                        vertexList[i] = glm::mix(
-                            cubePos + cornerOffsets[idxA] * grid->h,
-                            cubePos + cornerOffsets[idxB] * grid->h,
-                            t);
+                        vec3s a = glms_vec3_add(cubePos, glms_vec3_scale(cornerOffsets[idxA], grid->h));
+                        vec3s b = glms_vec3_add(cubePos, glms_vec3_scale(cornerOffsets[idxB], grid->h));
+                        vertexList[i] = glms_vec3_lerp(a, b, t);
                     }
                 }
 
                 for (int i = 0; triTable[cubeIndex][i] != -1; i += 3)
                 {
-                    glm::vec3 v0 = vertexList[triTable[cubeIndex][i]];
-                    glm::vec3 v1 = vertexList[triTable[cubeIndex][i + 1]];
-                    glm::vec3 v2 = vertexList[triTable[cubeIndex][i + 2]];
-
-                    glm::vec3 normal = glm::normalize(glm::cross(v0 - v1, v0 - v2));
+                    vec3s v0 = vertexList[triTable[cubeIndex][i]];
+                    vec3s v1 = vertexList[triTable[cubeIndex][i + 1]];
+                    vec3s v2 = vertexList[triTable[cubeIndex][i + 2]];
+                    vec3s edge1 = glms_vec3_sub(v1, v0);
+                    vec3s edge2 = glms_vec3_sub(v2, v0);
+                    vec3s normal = glms_vec3_normalize(glms_vec3_cross(edge1, edge2));
 
                     for (int j = 0; j < 3; j++)
                     {
                         int vertID = triTable[cubeIndex][i + j];
-                        float color[3] = {0.113f, 0.353f, 0.403f};
+                        vec3s color = {{0.113f, 0.353f, 0.403f}};
 
                         if (show_sci)
                         {
-                            getSciColor(cornerValues[vertID], minPressure, maxPressure, color);
+                            getSciColor(cornerValues[vertID], minPressure, maxPressure, color.raw);
                         }
 
                         vertices[vert_index].position = vertexList[vertID];
-                        vertices[vert_index].color = glm::vec3(color[0], color[1], color[2]);
+                        vertices[vert_index].color = color;
                         vertices[vert_index].normal = normal;
 
                         indices[ind_index++] = vert_index++;
@@ -806,13 +806,13 @@ Pair_t FLIP_transformGridToVerticiesMarchingCubes(
     return {.first = (int)vert_index, .second = (int)ind_index};
 }
 
-Pair_t FLIP_transformMarkersToVertices(FlipGrid_t *grid, Vertex_t *markerVertices, GLuint *markerIndices)
+Pair_t FLIP_transformMarkersToVertices(FlipGrid_t *grid, Vertex_t *marker_vertices, GLuint *marker_indices)
 {
     int sphere_lat_slices = 3;
     int sphere_lon_slices = 3;
 
-    int indexOffset = 0;
-    int vertexOffset = 0;
+    int index_offset = 0;
+    int vertex_offset = 0;
 
     float min_velocity = FLT_MAX;
     float max_velocity = FLT_MIN;
@@ -835,39 +835,43 @@ Pair_t FLIP_transformMarkersToVertices(FlipGrid_t *grid, Vertex_t *markerVertice
 
     for (int m = 0; m < grid->num_particles; m++)
     {
-        glm::vec3 markerPos = glm::vec3(grid->particle_pos[3 * m], grid->particle_pos[3 * m + 1], grid->particle_pos[3 * m + 2]);
-        if (markerPos.x < grid->h + grid->particle_radius * 2 || markerPos.x > (grid->f_num_x - 1) * grid->h - grid->particle_radius * 2 ||
-            markerPos.y < grid->h + grid->particle_radius * 2 || markerPos.y > (grid->f_num_y - 1) * grid->h - grid->particle_radius * 2 ||
-            markerPos.z < grid->h + grid->particle_radius * 2 || markerPos.z > (grid->f_num_z - 1) * grid->h - grid->particle_radius * 2)
+        float marker_pos_x = grid->particle_pos[3 * m];
+        float marker_pos_y = grid->particle_pos[3 * m + 1];
+        float marker_pos_z = grid->particle_pos[3 * m + 2];
+        if (marker_pos_x < grid->h + grid->particle_radius * 2 || marker_pos_x > (grid->f_num_x - 1) * grid->h - grid->particle_radius * 2 ||
+            marker_pos_y < grid->h + grid->particle_radius * 2 || marker_pos_y > (grid->f_num_y - 1) * grid->h - grid->particle_radius * 2 ||
+            marker_pos_z < grid->h + grid->particle_radius * 2 || marker_pos_z > (grid->f_num_z - 1) * grid->h - grid->particle_radius * 2)
         {
             continue;
         }
-        float c[3] = {0.0f, 0.0f, 1.0f};
-        getSciColor(glm::length(glm::vec3(grid->particle_vel[3 * m], grid->particle_vel[3 * m + 1], grid->particle_vel[3 * m + 2])), min_velocity, max_velocity, c);
-        glm::vec3 markerColor = glm::vec3(c[0], c[1], c[2]);
+        vec3s color = {{0.0f, 0.0f, 1.0f}};
+        getSciColor(
+            glms_vec3_norm((vec3s){{grid->particle_vel[3 * m],
+                                    grid->particle_vel[3 * m + 1],
+                                    grid->particle_vel[3 * m + 2]}}),
+            min_velocity, max_velocity,
+            color.raw);
+
         float radius = grid->particle_radius;
         for (int i = 0; i <= sphere_lat_slices; i++)
         {
             float theta = (float)i / sphere_lat_slices * M_PI;
-            float sinTheta = sinf(theta);
-            float cosTheta = cosf(theta);
+            float sin_theta = sinf(theta);
+            float cos_theta = cosf(theta);
 
             for (int j = 0; j <= sphere_lon_slices; j++)
             {
                 float phi = (float)j / sphere_lon_slices * 2.0f * M_PI;
-                float sinPhi = sinf(phi);
-                float cosPhi = cosf(phi);
+                float sin_phi = sinf(phi);
+                float cos_phi = cosf(phi);
 
-                glm::vec3 vertexPos;
+                vec3s vertex_pos = {{marker_pos_x + radius * sin_theta * cos_phi,
+                                     marker_pos_y + radius * cos_theta,
+                                     marker_pos_z + radius * sin_theta * sin_phi}};
 
-                vertexPos.x = markerPos.x + radius * sinTheta * cosPhi;
-                vertexPos.y = markerPos.y + radius * cosTheta;
-                vertexPos.z = markerPos.z + radius * sinTheta * sinPhi;
-
-                markerVertices[vertexOffset]
-                    .position = vertexPos;
-                markerVertices[vertexOffset].color = markerColor;
-                vertexOffset++;
+                marker_vertices[vertex_offset].position = vertex_pos;
+                marker_vertices[vertex_offset].color = color;
+                vertex_offset++;
             }
         }
 
@@ -875,21 +879,21 @@ Pair_t FLIP_transformMarkersToVertices(FlipGrid_t *grid, Vertex_t *markerVertice
         {
             for (int j = 0; j < sphere_lon_slices; j++)
             {
-                int first = vertexOffset - (sphere_lat_slices + 1) * (sphere_lon_slices + 1) + i * (sphere_lon_slices + 1) + j;
+                int first = vertex_offset - (sphere_lat_slices + 1) * (sphere_lon_slices + 1) + i * (sphere_lon_slices + 1) + j;
                 int second = first + sphere_lon_slices + 1;
 
-                markerIndices[indexOffset++] = first;
-                markerIndices[indexOffset++] = second;
-                markerIndices[indexOffset++] = first + 1;
+                marker_indices[index_offset++] = first;
+                marker_indices[index_offset++] = second;
+                marker_indices[index_offset++] = first + 1;
 
-                markerIndices[indexOffset++] = second;
-                markerIndices[indexOffset++] = second + 1;
-                markerIndices[indexOffset++] = first + 1;
+                marker_indices[index_offset++] = second;
+                marker_indices[index_offset++] = second + 1;
+                marker_indices[index_offset++] = first + 1;
             }
         }
     }
 
-    return (Pair_t){.first = vertexOffset, .second = indexOffset};
+    return (Pair_t){.first = vertex_offset, .second = index_offset};
 }
 
 void FLIP_destroy(FlipGrid_t *grid)

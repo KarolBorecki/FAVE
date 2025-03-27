@@ -523,10 +523,9 @@ Pair_t FLIP2D_transformGridToVerticiesMarchingSquares(
 
     float minPressure = FLT_MAX, maxPressure = FLT_MIN;
 
-    const glm::vec3 cornerOffsets2D[4] = {
-        {0, 0, 0}, {1, 0, 0}, {1, 1, 0}, {0, 1, 0}};
+    const vec3s cornerOffsets2D[4] = {{{0.0f, 0.0f, 0.0f}}, {{1.0f, 0.0f, 0.0f}}, {{1.0f, 1.0f, 0.0f}}, {{0.0f, 1.0f, 0.0f}}};
 
-    glm::vec3 vertexList[4];
+    vec3s vertexList[4];
     float cornerValues[4];
 
     for (int y = 0; y < grid->f_num_y; y++)
@@ -534,19 +533,19 @@ Pair_t FLIP2D_transformGridToVerticiesMarchingSquares(
         for (int x = 0; x < grid->f_num_x; x++)
         {
             int cellNr = y * grid->f_num_x + x;
-            glm::vec3 squarePos = glm::vec3(x, y, 0) * grid->h;
+            vec3s squarePos = {{x * grid->h, y * grid->h, 0}};
 
             int squareIndex = 0;
 
             for (int i = 0; i < 4; i++)
             {
                 int cornerCell = cellNr +
-                                 (int)cornerOffsets2D[i].x +
-                                 (int)cornerOffsets2D[i].y * grid->f_num_x;
+                                 (int)cornerOffsets2D[i].raw[0] +
+                                 (int)cornerOffsets2D[i].raw[1] * grid->f_num_x;
 
                 cornerValues[i] = grid->p[cornerCell];
 
-                if (std::isnan(cornerValues[i]) || std::isinf(cornerValues[i]))
+                if (isnan(cornerValues[i]) || isinf(cornerValues[i]))
                     cornerValues[i] = 0.0f;
 
                 if (cornerValues[i] <= 0.0f)
@@ -554,8 +553,8 @@ Pair_t FLIP2D_transformGridToVerticiesMarchingSquares(
 
                 if (grid->cell_type[cornerCell] == FLUID)
                 {
-                    minPressure = std::min(minPressure, cornerValues[i]);
-                    maxPressure = std::max(maxPressure, cornerValues[i]);
+                    minPressure = minf(minPressure, cornerValues[i]);
+                    maxPressure = maxf(maxPressure, cornerValues[i]);
                 }
             }
 
@@ -564,7 +563,7 @@ Pair_t FLIP2D_transformGridToVerticiesMarchingSquares(
 
             for (int i = 0; i < 4; i++)
             {
-                vertexList[i] = glm::vec3(0.0f);
+                vertexList[i] = {{0.0f, 0.0f, 0.0f}};
             }
 
             for (int i = 0; i < 4; i++)
@@ -577,35 +576,35 @@ Pair_t FLIP2D_transformGridToVerticiesMarchingSquares(
                     float valA = cornerValues[idxA];
                     float valB = cornerValues[idxB];
 
-                    float t = (valA == valB) ? 0.5f : glm::clamp((0.0f - valA) / (valB - valA), 0.0f, 1.0f);
-
-                    vertexList[i] = glm::mix(
-                        squarePos + cornerOffsets2D[idxA] * grid->h,
-                        squarePos + cornerOffsets2D[idxB] * grid->h,
-                        t);
+                    float t = (valA == valB) ? 0.5f : clampf((0.0f - valA) / (valB - valA), 0.0f, 1.0f);
+                    vec3s a = glms_vec3_add(squarePos, glms_vec3_scale(cornerOffsets2D[idxA], grid->h));
+                    vec3s b = glms_vec3_add(squarePos, glms_vec3_scale(cornerOffsets2D[idxB], grid->h));
+                    vertexList[i] = glms_vec3_lerp(a, b, t);
                 }
             }
 
             for (int i = 0; triTable2D[squareIndex][i] != -1 && i < 4; i += 3)
             {
-                glm::vec3 v0 = vertexList[triTable2D[squareIndex][i]];
-                glm::vec3 v1 = vertexList[triTable2D[squareIndex][i + 1]];
-                glm::vec3 v2 = vertexList[triTable2D[squareIndex][i + 2]];
+                vec3s v0 = vertexList[triTable2D[squareIndex][i]];
+                vec3s v1 = vertexList[triTable2D[squareIndex][i + 1]];
+                vec3s v2 = vertexList[triTable2D[squareIndex][i + 2]];
 
-                glm::vec3 normal = glm::normalize(glm::cross(v1 - v0, v2 - v0));
+                vec3s edge1 = glms_vec3_sub(v1, v0);
+                vec3s edge2 = glms_vec3_sub(v2, v0);
+                vec3s normal = glms_vec3_normalize(glms_vec3_cross(edge1, edge2));
 
                 for (int j = 0; j < 3; j++)
                 {
                     int vertID = triTable2D[squareIndex][i + j];
-                    float color[3] = {0.113f, 0.353f, 0.403f};
+                    vec3s color = {{0.113f, 0.353f, 0.403f}};
 
                     if (show_sci)
                     {
-                        getSciColor(cornerValues[vertID], minPressure, maxPressure, color);
+                        getSciColor(cornerValues[vertID], minPressure, maxPressure, color.raw);
                     }
 
                     vertices[vert_index].position = vertexList[vertID];
-                    vertices[vert_index].color = glm::vec3(color[0], color[1], color[2]);
+                    vertices[vert_index].color = color;
                     vertices[vert_index].normal = normal;
 
                     indices[ind_index++] = vert_index++;

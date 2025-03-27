@@ -6,7 +6,8 @@
 
 #include <math.h>
 
-#include <glm/glm.hpp>
+#include <cglm/cglm.h>
+#include <cglm/struct.h>
 
 #include "definitions.h"
 #include "types.h"

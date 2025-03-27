@@ -292,31 +292,15 @@ int triTable[256][16] =
      {0, 3, 8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
      {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}};
 
-const glm::vec3 cornerOffsets[8] = {
-    glm::vec3(0, 0, 0),
-    glm::vec3(1, 0, 0),
-    glm::vec3(1, 1, 0),
-    glm::vec3(0, 1, 0),
-    glm::vec3(0, 0, 1),
-    glm::vec3(1, 0, 1),
-    glm::vec3(1, 1, 1),
-    glm::vec3(0, 1, 1),
-};
-
-const glm::vec3 edgeVertexOffsets[12][2] = {
-    {cornerOffsets[0], cornerOffsets[1]},
-    {cornerOffsets[1], cornerOffsets[2]},
-    {cornerOffsets[2], cornerOffsets[3]},
-    {cornerOffsets[3], cornerOffsets[0]},
-    {cornerOffsets[4], cornerOffsets[5]},
-    {cornerOffsets[5], cornerOffsets[6]},
-    {cornerOffsets[6], cornerOffsets[7]},
-    {cornerOffsets[7], cornerOffsets[4]},
-    {cornerOffsets[0], cornerOffsets[4]},
-    {cornerOffsets[1], cornerOffsets[5]},
-    {cornerOffsets[2], cornerOffsets[6]},
-    {cornerOffsets[3], cornerOffsets[7]},
-};
+const vec3s cornerOffsets[8] = {
+    {{0.0f, 0.0f, 0.0f}},
+    {{1.0f, 0.0f, 0.0f}},
+    {{1.0f, 1.0f, 0.0f}},
+    {{0.0f, 1.0f, 0.0f}},
+    {{0.0f, 0.0f, 1.0f}},
+    {{1.0f, 0.0f, 1.0f}},
+    {{1.0f, 1.0f, 1.0f}},
+    {{0.0f, 1.0f, 1.0f}}};
 
 const int cornerIndexAFromEdge[12] = {0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3};
 const int cornerIndexBFromEdge[12] = {1, 2, 3, 0, 5, 6, 7, 4, 4, 5, 6, 7};
@@ -326,32 +310,28 @@ const int edgeTable2D[16] = {
     0xC, 0x5, 0xF, 0x6, 0xA, 0x3, 0x9, 0x0};
 
 const int triTable2D[16][4] = {
-    {-1, -1, -1, -1}, 
-    {0, 3, 8, -1}, 
-    {1, 0, 9, -1}, 
-    {1, 3, 8, 9}, 
-    {2, 1, 10, -1}, 
-    {2, 0, 8, 10}, 
-    {2, 3, 8, 10}, 
-    {3, 8, 9, 10}, 
-    {3, 4, 7, -1}, 
-    {0, 1, 10, 7}, 
-    {3, 0, 8, 7}, 
-    {1, 8, 9, 10}, 
-    {2, 3, 8, 7}, 
-    {0, 8, 9, 10}, 
-    {1, 2, 10, 7}, 
-    {7, 8, 9, 10}
-};
+    {-1, -1, -1, -1},
+    {0, 3, 8, -1},
+    {1, 0, 9, -1},
+    {1, 3, 8, 9},
+    {2, 1, 10, -1},
+    {2, 0, 8, 10},
+    {2, 3, 8, 10},
+    {3, 8, 9, 10},
+    {3, 4, 7, -1},
+    {0, 1, 10, 7},
+    {3, 0, 8, 7},
+    {1, 8, 9, 10},
+    {2, 3, 8, 7},
+    {0, 8, 9, 10},
+    {1, 2, 10, 7},
+    {7, 8, 9, 10}};
 
-const glm::vec3 cornerOffsets2D[4] = {{0, 0, 0}, {1, 0, 0}, {1, 1, 0}, {0, 1, 0}};
-
-const glm::vec3 edgeVertexOffsets2D[4][2] = {
-    {cornerOffsets2D[0], cornerOffsets2D[1]},
-    {cornerOffsets2D[1], cornerOffsets2D[2]},
-    {cornerOffsets2D[2], cornerOffsets2D[3]},
-    {cornerOffsets2D[3], cornerOffsets2D[0]},
-};
+const vec3s cornerOffsets2D[4] = {
+    {{0, 0, 0}},
+    {{1, 0, 0}},
+    {{1, 1, 0}},
+    {{0, 1, 0}}};
 
 const int cornerIndexAFromEdge2D[4] = {0, 1, 2, 3};
 const int cornerIndexBFromEdge2D[4] = {1, 2, 3, 0};

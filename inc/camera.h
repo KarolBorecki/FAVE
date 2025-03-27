@@ -4,12 +4,11 @@
 #define FAVE_CAMERA_H
 
 #include <cstdio>
+#include <math.h>
 
 #include <GLFW/glfw3.h>
 #include <cglm/cglm.h>
 #include <cglm/struct.h>
-#include <GLFW/glfw3.h>
-#include <math.h>
 
 #ifdef __cplusplus
 extern "C"
