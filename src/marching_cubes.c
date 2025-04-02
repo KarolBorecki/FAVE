@@ -327,11 +327,11 @@ const int triTable2D[16][4] = {
     {1, 2, 10, 7},
     {7, 8, 9, 10}};
 
-const vec3s cornerOffsets2D[4] = {
-    {{0, 0, 0}},
-    {{1, 0, 0}},
-    {{1, 1, 0}},
-    {{0, 1, 0}}};
+const vec2s cornerOffsets2D[4] = {
+    {{0, 0}},
+    {{1, 0}},
+    {{1, 1}},
+    {{0, 1}}};
 
 const int cornerIndexAFromEdge2D[4] = {0, 1, 2, 3};
 const int cornerIndexBFromEdge2D[4] = {1, 2, 3, 0};

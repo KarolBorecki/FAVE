@@ -111,6 +111,7 @@ void Camera_processInput(Camera_t *camera, GLFWwindow *window)
                    camera->up.raw,
                    camera->view_mat.raw);
         camera->cam_mat = glms_mat4_mul(camera->projection_mat, camera->view_mat);
+        printf("%lf %lf %lf\n", camera->position.raw[0], camera->position.raw[1], camera->position.raw[2]);
     }
 }
 

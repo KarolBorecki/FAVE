@@ -687,7 +687,13 @@ Pair_t FLIP_transformGridToVerticies(FlipGrid_t *grid, Vertex_t *vertices, GLuin
         case AIR:
             if (!show_air)
                 continue;
-            c = {{0.53f, 0.81f, 0.94f}};
+            if (show_sci)
+                c = {{0.33f, 0.33f, 0.33f}};
+            else
+            {
+                c = {{0.53f, 0.81f, 0.94f}};
+            }
+            
             break;
         }
 
@@ -765,7 +771,7 @@ Pair_t FLIP_transformGridToVerticiesMarchingCubes(
                         float valA = cornerValues[idxA];
                         float valB = cornerValues[idxB];
 
-                        float t = clampf((0.0f - valA) / (valB - valA), 0.0f, 1.0f);
+                        float t = clampf((0.5f - valA) / (valB - valA), 0.0f, 1.0f);
 
                         vec3s a = glms_vec3_add(cubePos, glms_vec3_scale(cornerOffsets[idxA], grid->h));
                         vec3s b = glms_vec3_add(cubePos, glms_vec3_scale(cornerOffsets[idxB], grid->h));

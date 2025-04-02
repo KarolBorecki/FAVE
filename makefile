@@ -1,7 +1,7 @@
 TARGET = FAVE
 
 CC = g++
-CFLAGS = -g -o3 -Wall -std=c++23 -Iinc -Iinc/external #TODO remove -g
+CFLAGS = -o3 -Wall -std=c++23 -Iinc -Iinc/external
 
 LIBS = -ldl -lglfw -lGL -lcglm -lm
 

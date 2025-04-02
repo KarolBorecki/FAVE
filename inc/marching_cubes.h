@@ -17,7 +17,7 @@ extern "C"
 
     extern const int edgeTable2D[16];
     extern const int triTable2D[16][4];
-    extern const vec3s cornerOffsets2D[4];
+    extern const vec2s cornerOffsets2D[4];
     extern const int cornerIndexAFromEdge2D[4];
     extern const int cornerIndexBFromEdge2D[4];
 #ifdef __cplusplus
