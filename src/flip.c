@@ -693,7 +693,7 @@ Pair_t FLIP_transformGridToVerticies(FlipGrid_t *grid, Vertex_t *vertices, GLuin
             {
                 c = {{0.53f, 0.81f, 0.94f}};
             }
-            
+
             break;
         }
 
@@ -814,49 +814,51 @@ Pair_t FLIP_transformGridToVerticiesMarchingCubes(
 
 Pair_t FLIP_transformMarkersToVertices(FlipGrid_t *grid, Vertex_t *marker_vertices, GLuint *marker_indices)
 {
-    int sphere_lat_slices = 3;
-    int sphere_lon_slices = 3;
+    int sphere_lat_slices = 4;
+    int sphere_lon_slices = 4;
 
     int index_offset = 0;
     int vertex_offset = 0;
 
     float min_velocity = FLT_MAX;
     float max_velocity = FLT_MIN;
-    float sum_velocity = 0.0f;
-    for (int i = 0; i < grid->f_num_cells; i++)
+    float sum_vel = 0.0f;
+    for (int i = 0; i < grid->num_particles; i++)
     {
-        if (grid->cell_type[i] == FLUID)
-        {
-            float vel = grid->particle_vel[3 * i] * grid->particle_vel[3 * i] +
-                        grid->particle_vel[3 * i + 1] * grid->particle_vel[3 * i + 1] +
-                        grid->particle_vel[3 * i + 2] * grid->particle_vel[3 * i + 2];
-            vel = sqrtf(vel);
-            if (vel < min_velocity)
-                min_velocity = vel;
-            if (vel > max_velocity)
-                max_velocity = vel;
-            sum_velocity += vel;
-        }
+
+        float vel = grid->particle_vel[3 * i] * grid->particle_vel[3 * i] +
+                    grid->particle_vel[3 * i + 1] * grid->particle_vel[3 * i + 1] +
+                    grid->particle_vel[3 * i + 2] * grid->particle_vel[3 * i + 2];
+        vel = sqrtf(vel);
+        if (vel < min_velocity)
+            min_velocity = vel;
+        if (vel > max_velocity)
+            max_velocity = vel;
+        sum_vel += vel;
     }
+
+    float avg_vel_magnitude = sum_vel / grid->num_particles;
 
     for (int m = 0; m < grid->num_particles; m++)
     {
         float marker_pos_x = grid->particle_pos[3 * m];
         float marker_pos_y = grid->particle_pos[3 * m + 1];
         float marker_pos_z = grid->particle_pos[3 * m + 2];
+        vec3s center = {{marker_pos_x, marker_pos_y, marker_pos_z}};
         if (marker_pos_x < grid->h + grid->particle_radius * 2 || marker_pos_x > (grid->f_num_x - 1) * grid->h - grid->particle_radius * 2 ||
             marker_pos_y < grid->h + grid->particle_radius * 2 || marker_pos_y > (grid->f_num_y - 1) * grid->h - grid->particle_radius * 2 ||
             marker_pos_z < grid->h + grid->particle_radius * 2 || marker_pos_z > (grid->f_num_z - 1) * grid->h - grid->particle_radius * 2)
         {
             continue;
         }
-        vec3s color = {{0.0f, 0.0f, 1.0f}};
-        getSciColor(
-            glms_vec3_norm((vec3s){{grid->particle_vel[3 * m],
-                                    grid->particle_vel[3 * m + 1],
-                                    grid->particle_vel[3 * m + 2]}}),
-            min_velocity, max_velocity,
-            color.raw);
+        float vx = grid->particle_vel[3 * m];
+        float vy = grid->particle_vel[3 * m + 1];
+        float vz = grid->particle_vel[3 * m + 2];
+
+        float velocity_magnitude = sqrtf(vx * vx + vy * vy + vz * vz);
+
+        vec3s color = {{0.0f, 0.1f, 0.5f}};
+        getSciColor(velocity_magnitude, min_velocity, avg_vel_magnitude, color.raw);
 
         float radius = grid->particle_radius;
         for (int i = 0; i <= sphere_lat_slices; i++)
@@ -875,7 +877,10 @@ Pair_t FLIP_transformMarkersToVertices(FlipGrid_t *grid, Vertex_t *marker_vertic
                                      marker_pos_y + radius * cos_theta,
                                      marker_pos_z + radius * sin_theta * sin_phi}};
 
+                vec3s normal = glms_normalize(glms_vec3_sub(vertex_pos, center));
+
                 marker_vertices[vertex_offset].position = vertex_pos;
+                marker_vertices[vertex_offset].normal = normal;
                 marker_vertices[vertex_offset].color = color;
                 vertex_offset++;
             }
